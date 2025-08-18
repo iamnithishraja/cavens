@@ -8,28 +8,28 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		1D29A642E9517551CC047AF8 /* libPods-cavens.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D92AD8428243854B3C421A9 /* libPods-cavens.a */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		935EBB92B5C6B0AE24C8E169 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C621BF7E95E328BE3C3E5DC5 /* PrivacyInfo.xcprivacy */; };
-		9A183AD49EC91D649BACC522 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0694EEB084D48CB4D4793D29 /* ExpoModulesProvider.swift */; };
+		4B45287D762A1BAC62E41DCA /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1F7E2A293672F888B016C8 /* ExpoModulesProvider.swift */; };
+		7E94C5A6228EA869E02FBB07 /* libPods-cavens.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C508C8B21CC713EEBF744CF /* libPods-cavens.a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		EBB2A5754F22DFEB4BEDB3F4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 8586F45B62E4ACFBF477CCC4 /* PrivacyInfo.xcprivacy */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0694EEB084D48CB4D4793D29 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-cavens/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		10C4663ACBE38A77C5083646 /* Pods-cavens.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-cavens.debug.xcconfig"; path = "Target Support Files/Pods-cavens/Pods-cavens.debug.xcconfig"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* cavens.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = cavens.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = cavens/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = cavens/Info.plist; sourceTree = "<group>"; };
-		2D92AD8428243854B3C421A9 /* libPods-cavens.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-cavens.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3C508C8B21CC713EEBF744CF /* libPods-cavens.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-cavens.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		8586F45B62E4ACFBF477CCC4 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = cavens/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = cavens/SplashScreen.storyboard; sourceTree = "<group>"; };
-		AF288D3C522BCEF2DFCF1236 /* Pods-cavens.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-cavens.debug.xcconfig"; path = "Target Support Files/Pods-cavens/Pods-cavens.debug.xcconfig"; sourceTree = "<group>"; };
+		B6CB330603D34A29132565D1 /* Pods-cavens.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-cavens.release.xcconfig"; path = "Target Support Files/Pods-cavens/Pods-cavens.release.xcconfig"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		C621BF7E95E328BE3C3E5DC5 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = cavens/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = cavens/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* cavens-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "cavens-Bridging-Header.h"; path = "cavens/cavens-Bridging-Header.h"; sourceTree = "<group>"; };
-		F4A06F87931834A83D8CB3DD /* Pods-cavens.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-cavens.release.xcconfig"; path = "Target Support Files/Pods-cavens/Pods-cavens.release.xcconfig"; sourceTree = "<group>"; };
+		FA1F7E2A293672F888B016C8 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-cavens/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,7 +37,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1D29A642E9517551CC047AF8 /* libPods-cavens.a in Frameworks */,
+				7E94C5A6228EA869E02FBB07 /* libPods-cavens.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,41 +53,33 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				C621BF7E95E328BE3C3E5DC5 /* PrivacyInfo.xcprivacy */,
+				8586F45B62E4ACFBF477CCC4 /* PrivacyInfo.xcprivacy */,
 			);
 			name = cavens;
-			sourceTree = "<group>";
-		};
-		1B7D1E6E79C398B386B28CF5 /* ExpoModulesProviders */ = {
-			isa = PBXGroup;
-			children = (
-				3FF28B264139D6959DA4CB10 /* cavens */,
-			);
-			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				2D92AD8428243854B3C421A9 /* libPods-cavens.a */,
+				3C508C8B21CC713EEBF744CF /* libPods-cavens.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		3FF28B264139D6959DA4CB10 /* cavens */ = {
+		5C88D98ECE7B62C59B9015A8 /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				0694EEB084D48CB4D4793D29 /* ExpoModulesProvider.swift */,
+				B599F3CC399E161FD936B4DD /* cavens */,
 			);
-			name = cavens;
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
-		6A2AD0F42C59E4C0CC5E0BA6 /* Pods */ = {
+		63867D90E49C6E8C2E8E9699 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				AF288D3C522BCEF2DFCF1236 /* Pods-cavens.debug.xcconfig */,
-				F4A06F87931834A83D8CB3DD /* Pods-cavens.release.xcconfig */,
+				10C4663ACBE38A77C5083646 /* Pods-cavens.debug.xcconfig */,
+				B6CB330603D34A29132565D1 /* Pods-cavens.release.xcconfig */,
 			);
 			name = Pods;
 			path = Pods;
@@ -107,8 +99,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				6A2AD0F42C59E4C0CC5E0BA6 /* Pods */,
-				1B7D1E6E79C398B386B28CF5 /* ExpoModulesProviders */,
+				63867D90E49C6E8C2E8E9699 /* Pods */,
+				5C88D98ECE7B62C59B9015A8 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -121,6 +113,14 @@
 				13B07F961A680F5B00A75B9A /* cavens.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		B599F3CC399E161FD936B4DD /* cavens */ = {
+			isa = PBXGroup;
+			children = (
+				FA1F7E2A293672F888B016C8 /* ExpoModulesProvider.swift */,
+			);
+			name = cavens;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -140,13 +140,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "cavens" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				8BA02B5C7124E74ABEED627C /* [Expo] Configure project */,
+				00E18C7C82329D2576AE0F5E /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				89163F61663A621E4EB79687 /* [CP] Embed Pods Frameworks */,
+				296441BD42E589D8DEB8BDD9 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -196,7 +196,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				935EBB92B5C6B0AE24C8E169 /* PrivacyInfo.xcprivacy in Resources */,
+				EBB2A5754F22DFEB4BEDB3F4 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -218,6 +218,25 @@
 			shellPath = /bin/sh;
 			shellScript = "if [[ -f \"$PODS_ROOT/../.xcode.env\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env\"\nfi\nif [[ -f \"$PODS_ROOT/../.xcode.env.local\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env.local\"\nfi\n\n# The project root by default is one level up from the ios directory\nexport PROJECT_ROOT=\"$PROJECT_DIR\"/..\n\nif [[ \"$CONFIGURATION\" = *Debug* ]]; then\n  export SKIP_BUNDLING=1\nfi\nif [[ -z \"$ENTRY_FILE\" ]]; then\n  # Set the entry JS file using the bundler's entry resolution.\n  export ENTRY_FILE=\"$(\"$NODE_BINARY\" -e \"require('expo/scripts/resolveAppEntry')\" \"$PROJECT_ROOT\" ios absolute | tail -n 1)\"\nfi\n\nif [[ -z \"$CLI_PATH\" ]]; then\n  # Use Expo CLI\n  export CLI_PATH=\"$(\"$NODE_BINARY\" --print \"require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })\")\"\nfi\nif [[ -z \"$BUNDLE_COMMAND\" ]]; then\n  # Default Expo CLI command for bundling\n  export BUNDLE_COMMAND=\"export:embed\"\nfi\n\n# Source .xcode.env.updates if it exists to allow\n# SKIP_BUNDLING to be unset if needed\nif [[ -f \"$PODS_ROOT/../.xcode.env.updates\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env.updates\"\nfi\n# Source local changes to allow overrides\n# if needed\nif [[ -f \"$PODS_ROOT/../.xcode.env.local\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env.local\"\nfi\n\n`\"$NODE_BINARY\" --print \"require('path').dirname(require.resolve('react-native/package.json')) + '/scripts/react-native-xcode.sh'\"`\n\n";
 		};
+		00E18C7C82329D2576AE0F5E /* [Expo] Configure project */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-cavens/expo-configure-project.sh\"\n";
+		};
 		08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -238,6 +257,24 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		296441BD42E589D8DEB8BDD9 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-cavens/Pods-cavens-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-cavens/Pods-cavens-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
@@ -276,43 +313,6 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-cavens/Pods-cavens-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		89163F61663A621E4EB79687 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-cavens/Pods-cavens-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-cavens/Pods-cavens-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		8BA02B5C7124E74ABEED627C /* [Expo] Configure project */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "[Expo] Configure project";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-cavens/expo-configure-project.sh\"\n";
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -321,7 +321,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				9A183AD49EC91D649BACC522 /* ExpoModulesProvider.swift in Sources */,
+				4B45287D762A1BAC62E41DCA /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -330,7 +330,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = AF288D3C522BCEF2DFCF1236 /* Pods-cavens.debug.xcconfig */;
+			baseConfigurationReference = 10C4663ACBE38A77C5083646 /* Pods-cavens.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -366,7 +366,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = F4A06F87931834A83D8CB3DD /* Pods-cavens.release.xcconfig */;
+			baseConfigurationReference = B6CB330603D34A29132565D1 /* Pods-cavens.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
