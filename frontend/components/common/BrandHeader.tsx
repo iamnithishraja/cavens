@@ -18,7 +18,7 @@ const BrandHeader = ({ title = "caven", subtitle = "Your nightlife, curated." }:
     >
       <View style={styles.row}>
         <Image source={require("@/assets/images/icon.png")} style={styles.logo} />
-        <Text style={styles.brand}>caVen</Text>
+        <Text style={styles.brand}>caVén</Text>
       </View>
       <Text style={styles.subtitle}>{subtitle}</Text>
     </LinearGradient>
