@@ -1,9 +1,8 @@
 import User from "../models/userModel";
 import { onbooardingSchema } from "../schemas/onboardingSchema";
 import { generateOTP } from "../utils/otp";
-import { sendSMS } from "../utils/sms";
+import { sendPhoneOtp  } from "../utils/sms";
 import type { Response, Request } from "express";
-import { generateToken } from "../utils/token";
 import z from "zod";
 
 async function onboarding(req: Request, res: Response) {
@@ -13,15 +12,12 @@ async function onboarding(req: Request, res: Response) {
     if (!user) {
       const newUser = await User.create({ phone });
       const otp = generateOTP();
-      await sendSMS(
-        phone,
-        `Welcome to Cavens! Your account has been created successfully and your otp is ${otp}`
-      );
+      await sendPhoneOtp(phone, otp);
       await newUser.updateOne({
         otp: otp,
-        otpExpires: new Date(Date.now() + 15 * 60 * 1000), // OTP valid for 15 minutes
-      }); 
-       res.status(201).json({
+        otpExpiry: new Date(Date.now() + 15 * 60 * 1000), // OTP valid for 15 minutes
+      });
+      res.status(201).json({
         success: true,
         message: "User created successfully",
         user: newUser,
@@ -29,23 +25,21 @@ async function onboarding(req: Request, res: Response) {
       return;
     } else {
       const otp = generateOTP();
-      await sendSMS(phone, `Welcome back to Cavens! Your OTP is ${otp}`);
+      await sendPhoneOtp(phone, otp);
       const userId = user?._id.toString();
       if (!userId) {
         console.log("some problem with userId");
       }
-      const token = generateToken(userId);
       await user.updateOne({
         otp: otp,
-        otpExpires: new Date(Date.now() + 15 * 60 * 1000),
-      }); // OTP valid for 15 minutes
+        otpExpiry: new Date(Date.now() + 15 * 60 * 1000), // OTP valid for 15 minutes
+      }); 
       res.status(200).json({
         success: true,
         message: "OTP sent successfully",
         user: {
           _id: user._id,
           phone: user.phone,
-          token: token,
         },
       });
       return;
