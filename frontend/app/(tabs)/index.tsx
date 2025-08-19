@@ -2,12 +2,12 @@ import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { Text, View } from "react-native";
 
-const index = () => {
+const Index = () => {
     const router = useRouter();
 
     useEffect(() => {
         const timeout = setTimeout(() => {
-            router.navigate("../(tabs)/auth/Login");
+            router.navigate("../auth/Auth");
         }, 0); // Ensure navigation happens after mounting
         return () => clearTimeout(timeout); // Cleanup timeout
     }, []);
@@ -19,4 +19,4 @@ const index = () => {
     );
 };
 
-export default index;
+export default Index;
