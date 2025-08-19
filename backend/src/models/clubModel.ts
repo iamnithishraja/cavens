@@ -9,6 +9,23 @@ const clubSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  clubDescription: {
+    type: String,
+    required: true,
+  },
+  typeOfVenue: {
+    type: String,
+    required: true,
+  },
+  clubImages: {
+    type: [String],
+    required: true,
+  },
+  operatingDays: {
+    type: [String],
+    enum: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    required: true,
+  },
   events: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -20,10 +37,6 @@ const clubSchema = new mongoose.Schema({
     required: true,
   },
   address: {
-    type: String,
-    required: true,
-  },
-  city: {
     type: String,
     required: true,
   },
