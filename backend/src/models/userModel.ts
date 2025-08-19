@@ -18,8 +18,15 @@ const userSchema = new mongoose.Schema({
     enum: ["admin", "user", "club"],
     default: "user",
   },
-  password: {
+  otp: {
     type: String,
+  },
+  otpExpiry: {
+    type: Date,
+  },
+  club: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Club",
   },
   createdAt: {
     type: Date,
