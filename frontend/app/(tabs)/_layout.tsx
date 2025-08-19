@@ -1,14 +1,19 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { Platform, View } from 'react-native';
+import { Tabs } from "expo-router";
+import React from "react";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function TabLayout() {
   return (
-   <Tabs>
-    <Tabs.Screen name="index" options={{
-      title: "Anylytics",
-      headerShown: false,
-    }} />
-   </Tabs>
+    <SafeAreaProvider>
+      <Tabs>
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: "Anylytics",
+            headerShown: false,
+          }}
+        />
+      </Tabs>
+    </SafeAreaProvider>
   );
 }
