@@ -6,6 +6,9 @@ const userSchema = new mongoose.Schema({
     unique: true,
     sparse: true, // Allows for unique email or phone, but not both
   },
+  name:{
+    type: String,
+  },
   phone: {
     type: String,
     unique: true,
