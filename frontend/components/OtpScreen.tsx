@@ -58,8 +58,8 @@ const OtpScreen = ({
     try {
       console.log("Sending OTP:", otpString, "and phone number:", phoneNumber); // Debug log
       const res = await apiClient.post("/api/user/verify-otp", {
-        phone:phoneNumber.trim(),
-        otp:otpString.trim(),
+        phone: phoneNumber.trim(),
+        otp: otpString,
       });
 
       if (res.data.success) {
@@ -69,14 +69,15 @@ const OtpScreen = ({
         // await AsyncStorage.setItem("token", token);
 
         if (isProfileComplete) {
-          // Existing user → go to dashboard
           console.log("OTP verified, navigating to dashboard");
-          router.navigate('../profile/index');
+          
         } else {
           // New user → go to profile completion screen
           console.log("OTP verified, navigating to profile completion");
+          router.navigate('/profile');
         }
-      } else {
+      }
+       else {
         Alert.alert("Error", res.data.message || "Invalid OTP");
       }
     } catch (error: any) {
