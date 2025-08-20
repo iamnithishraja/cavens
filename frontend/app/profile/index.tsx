@@ -111,7 +111,7 @@ const ProfileScreen = () => {
             <View style={styles.formContainer}>
               {/* Name Field */}
               <View style={styles.fieldContainer}>
-                <Text style={styles.fieldLabel}>What's your name?</Text>
+                <Text style={styles.fieldLabel}> Name</Text>
                 <View style={styles.inputWrapper}>
                   <LinearGradient
                     colors={name ? [Colors.surfaceElevated, Colors.surface] : [Colors.surface, Colors.surfaceElevated]}
@@ -121,7 +121,7 @@ const ProfileScreen = () => {
                   >
                     <TextInput
                       style={styles.textInput}
-                      placeholder="Enter your full name"
+                      placeholder="John Doe"
                       placeholderTextColor={Colors.textMuted}
                       value={name}
                       onChangeText={setName}
@@ -143,7 +143,7 @@ const ProfileScreen = () => {
 
               {/* Email Field */}
               <View style={styles.fieldContainer}>
-                <Text style={styles.fieldLabel}>What's your email?</Text>
+                <Text style={styles.fieldLabel}>Email</Text>
                 <View style={styles.inputWrapper}>
                   <LinearGradient
                     colors={email ? [Colors.surfaceElevated, Colors.surface] : [Colors.surface, Colors.surfaceElevated]}
@@ -153,7 +153,7 @@ const ProfileScreen = () => {
                   >
                     <TextInput
                       style={styles.textInput}
-                      placeholder="Enter your email address"
+                      placeholder="abc@example.com"
                       placeholderTextColor={Colors.textMuted}
                       value={email}
                       onChangeText={setEmail}
