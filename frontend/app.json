@@ -10,7 +10,13 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.nithishraja.cavens"
+      "bundleIdentifier": "com.nithishraja.cavens",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to let you select club photos, logos and banners.",
+        "NSPhotoLibraryAddUsageDescription": "This app needs permission to save images to your library.",
+        "NSCameraUsageDescription": "This app needs access to your camera to capture photos for your club."
+      },
+      "appleTeamId": "65JXC7579A"
     },
     "android": {
       "adaptiveIcon": {
@@ -33,6 +39,13 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#0B1120"
+        }
+      ],
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": true,
+          "supportsPictureInPicture": true
         }
       ]
     ],

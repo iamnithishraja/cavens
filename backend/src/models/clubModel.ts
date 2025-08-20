@@ -5,6 +5,9 @@ const clubSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  logoUrl: {
+    type: String,
+  },
   email: {
     type: String,
     required: true,
@@ -17,9 +20,14 @@ const clubSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  coverBannerUrl: {
+    type: String,
+  },
+  photos: {
+    type: [String],
+  },
   clubImages: {
     type: [String],
-    required: true,
   },
   operatingDays: {
     type: [String],
