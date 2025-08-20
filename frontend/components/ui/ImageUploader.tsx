@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { VideoView, useVideoPlayer } from "expo-video";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
@@ -87,11 +87,7 @@ const ImageUploader = ({ label, multiple = false, existingUrls = [], onUploaded,
             ) : (
               <Image source={{ uri: it.uri }} style={fullWidth ? styles.fullImage : styles.thumb} />
             )}
-            {it.uploading && (
-              <View style={styles.uploadOverlay}>
-                <ActivityIndicator color={"#fff"} />
-              </View>
-            )}
+            {/* Loading spinner removed as per request */}
             <TouchableOpacity style={styles.removeBtn} onPress={() => handleRemove(i)}>
               <Text style={styles.removeText}>×</Text>
             </TouchableOpacity>
