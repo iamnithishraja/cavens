@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import Club from "../models/clubModel";
+import ClubManager from "../models/clubManagerModel";
 
 export const createClub = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -37,6 +38,34 @@ export const createClub = async (req: Request, res: Response): Promise<void> => 
     });
 
     res.status(201).json({ success: true, club });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+export const saveManagerData = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { clubId, events } = req.body;
+
+    // Enforce at most one event
+    const normalizedEvents = Array.isArray(events) ? events.slice(0, 1) : [];
+
+    const payload = {
+      clubId: clubId || undefined,
+      events: normalizedEvents,
+      updatedAt: new Date(),
+    };
+
+    if (clubId) {
+      const doc = await ClubManager.findOneAndUpdate({ clubId }, payload, { upsert: true, new: true });
+      res.status(200).json({ success: true, data: doc });
+      return;
+    }
+
+    const doc = await ClubManager.create(payload);
+    res.status(201).json({ success: true, data: doc });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
