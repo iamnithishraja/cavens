@@ -13,9 +13,10 @@ export async function isAuthenticated(
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res
+       res
         .status(401)
         .json({ success: false, message: "No token provided" });
+        return;
     }
 
     // Ensure the token starts with 'Bearer'
@@ -24,32 +25,41 @@ export async function isAuthenticated(
       : null;
 
     if (!token) {
-      return res
+       res
         .status(401)
         .json({ success: false, message: "Token is missing or invalid" });
+        return;
     }
 
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET!
     ) as JwtPayload;
-
-    const user: IUser | null = await User.findById(decoded._id);
+    
+    if (!decoded || !decoded.userId) {
+       res.status(401).json({ success: false, message: "Invalid token" });
+       return;
+    }
+    const user: IUser | null = await User.findById(decoded.userId);
+    
     if (!user) {
-      return res.status(401).json({ success: false, message: "User not found" });
+       res.status(401).json({ success: false, message: "User not found" });
+       return;
     }
 
     if (!user.isPhoneVerified) {
-      return res.status(401).json({
+       res.status(401).json({
         success: false,
         message: "Phone number not verified",
       });
+      return;
     }
-
+    
     req.user = user;
     next();
   } catch (error) {
     console.error("Authentication error:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
+    return;
   }
 }
