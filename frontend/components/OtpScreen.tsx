@@ -4,6 +4,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/Colors";
 import apiClient from "@/app/api/client";
 import { useRouter } from "expo-router";
+import { store } from "@/utils";
+
 
 const OtpScreen = ({
   phoneNumber,
@@ -66,11 +68,11 @@ const OtpScreen = ({
         const { isProfileComplete, user, token } = res.data;
         console.log("Response from server:", res.data); // Debug log
         // store token if you want (AsyncStorage or Zustand)
-        // await AsyncStorage.setItem("token", token);
+        store.set("token", token);
 
         if (isProfileComplete) {
           console.log("OTP verified, navigating to dashboard");
-          
+             
         } else {
           // New user → go to profile completion screen
           console.log("OTP verified, navigating to profile completion");
@@ -88,6 +90,24 @@ const OtpScreen = ({
       );
     }
   };
+  // const handleVerifyOtp=()=>{
+  //   router.navigate('/profile');
+  // }
+  const handleResendOtp=async()=>{
+    try {
+      const res = await apiClient.post("/api/user/onboarding", {
+        phone: phoneNumber.trim()
+      });
+      if (res.status === 200) {
+        console.log("OTP sent successfully");
+        Alert.alert("Success", "OTP sent successfully to " + getMaskedPhoneNumber(phoneNumber));
+      } 
+      console.log("Response:", res.data);
+    } catch (error) {
+      console.error("Error sending OTP:", error);
+    }
+  };
+  
 
   return (
     <LinearGradient
@@ -165,7 +185,7 @@ const OtpScreen = ({
             </View>
 
             {/* Resend Code */}
-            <TouchableOpacity style={styles.resendContainer}>
+            <TouchableOpacity style={styles.resendContainer} onPress={handleResendOtp}>
               <Text style={styles.resendText}>
                 Didn't receive code?{" "}
                 <Text style={styles.resendLink}>Resend</Text>

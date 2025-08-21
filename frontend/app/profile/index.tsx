@@ -39,7 +39,7 @@ const ProfileScreen = () => {
     try {
       console.log("Completing profile:", { name: name.trim(), email: email.trim() });
       
-      const res = await apiClient.post("/api/user/complete-profile", {
+      const res = await apiClient.post("/api/user/completeProfile", {
         name: name.trim(),
         email: email.trim(),
       });
