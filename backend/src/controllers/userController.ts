@@ -8,6 +8,8 @@ import { sendPhoneOtp } from "../utils/sms";
 import type { Response, Request } from "express";
 import z from "zod";
 import { generateToken } from "../utils/token";
+import { completeProfileSchema } from "../schemas/onboardingSchema";
+import type { CustomRequest } from "../types";
 
 async function onboarding(req: Request, res: Response) {
   try {
@@ -66,15 +68,18 @@ async function verifyOtp(req: Request, res: Response) {
 
     const user = await User.findOne({ phone: phone.trim() });
     if (!user) {
-      return res.status(400).json({ success: false, message: "User not found" });
+      res.status(400).json({ success: false, message: "User not found" });
+      return;
     }
 
-    if (!user.otp ) {
-      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    if (!user.otp) {
+      res.status(400).json({ success: false, message: "Invalid OTP" });
+      return;
     }
 
     if (user.otpExpiry && user.otpExpiry < new Date()) {
-      return res.status(400).json({ success: false, message: "OTP expired" });
+      res.status(400).json({ success: false, message: "OTP expired" });
+      return;
     }
 
     user.otp = null;
@@ -85,26 +90,74 @@ async function verifyOtp(req: Request, res: Response) {
     const token = await generateToken(user._id.toString());
 
     if (!user.email || !user.name) {
-      return res.status(200).json({
+      res.status(200).json({
         success: true,
         message: "OTP verified. Please complete your profile.",
         user: { _id: user._id, phone: user.phone },
         token,
         isProfileComplete: false,
       });
+      return;
     }
 
     res.status(200).json({
       success: true,
       message: "OTP verified. Logged in successfully.",
-      user: { _id: user._id, name: user.name, email: user.email, phone: user.phone },
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+      },
       token,
       isProfileComplete: true,
     });
+    return;
   } catch (error) {
     console.error("Error during OTP verification:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
 
-export { onboarding, verifyOtp };
+async function completeProfile(req: CustomRequest, res: Response) {
+  try {
+    const { name, email } = completeProfileSchema.parse(req.body);
+    const user = req.user;
+    if (!user) {
+      res
+        .status(401)
+        .json({ success: false, message: "User not authenticated" });
+      return;
+    }
+    await User.findByIdAndUpdate(
+      user._id,
+      {
+        name: name,
+        email: email,
+      },
+      { new: true }
+    );
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: {
+        _id: user._id,
+        name: name,
+        email: email,
+      },
+    });
+    return;
+  } catch (error) {
+    console.error("Error during profile completion:", error);
+    if (error instanceof z.ZodError) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid input data",
+      });
+      return;
+    }
+    res.status(500).json({ success: false, message: "Internal server error" });
+    return;
+  }
+}
+export { onboarding, verifyOtp, completeProfile };

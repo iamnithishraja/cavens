@@ -1,3 +1,4 @@
+import type { setUncaughtExceptionCaptureCallback } from "node:process";
 import z from "zod";
 
 export const onbooardingSchema = z.object({
@@ -6,4 +7,9 @@ export const onbooardingSchema = z.object({
 export const verifyOtpSchema = z.object({
     phone: z.string().min(10, "Phone number must be at least 10 characters long"),
     otp: z.string().length(4, "OTP must be exactly 4 characters long"),
+});
+
+export const completeProfileSchema = z.object({
+    name: z.string().min(1, "Name is required"),
+    email: z.email(),
 });
