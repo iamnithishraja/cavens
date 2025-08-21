@@ -34,6 +34,7 @@ export interface MenuItem {
   name: string;
   price: string;
   description: string;
+  itemImage?: string;
 }
 
 export interface MenuCategory {
@@ -49,6 +50,7 @@ export type MenuCategoryId =
   | "Seafood"
   | "Desserts & Sweets"
   | "Beverages & Drinks"
+  | "Combos"
   | "Other";
 
 export interface MenuItemFull extends MenuItem {

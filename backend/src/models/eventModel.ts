@@ -1,56 +1,27 @@
 import mongoose from "mongoose";
+import menuItemSchema from "./menuItemSchema";
+import ticketSchema from "./ticketModel";
 
 const eventSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-  },
-  description: {
-    type: String,
-    required: true,
-  },
-  images: [
-    {
-      type: String,
+    name: String,
+    date: String,
+    time: String,
+    djArtists: String,
+    description: String,
+    coverImage: String,
+    tickets: [ticketSchema],
+    menuItems: [menuItemSchema],
+    guestExperience: {
+      dressCode: String,
+      entryRules: String,
+      tableLayoutMap: String,
+      parkingInfo: String,
+      accessibilityInfo: String,
     },
-  ],
-  video: {
-    type: String,
-  },
-  mapImage: {
-    type: String,
-  },
-  date: {
-    type: Date,
-    required: true,
-  },
-  startTime: {
-    type: String,
-    required: true,
-  },
-  endTime: {
-    type: String,
-    required: true,
-  },
-  club: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Club",
-  },
-  tickets: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Ticket",
-    },
-  ],
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
+    galleryPhotos: [String],
+    promoVideos: [String],
+    happyHourTimings: String,
+  });
 
 const eventModel = mongoose.model("Event", eventSchema);
 

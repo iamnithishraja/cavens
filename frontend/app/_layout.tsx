@@ -3,7 +3,7 @@ import { Text, View } from "react-native";
 import Background from "@/components/common/Background";
 import { Slot } from "expo-router";
 import ClubDetailsForm from "@/components/screens/ClubDetailsScreen";
-import ClubManagementForm from "@/components/screens/ClubManager";
+import ClubManagementForm from "@/components/screens/CreateEventForm";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function RootLayout() {

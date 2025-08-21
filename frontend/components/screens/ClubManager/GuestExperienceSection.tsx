@@ -56,7 +56,7 @@ const GuestExperienceSection: React.FC<Props> = ({
 
       <View style={styles.sectionSpacing}>
         <ImageUploader
-          label="Table Layout Map / VIP Booking Info"
+          label="Venue Layout Map"
           multiple={false}
           onUploaded={(urls) => setTableLayoutMap(urls[0] || null)}
           existingUrls={tableLayoutMap ? [tableLayoutMap] : []}
@@ -74,7 +74,7 @@ const GuestExperienceSection: React.FC<Props> = ({
           label="Parking / Valet Info"
           value={parkingInfo}
           onChangeText={setParkingInfo}
-          placeholder="e.g. Valet parking available, ₹200. Street parking nearby."
+          placeholder="e.g. Valet parking available, 200. Street parking nearby."
         />
       </View>
 

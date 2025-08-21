@@ -1,10 +1,19 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Pressable, FlatList, TextInput, StyleSheet as RNStyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Pressable,
+  FlatList,
+  StyleSheet as RNStyleSheet,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "@/constants/Colors";
 import TextField from "../../ui/TextField";
 import { MenuItemFull, MenuCategoryId } from "./types";
+import ImageUploader from "@/components/ui/ImageUploader";
 
 const CATEGORY_OPTIONS: MenuCategoryId[] = [
   "Appetizers & Snacks",
@@ -13,6 +22,7 @@ const CATEGORY_OPTIONS: MenuCategoryId[] = [
   "Seafood",
   "Desserts & Sweets",
   "Beverages & Drinks",
+  "Combos",
   "Other",
 ];
 
@@ -38,7 +48,7 @@ const CategoryPicker: React.FC<{
       >
         <View style={styles.pickerGrabber} />
         <Text style={styles.pickerTitle}>Choose Category</Text>
-        
+
         <FlatList
           data={CATEGORY_OPTIONS}
           keyExtractor={(item) => item}
@@ -58,7 +68,11 @@ const CategoryPicker: React.FC<{
 type Props = {
   items: MenuItemFull[];
   onAddItem: () => void;
-  onUpdateItem: (itemId: string, field: keyof MenuItemFull, value: string | MenuCategoryId) => void;
+  onUpdateItem: (
+    itemId: string,
+    field: keyof MenuItemFull,
+    value: string | MenuCategoryId
+  ) => void;
   onRemoveItem: (itemId: string) => void;
   happyHourTimings: string;
   setHappyHourTimings: (value: string) => void;
@@ -69,8 +83,6 @@ const MenuSection: React.FC<Props> = ({
   onAddItem,
   onUpdateItem,
   onRemoveItem,
-  happyHourTimings,
-  setHappyHourTimings,
 }) => {
   const [categoryPickerVisible, setCategoryPickerVisible] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -95,15 +107,6 @@ const MenuSection: React.FC<Props> = ({
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Interactive Menu</Text>
 
-      <View style={styles.sectionSpacing}>
-        <TextField
-          label="Happy Hour Timings"
-          value={happyHourTimings}
-          onChangeText={setHappyHourTimings}
-          placeholder="e.g. 6 PM - 8 PM, 50% off selected drinks"
-        />
-      </View>
-
       <View style={styles.headerRow}>
         <Text style={styles.headerLabel}>Menu Items</Text>
         <TouchableOpacity style={styles.addMenuItemBtn} onPress={onAddItem}>
@@ -113,7 +116,10 @@ const MenuSection: React.FC<Props> = ({
 
       {items.map((item) => (
         <View key={item.id} style={styles.menuItemCard}>
-          <LinearGradient colors={Colors.gradients.card as [string, string]} style={styles.menuItemGradient}>
+          <LinearGradient
+            colors={Colors.gradients.card as [string, string]}
+            style={styles.menuItemGradient}
+          >
             <View style={styles.topRow}>
               <TouchableOpacity
                 style={styles.categorySelector}
@@ -121,7 +127,9 @@ const MenuSection: React.FC<Props> = ({
               >
                 <Text style={styles.categorySelectorLabel}>Category</Text>
                 <Text style={styles.categorySelectorText}>
-                  {item.category === "Other" ? item.customCategory || "Other" : item.category}
+                  {item.category === "Other"
+                    ? item.customCategory || "Other"
+                    : item.category}
                 </Text>
               </TouchableOpacity>
               <View style={styles.namePriceRow}>
@@ -129,7 +137,9 @@ const MenuSection: React.FC<Props> = ({
                   <TextField
                     label="Item Name"
                     value={item.name}
-                    onChangeText={(value) => onUpdateItem(item.id, "name", value)}
+                    onChangeText={(value) =>
+                      onUpdateItem(item.id, "name", value)
+                    }
                     placeholder="e.g. Chicken Wings"
                   />
                 </View>
@@ -137,25 +147,30 @@ const MenuSection: React.FC<Props> = ({
                   <TextField
                     label="Price"
                     value={item.price}
-                    onChangeText={(value) => onUpdateItem(item.id, "price", value)}
-                    placeholder="₹650"
+                    onChangeText={(value) =>
+                      onUpdateItem(item.id, "price", value)
+                    }
+                    placeholder="650"
                     keyboardType="numeric"
                   />
                 </View>
               </View>
-              <TouchableOpacity style={styles.removeMenuItemBtn} onPress={() => onRemoveItem(item.id)}>
+              <TouchableOpacity
+                style={styles.removeMenuItemBtn}
+                onPress={() => onRemoveItem(item.id)}
+              >
                 <Text style={styles.removeMenuItemText}>×</Text>
               </TouchableOpacity>
             </View>
-
-
 
             {item.category === "Other" && (
               <View style={{ marginTop: 12 }}>
                 <TextField
                   label="Custom Category"
                   value={item.customCategory || ""}
-                  onChangeText={(value) => onUpdateItem(item.id, "customCategory", value)}
+                  onChangeText={(value) =>
+                    onUpdateItem(item.id, "customCategory", value)
+                  }
                   placeholder="Enter category"
                 />
               </View>
@@ -164,9 +179,28 @@ const MenuSection: React.FC<Props> = ({
             <TextField
               label="Description"
               value={item.description}
-              onChangeText={(value) => onUpdateItem(item.id, "description", value)}
+              onChangeText={(value) =>
+                onUpdateItem(item.id, "description", value)
+              }
               placeholder="Short description about the item"
             />
+
+            <View style={{ marginTop: 12 }}>
+              <ImageUploader
+                label="Item Image"
+                multiple={false}
+                existingUrls={item.itemImage ? [item.itemImage] : []}
+                onUploaded={(urls) =>
+                  onUpdateItem(item.id, "itemImage", urls[0] || "")
+                }
+                squareSize={90}
+                fileNamePrefix={`menu-item-${
+                  item.name
+                    ? item.name.toLowerCase().replace(/\s+/g, "-") + "-"
+                    : ""
+                }`}
+              />
+            </View>
           </LinearGradient>
         </View>
       ))}
@@ -206,7 +240,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
   },
-  addMenuItemText: { color: Colors.button.text, fontSize: 12, fontWeight: "700" },
+  addMenuItemText: {
+    color: Colors.button.text,
+    fontSize: 12,
+    fontWeight: "700",
+  },
   menuItemCard: { marginBottom: 16, borderRadius: 16, overflow: "hidden" },
   menuItemGradient: {
     padding: 14,
@@ -236,7 +274,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
   },
-  categorySelectorLabel: { color: Colors.textSecondary, fontSize: 11, marginBottom: 4 },
+  categorySelectorLabel: {
+    color: Colors.textSecondary,
+    fontSize: 11,
+    marginBottom: 4,
+  },
   categorySelectorText: { color: Colors.textPrimary, fontWeight: "600" },
   dropdown: {
     backgroundColor: Colors.surface,
@@ -246,11 +288,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     overflow: "hidden",
   },
-  dropdownItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: Colors.borderBlue },
+  dropdownItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderBlue,
+  },
   dropdownItemText: { color: Colors.textPrimary },
   dropdownClose: { padding: 12, alignItems: "center" },
   dropdownCloseText: { color: Colors.textSecondary, fontWeight: "600" },
-  
+
   // Category Picker Styles
   pickerRoot: {
     position: "absolute",
@@ -310,4 +356,3 @@ const styles = StyleSheet.create({
 });
 
 export default MenuSection;
-

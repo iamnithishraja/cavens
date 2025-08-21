@@ -1,11 +1,15 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+} from "react-native";
 import { Colors } from "@/constants/Colors";
 import TextField from "../../ui/TextField";
 import TextArea from "../../ui/TextArea";
 import ImageUploader from "../../ui/ImageUploader";
-import * as ImagePicker from "expo-image-picker";
 import { ClubEvent, TicketType } from "@/components/screens/ClubManager/types";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -34,7 +38,12 @@ const EventsTicketingSection: React.FC<Props> = ({
   onRemoveTicket,
 }) => {
   const [datePickerFor, setDatePickerFor] = useState<string | null>(null);
-  const [timePickerFor, setTimePickerFor] = useState<{ id: string; kind: "time" } | null>(null);
+  const [timePickerFor, setTimePickerFor] = useState<{
+    id: string;
+    kind: "time";
+  } | null>(null);
+  const [tempDate, setTempDate] = useState<Date | null>(null);
+  const [tempTime, setTempTime] = useState<Date | null>(null);
 
   const formatDate = (d: Date) => d.toISOString().split("T")[0];
   const formatTime = (d: Date) => {
@@ -46,166 +55,215 @@ const EventsTicketingSection: React.FC<Props> = ({
     return `${hours}:${minutes} ${ampm}`;
   };
 
+  const parseDateString = (value?: string): Date => {
+    if (!value) return new Date();
+    const parsed = new Date(`${value}T00:00:00`);
+    return isNaN(parsed.getTime()) ? new Date() : parsed;
+  };
+
+  const parseTimeString = (value?: string): Date => {
+    if (!value) return new Date();
+    // expected e.g. "11:16 PM"
+    try {
+      const match = value.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+      if (!match) return new Date();
+      let hours = parseInt(match[1], 10);
+      const minutes = parseInt(match[2], 10);
+      const ampm = match[3].toUpperCase();
+      if (ampm === "PM" && hours < 12) hours += 12;
+      if (ampm === "AM" && hours === 12) hours = 0;
+      const d = new Date();
+      d.setHours(hours, minutes, 0, 0);
+      return d;
+    } catch {
+      return new Date();
+    }
+  };
+
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Events & Ticketing</Text>
+      {events.map((event) => (
+        <View key={event.id} style={styles.eventContainer}>
+          <View style={styles.ticketCardHeader}>
+            <Text style={styles.ticketCardTitle}>Event</Text>
+          </View>
 
-      <View style={styles.sectionSpacing}>
-        <View style={styles.ticketHeader}>
-          <Text style={styles.label}>Upcoming Events</Text>
-        </View>
+          <View style={styles.eventBasicInfo}>
+            <TextField
+              label="Event Name"
+              value={event.name}
+              onChangeText={(value) => onUpdateEvent(event.id, "name", value)}
+              placeholder="e.g. Saturday Night Vibes, DJ Nucleya Live"
+            />
 
-        {events.map((event, index) => (
-          <View key={event.id} style={styles.eventCard}>
-            <LinearGradient
-              colors={Colors.gradients.card as [string, string]}
-              style={styles.eventCardGradient}
-            >
-              <View style={styles.ticketCardHeader}>
-                <Text style={styles.ticketCardTitle}>Event</Text>
-              </View>
+            <View style={styles.ticketRow}>
+              <TouchableOpacity
+                style={[styles.ticketInput, styles.pickerField]}
+                onPress={() => {
+                  setTempDate(parseDateString(event.date));
+                  setDatePickerFor(event.id);
+                }}
+              >
+                <Text style={styles.pickerLabel}>Date</Text>
+                <Text style={styles.pickerValue}>
+                  {event.date || "Pick a date"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.ticketInput, styles.pickerField]}
+                onPress={() => {
+                  setTempTime(parseTimeString(event.time));
+                  setTimePickerFor({ id: event.id, kind: "time" });
+                }}
+              >
+                <Text style={styles.pickerLabel}>Time</Text>
+                <Text style={styles.pickerValue}>
+                  {event.time || "Pick time"}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-              <View style={styles.eventBasicInfo}>
-                <TextField
-                  label="Event Name"
-                  value={event.name}
-                  onChangeText={(value) => onUpdateEvent(event.id, "name", value)}
-                  placeholder="e.g. Saturday Night Vibes, DJ Nucleya Live"
-                />
+            <TextField
+              label="Performing DJs / Artists"
+              value={event.djArtists}
+              onChangeText={(value) =>
+                onUpdateEvent(event.id, "djArtists", value)
+              }
+              placeholder="DJ Nucleya, DJ Chetas, Local Artists"
+            />
 
-                <View style={styles.ticketRow}>
+            <TextArea
+              label="Event Description"
+              value={event.description}
+              onChangeText={(value) =>
+                onUpdateEvent(event.id, "description", value)
+              }
+              placeholder="Join us for an electrifying night of house and techno beats..."
+            />
+
+            <View style={styles.eventImageUpload}>
+              <ImageUploader
+                label="Event Cover Image"
+                multiple={false}
+                onUploaded={(urls) =>
+                  onUpdateEvent(event.id, "coverImage", urls[0] || null)
+                }
+                existingUrls={event.coverImage ? [event.coverImage] : []}
+                fullWidth
+                aspectRatio={16 / 9}
+              />
+            </View>
+          </View>
+
+          <View style={styles.eventTicketsSection}>
+            <View style={styles.eventTicketsHeader}>
+              <Text style={styles.eventTicketsTitle}>
+                Ticket Types for this Event
+              </Text>
+              <TouchableOpacity
+                style={styles.addEventTicketBtn}
+                onPress={() => onAddTicket(event.id)}
+              >
+                <Text style={styles.addEventTicketText}>+ Ticket</Text>
+              </TouchableOpacity>
+            </View>
+
+            {event.ticketTypes.map((ticket) => (
+              <View key={ticket.id} style={styles.eventTicketItem}>
+                <View style={styles.eventTicketRow}>
+                  <View style={styles.eventTicketInput}>
+                    <TextField
+                      label="Type"
+                      value={ticket.name}
+                      onChangeText={(value) =>
+                        onUpdateTicket(event.id, ticket.id, "name", value)
+                      }
+                      placeholder="General"
+                    />
+                  </View>
+                  <View style={styles.eventTicketInput}>
+                    <TextField
+                      label="Price"
+                      value={ticket.price}
+                      onChangeText={(value) =>
+                        onUpdateTicket(event.id, ticket.id, "price", value)
+                      }
+                      placeholder="1500"
+                      keyboardType="numeric"
+                    />
+                  </View>
                   <TouchableOpacity
-                    style={[styles.ticketInput, styles.pickerField]}
-                    onPress={() => setDatePickerFor(event.id)}
+                    style={styles.removeEventTicketBtn}
+                    onPress={() => onRemoveTicket(event.id, ticket.id)}
                   >
-                    <Text style={styles.pickerLabel}>Date</Text>
-                    <Text style={styles.pickerValue}>{event.date || "Pick a date"}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.ticketInput, styles.pickerField]}
-                    onPress={() => setTimePickerFor({ id: event.id, kind: "time" })}
-                  >
-                    <Text style={styles.pickerLabel}>Time</Text>
-                    <Text style={styles.pickerValue}>{event.time || "Pick time"}</Text>
+                    <Text style={styles.removeEventTicketBtnText}>×</Text>
                   </TouchableOpacity>
                 </View>
-
-                <TextField
-                  label="Performing DJs / Artists"
-                  value={event.djArtists}
-                  onChangeText={(value) => onUpdateEvent(event.id, "djArtists", value)}
-                  placeholder="DJ Nucleya, DJ Chetas, Local Artists"
-                />
-
-                <TextArea
-                  label="Event Description"
-                  value={event.description}
-                  onChangeText={(value) => onUpdateEvent(event.id, "description", value)}
-                  placeholder="Join us for an electrifying night of house and techno beats..."
-                />
-
-                <View style={styles.eventImageUpload}>
-                  <ImageUploader
-                    label="Event Cover Image"
-                    multiple={false}
-                    onUploaded={(urls) => onUpdateEvent(event.id, "coverImage", urls[0] || null)}
-                    existingUrls={event.coverImage ? [event.coverImage] : []}
-                    fullWidth
-                    aspectRatio={16 / 9}
-                    mediaTypes={ImagePicker.MediaTypeOptions.All}
+                <View style={styles.eventTicketRow}>
+                  <View style={styles.eventTicketInput}>
+                    <TextField
+                      label="Quantity"
+                      value={ticket.quantity}
+                      onChangeText={(value) =>
+                        onUpdateTicket(event.id, ticket.id, "quantity", value)
+                      }
+                      placeholder="100"
+                      keyboardType="numeric"
+                    />
+                  </View>
+                </View>
+                <View style={styles.eventTicketDescription}>
+                  <TextArea
+                    label="Description"
+                    value={ticket.description}
+                    onChangeText={(value) =>
+                      onUpdateTicket(event.id, ticket.id, "description", value)
+                    }
+                    placeholder="Includes drinks, table access"
                   />
                 </View>
               </View>
-
-              <View style={styles.eventTicketsSection}>
-                <View style={styles.eventTicketsHeader}>
-                  <Text style={styles.eventTicketsTitle}>Ticket Types for this Event</Text>
-                  <TouchableOpacity
-                    style={styles.addEventTicketBtn}
-                    onPress={() => onAddTicket(event.id)}
-                  >
-                    <Text style={styles.addEventTicketText}>+ Ticket</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {event.ticketTypes.map((ticket) => (
-                  <View key={ticket.id} style={styles.eventTicketItem}>
-                    <View style={styles.eventTicketRow}>
-                      <View style={styles.eventTicketInput}>
-                        <TextField
-                          label="Type"
-                          value={ticket.name}
-                          onChangeText={(value) =>
-                            onUpdateTicket(event.id, ticket.id, "name", value)
-                          }
-                          placeholder="General/VIP/Early Bird"
-                        />
-                      </View>
-                      <View style={styles.eventTicketInput}>
-                        <TextField
-                          label="Price"
-                          value={ticket.price}
-                          onChangeText={(value) =>
-                            onUpdateTicket(event.id, ticket.id, "price", value)
-                          }
-                          placeholder="₹1500"
-                          keyboardType="numeric"
-                        />
-                      </View>
-                      <TouchableOpacity
-                        style={styles.removeEventTicketBtn}
-                        onPress={() => onRemoveTicket(event.id, ticket.id)}
-                      >
-                        <Text style={styles.removeEventTicketBtnText}>×</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <View style={styles.eventTicketRow}>
-                      <View style={styles.eventTicketInput}>
-                        <TextField
-                          label="Quantity"
-                          value={ticket.quantity}
-                          onChangeText={(value) =>
-                            onUpdateTicket(event.id, ticket.id, "quantity", value)
-                          }
-                          placeholder="100"
-                          keyboardType="numeric"
-                        />
-                      </View>
-                    </View>
-                    <View style={styles.eventTicketDescription}>
-                      <TextArea
-                        label="Description"
-                        value={ticket.description}
-                        onChangeText={(value) =>
-                          onUpdateTicket(event.id, ticket.id, "description", value)
-                        }
-                        placeholder="Includes drinks, table access"
-                      />
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </LinearGradient>
+            ))}
           </View>
-        ))}
-      </View>
+        </View>
+      ))}
 
       {datePickerFor && (
         <View style={styles.pickerOverlay}>
           <View style={styles.pickerContainer}>
             <Text style={styles.pickerTitle}>Select Date</Text>
-            <DateTimePicker
-              value={new Date()}
-              mode="date"
-              display="spinner"
-              onChange={(event: any, date?: Date) => {
-                if (date) onUpdateEvent(datePickerFor, "date", formatDate(date));
-                setDatePickerFor(null);
-              }}
-            />
-            <TouchableOpacity onPress={() => setDatePickerFor(null)} style={styles.pickerCloseBtn}>
-              <Text style={styles.pickerCloseText}>Close</Text>
-            </TouchableOpacity>
+            <View style={styles.pickerWheelContainer}>
+              <DateTimePicker
+                value={
+                  tempDate ||
+                  parseDateString(
+                    events.find((e) => e.id === datePickerFor)?.date
+                  )
+                }
+                mode="date"
+                display="spinner"
+                themeVariant={Platform.OS === "ios" ? "dark" : undefined}
+                textColor={
+                  Platform.OS === "ios" ? Colors.textPrimary : undefined
+                }
+                onChange={(event: any, date?: Date) => {
+                  if (date) setTempDate(date);
+                }}
+              />
+            </View>
+            <View style={styles.pickerButtonsRow}>
+              <TouchableOpacity
+                onPress={() => {
+                  const commit = tempDate || new Date();
+                  onUpdateEvent(datePickerFor, "date", formatDate(commit));
+                  setDatePickerFor(null);
+                  setTempDate(null);
+                }}
+                style={styles.pickerSaveBtn}
+              >
+                <Text style={styles.pickerSaveText}>Save</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       )}
@@ -213,19 +271,39 @@ const EventsTicketingSection: React.FC<Props> = ({
         <View style={styles.pickerOverlay}>
           <View style={styles.pickerContainer}>
             <Text style={styles.pickerTitle}>Select Time</Text>
-            <DateTimePicker
-              value={new Date()}
-              mode="time"
-              is24Hour={false}
-              display="spinner"
-              onChange={(event: any, date?: Date) => {
-                if (date) onUpdateEvent(timePickerFor.id, "time", formatTime(date));
-                setTimePickerFor(null);
-              }}
-            />
-            <TouchableOpacity onPress={() => setTimePickerFor(null)} style={styles.pickerCloseBtn}>
-              <Text style={styles.pickerCloseText}>Close</Text>
-            </TouchableOpacity>
+            <View style={styles.pickerWheelContainer}>
+              <DateTimePicker
+                value={
+                  tempTime ||
+                  parseTimeString(
+                    events.find((e) => e.id === timePickerFor.id)?.time
+                  )
+                }
+                mode="time"
+                is24Hour={false}
+                display="spinner"
+                themeVariant={Platform.OS === "ios" ? "dark" : undefined}
+                textColor={
+                  Platform.OS === "ios" ? Colors.textPrimary : undefined
+                }
+                onChange={(event: any, date?: Date) => {
+                  if (date) setTempTime(date);
+                }}
+              />
+            </View>
+            <View style={styles.pickerButtonsRow}>
+              <TouchableOpacity
+                onPress={() => {
+                  const commit = tempTime || new Date();
+                  onUpdateEvent(timePickerFor.id, "time", formatTime(commit));
+                  setTimePickerFor(null);
+                  setTempTime(null);
+                }}
+                style={styles.pickerSaveBtn}
+              >
+                <Text style={styles.pickerSaveText}>Save</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       )}
@@ -236,6 +314,9 @@ const EventsTicketingSection: React.FC<Props> = ({
 const styles = StyleSheet.create({
   section: {
     marginBottom: 32,
+  },
+  eventContainer: {
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 20,
@@ -389,8 +470,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.borderBlue,
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    minHeight: 56,
   },
   pickerLabel: { color: Colors.textSecondary, fontSize: 12, marginBottom: 4 },
   pickerValue: { color: Colors.textPrimary, fontWeight: "700" },
@@ -406,15 +488,14 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
     alignItems: "center",
     justifyContent: "center",
-    padding: 20,
   },
-  pickerContainer: {
+  pickerWheelContainer: {
     width: "100%",
-    borderRadius: 16,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
-    padding: 16,
+    alignSelf: "center",
+  },
+  pickerWheel: {
+    width: "100%",
+    padding: 20,
   },
   pickerTitle: {
     color: Colors.textPrimary,
@@ -434,7 +515,69 @@ const styles = StyleSheet.create({
     color: Colors.button.text,
     fontWeight: "700",
   },
+  pickerButtonsRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 8,
+  },
+  pickerSaveBtn: {
+    backgroundColor: Colors.accentBlue,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  pickerSaveText: {
+    color: Colors.button.text,
+    fontWeight: "800",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  modalContent: {
+    backgroundColor: Colors.surface,
+    borderRadius: 20,
+    padding: 24,
+    margin: 20,
+    width: '85%',
+    maxHeight: '70%',
+    borderWidth: 1,
+    borderColor: Colors.borderBlue,
+  },
+  
+  pickerHeader: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  
+  pickerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 200,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.borderBlue,
+    padding: 12,
+  },
+  
+  saveButtonContainer: {
+    marginTop: 20,
+    alignItems: 'flex-end',
+  },
+  
+  saveButton: {
+    backgroundColor: Colors.accentBlue,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
 });
 
 export default EventsTicketingSection;
-

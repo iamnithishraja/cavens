@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import Club from "../models/clubModel";
-import ClubManager from "../models/clubManagerModel";
+import eventModel from "../models/eventModel";
 
 export const createClub = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -45,7 +45,7 @@ export const createClub = async (req: Request, res: Response): Promise<void> => 
 };
 
 
-export const saveManagerData = async (req: Request, res: Response): Promise<void> => {
+export const saveEventData = async (req: Request, res: Response): Promise<void> => {
   try {
     const { clubId, events } = req.body;
 
@@ -59,12 +59,12 @@ export const saveManagerData = async (req: Request, res: Response): Promise<void
     };
 
     if (clubId) {
-      const doc = await ClubManager.findOneAndUpdate({ clubId }, payload, { upsert: true, new: true });
+      const doc = await eventModel.findOneAndUpdate({ clubId }, payload, { upsert: true, new: true });
       res.status(200).json({ success: true, data: doc });
       return;
     }
 
-    const doc = await ClubManager.create(payload);
+    const doc = await eventModel.create(payload);
     res.status(201).json({ success: true, data: doc });
   } catch (error) {
     console.error(error);

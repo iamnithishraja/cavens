@@ -19,14 +19,13 @@ import EventsTicketingSection from "./ClubManager/EventsTicketingSection";
 import MenuSection from "./ClubManager/MenuSection";
 import GalleryMediaSection from "./ClubManager/GalleryMediaSection";
 import GuestExperienceSection from "./ClubManager/GuestExperienceSection";
+import Header from "@/components/ui/ClubDetailsHeader";
 import { ClubEvent, TicketType, MenuItemFull, MenuCategoryId } from "./ClubManager/types";
 import apiClient from "@/app/api/client";
 
 // Basics removed per request; using shared types
 
-const ClubManagementForm = () => {
-  // Basics removed per request
-
+const CreateEventForm = () => {
   // Events & Ticketing
   const [events, setEvents] = useState<ClubEvent[]>([]);
 
@@ -155,6 +154,7 @@ const ClubManagementForm = () => {
       price: "",
       description: "",
       category: "Appetizers & Snacks",
+      itemImage: "",
     };
     setMenuItems((prev) => [newItem, ...prev]);
   };
@@ -188,6 +188,7 @@ const ClubManagementForm = () => {
       menuItems: menuItems.map((item) => ({
         ...item,
         price: item.price.toString(),
+        itemImage: item.itemImage || null,
       })),
       happyHourTimings,
       galleryPhotos: galleryPhotos,
@@ -206,9 +207,9 @@ const ClubManagementForm = () => {
     };
 
     try {
-      await apiClient.post("/api/club/manager", payload);
+      await apiClient.post("/api/club/event", payload);
       Alert.alert("Success", "Event created successfully!");
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "Failed to create event");
     } finally {
       setSubmitting(false);
@@ -337,6 +338,7 @@ const ClubManagementForm = () => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={[]}>
+      <Header title="Add Event" />
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -416,13 +418,6 @@ const ClubManagementForm = () => {
                       </LinearGradient>
                     </TouchableOpacity>
                   )}
-
-                  <View style={styles.statusNote}>
-                    <View style={styles.statusNoteDot} />
-                    <Text style={styles.statusNoteText}>
-                      Your club details will be reviewed before going live
-                    </Text>
-                  </View>
                 </View>
               </View>
             </LinearGradient>
@@ -552,8 +547,7 @@ const styles = StyleSheet.create({
   },
   continueBtn: {
     alignSelf: "center",
-    marginTop: 20,
-    marginBottom: 20,
+
   },
   continueGradient: {
     paddingHorizontal: 24,
@@ -569,4 +563,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ClubManagementForm;
+export default CreateEventForm;
