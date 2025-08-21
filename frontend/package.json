@@ -45,9 +45,7 @@
     "react-native-webview": "13.13.5",
     "twrnc": "^4.9.1",
     "zod": "^4.0.17",
-    "expo-video": "~2.2.2",
-    "twrnc": "^4.9.1",
-    "zod": "^4.0.17"
+    "expo-video": "~2.2.2"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
