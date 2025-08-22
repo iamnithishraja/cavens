@@ -82,6 +82,12 @@ async function verifyOtp(req: Request, res: Response) {
       return;
     }
 
+    // Verify submitted OTP matches stored OTP
+    if (user.otp !== otp) {
+      res.status(400).json({ success: false, message: "Incorrect OTP" });
+      return;
+    }
+
     user.otp = null;
     user.otpExpiry = null;
     user.isPhoneVerified = true;
@@ -95,6 +101,7 @@ async function verifyOtp(req: Request, res: Response) {
         message: "OTP verified. Please complete your profile.",
         user: { _id: user._id, phone: user.phone },
         token,
+        role: user.role,
         isProfileComplete: false,
       });
       return;
@@ -110,6 +117,7 @@ async function verifyOtp(req: Request, res: Response) {
         phone: user.phone,
       },
       token,
+      role: user.role,
       isProfileComplete: true,
     });
     return;
