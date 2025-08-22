@@ -1,9 +1,10 @@
 import express from 'express';
-import { createClub } from '../controllers/clubController';
+import { createClub, saveEventData } from '../controllers/clubController';
 
 const clubRoute = express.Router();
 
-clubRoute.post('/', createClub);
+clubRoute.post('/', createClub); 
+clubRoute.post('/event', saveEventData);
 
 export default clubRoute;
 

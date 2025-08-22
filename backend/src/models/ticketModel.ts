@@ -9,6 +9,10 @@ const ticketSchema = new mongoose.Schema({
       type: Number,
       required: true,
     },
+    description: {
+      type: String,
+      required: true,
+    },
     quantityAvailable: {
       type: Number,
       required: true,
