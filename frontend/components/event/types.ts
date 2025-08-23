@@ -32,6 +32,7 @@ export interface EventItem {
   djArtists: string;
   description: string;
   coverImage: string;
+  venue?: string;
   tickets: Ticket[];
   menuItems: MenuItem[];
   guestExperience: {
