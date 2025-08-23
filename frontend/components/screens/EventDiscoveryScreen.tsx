@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, ScrollView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/Colors";
-import Background from "../common/Background";
 import CityDropdown from "@/components/event/CityDropdown";
 import SearchBar from "@/components/event/SearchBar";
 import FilterDropdown from "@/components/event/FilterDropdown";
@@ -10,6 +9,7 @@ import FeaturedCarousel from "@/components/event/FeaturedCarousel";
 import EventCard from "@/components/event/EventCard";
 import { SAMPLE_EVENTS } from "@/components/event/data";
 import type { City, EventItem } from "@/components/event/types";
+import GlowingText from "@/components/ui/GlowingText";
 
 type Props = {
   onSelectEvent?: (e: EventItem) => void;
@@ -31,12 +31,23 @@ const EventDiscoveryScreen: React.FC<Props> = ({ onSelectEvent }) => {
       e.djArtists.toLowerCase().includes(q) ||
       e.description.toLowerCase().includes(q)
     );
-  }, [search, activeCategory]);
+  }, [search]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-        {/* Header with location and filter */}
-        <View style={styles.headerSection}>
+        {/* Header with location and filter - styled like ClubDetailsHeader */}
+        <LinearGradient
+          colors={Colors.gradients.dark as [string, string]}
+          style={styles.headerSection}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <LinearGradient
+            colors={Colors.gradients.blueGlow as [string, string]}
+            style={styles.headerGlow}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0.4 }}
+          />
           <View style={styles.headerContent}>
             <View style={styles.locationSection}>
               <TouchableOpacity 
@@ -103,7 +114,13 @@ const EventDiscoveryScreen: React.FC<Props> = ({ onSelectEvent }) => {
               )}
             </View>
           </View>
-        </View>
+          <LinearGradient
+            colors={[Colors.accentBlue + "40", "transparent"]}
+            style={styles.headerBottomAccent}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          />
+        </LinearGradient>
 
         {/* Search Bar */}
         <View style={styles.searchSection}>
@@ -113,7 +130,9 @@ const EventDiscoveryScreen: React.FC<Props> = ({ onSelectEvent }) => {
         {/* Content */}
         <View style={{ marginBottom: 16 }}>
           <FeaturedCarousel events={SAMPLE_EVENTS} onPressEvent={onSelectEvent} />
-          <Text style={styles.sectionTitle}>All Events</Text>
+          <View style={{ marginLeft: 16, marginBottom: 12 }}>
+            <GlowingText>All Events</GlowingText>
+          </View>
         </View>
         
         <View style={styles.eventsContainer}>
@@ -136,15 +155,36 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   headerSection: {
+    marginTop: 12,
     paddingHorizontal: 16,
     marginBottom: 12,
     zIndex: 2000,
     elevation: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderBlue,
+    position: 'relative',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  headerGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.25,
   },
   headerContent: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  headerBottomAccent: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 1,
   },
   locationSection: {
     flex: 1,
@@ -191,7 +231,6 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 2002,
     elevation: 22,
-    marginTop: 2,
   },
   filterSection: {
     marginLeft: 12,

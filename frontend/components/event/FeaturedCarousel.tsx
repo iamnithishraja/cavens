@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/Colors";
 import { VideoView, useVideoPlayer } from "expo-video";
 import type { EventItem } from "./types";
+import GlowingText from "@/components/ui/GlowingText";
 
 // Format date for display
 const formatDate = (dateString: string) => {
@@ -229,7 +230,9 @@ const FeaturedCarousel: React.FC<Props> = ({ events }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Featured</Text>
+      <View style={{ marginLeft: 16, marginBottom: 12 }}>
+        <GlowingText>Featured</GlowingText>
+      </View>
       <FlatList
         ref={listRef}
         data={featured}
