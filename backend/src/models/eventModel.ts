@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import menuItemSchema from "./menuItemSchema";
-import ticketSchema from "./ticketModel";
+import { menuItemSchema } from "./menuItemSchema";
+import { ticketSchema } from "./ticketModel";
 
 const eventSchema = new mongoose.Schema({
     name: String,

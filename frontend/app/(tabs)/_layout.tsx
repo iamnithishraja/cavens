@@ -11,6 +11,9 @@ export default function TabLayout() {
           options={{
             title: "Anylytics",
             headerShown: false,
+            tabBarStyle: {
+              display: "none",
+            },
           }}
         />
       </Tabs>
