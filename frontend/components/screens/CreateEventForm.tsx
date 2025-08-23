@@ -22,6 +22,7 @@ import GuestExperienceSection from "./ClubManager/GuestExperienceSection";
 import Header from "@/components/ui/ClubDetailsHeader";
 import { ClubEvent, TicketType, MenuItemFull, MenuCategoryId } from "./ClubManager/types";
 import apiClient from "@/app/api/client";
+import { uploadImage, uploadVideo } from "@/utils/fileUpload";
 
 // Basics removed per request; using shared types
 
@@ -173,44 +174,173 @@ const CreateEventForm = () => {
 
   // Operating hours removed
 
+  const validateForm = (): string[] => {
+    const errors: string[] = [];
+    const event = events[0];
+
+    if (!event.name?.trim()) {
+      errors.push("Event name is required");
+    }
+    if (!event.date?.trim()) {
+      errors.push("Event date is required");
+    }
+    if (!event.time?.trim()) {
+      errors.push("Event time is required");
+    }
+    if (!event.description?.trim()) {
+      errors.push("Event description is required");
+    }
+
+    // Validate tickets
+    if (event.ticketTypes && event.ticketTypes.length > 0) {
+      event.ticketTypes.forEach((ticket, index) => {
+        if (!ticket.name?.trim()) {
+          errors.push(`Ticket ${index + 1} name is required`);
+        }
+        if (!ticket.price?.trim()) {
+          errors.push(`Ticket ${index + 1} price is required`);
+        }
+        if (!ticket.quantity?.trim()) {
+          errors.push(`Ticket ${index + 1} quantity is required`);
+        }
+      });
+    }
+
+    // Validate menu items
+    if (menuItems && menuItems.length > 0) {
+      menuItems.forEach((item, index) => {
+        if (!item.name?.trim()) {
+          errors.push(`Menu item ${index + 1} name is required`);
+        }
+        if (!item.price?.trim()) {
+          errors.push(`Menu item ${index + 1} price is required`);
+        }
+        if (!item.category?.trim()) {
+          errors.push(`Menu item ${index + 1} category is required`);
+        }
+      });
+    }
+
+    return errors;
+  };
+
   const handleSubmit = async () => {
-    // Validation logic would go here
+    // Validate form
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      Alert.alert("Validation Error", validationErrors.join("\n"));
+      return;
+    }
+
     setSubmitting(true);
 
-    // Since we only have one event, structure all data under it
-    const eventData = {
-      ...events[0],
-      ticketTypes: events[0].ticketTypes.map((ticket) => ({
-        ...ticket,
-        price: ticket.price.toString(),
-        quantity: ticket.quantity.toString(),
-      })),
-      menuItems: menuItems.map((item) => ({
-        ...item,
-        price: item.price.toString(),
-        itemImage: item.itemImage || null,
-      })),
-      happyHourTimings,
-      galleryPhotos: galleryPhotos,
-      promoVideos: promoVideos,
-      guestExperience: {
-        dressCode,
-        entryRules,
-        tableLayoutMap,
-        parkingInfo,
-        accessibilityInfo,
-      },
-    };
-
-    const payload = {
-      events: [eventData],
-    };
-
     try {
-      await apiClient.post("/api/club/event", payload);
-      Alert.alert("Success", "Event created successfully!");
-    } catch {
-      Alert.alert("Error", "Failed to create event");
+      // Upload cover image if exists
+      let coverImageUrl = "";
+      if (events[0].coverImage && typeof events[0].coverImage === 'object') {
+        try {
+          const fileName = `event-cover-${Date.now()}.jpg`;
+          coverImageUrl = await uploadImage(events[0].coverImage as File, fileName);
+        } catch (error) {
+          console.error("Failed to upload cover image:", error);
+          Alert.alert("Warning", "Failed to upload cover image, but continuing...");
+        }
+      } else if (typeof events[0].coverImage === 'string') {
+        coverImageUrl = events[0].coverImage;
+      }
+
+      // Upload gallery photos (only if they're File objects, not URLs)
+      const uploadedGalleryPhotos: string[] = [];
+      for (const photo of galleryPhotos) {
+        if (typeof photo === 'object' && photo !== null) {
+          try {
+            const fileName = `gallery-${Date.now()}-${Math.random()}.jpg`;
+            const photoUrl = await uploadImage(photo as File, fileName);
+            uploadedGalleryPhotos.push(photoUrl);
+          } catch (error) {
+            console.error("Failed to upload gallery photo:", error);
+          }
+        } else if (typeof photo === 'string') {
+          // Already a URL, keep as is
+          uploadedGalleryPhotos.push(photo);
+        }
+      }
+
+      // Upload promo videos (only if they're File objects, not URLs)
+      const uploadedPromoVideos: string[] = [];
+      for (const video of promoVideos) {
+        if (typeof video === 'object' && video !== null) {
+          try {
+            const fileName = `promo-${Date.now()}-${Math.random()}.mp4`;
+            const videoUrl = await uploadVideo(video as File, fileName);
+            uploadedPromoVideos.push(videoUrl);
+          } catch (error) {
+            console.error("Failed to upload promo video:", error);
+          }
+        } else if (typeof video === 'string') {
+          // Already a URL, keep as is
+          uploadedPromoVideos.push(video);
+        }
+      }
+
+      // Upload menu item images
+      const processedMenuItems = await Promise.all(
+        menuItems.map(async (item) => {
+          let itemImageUrl = item.itemImage;
+          if (item.itemImage && typeof item.itemImage === 'object') {
+            try {
+              const fileName = `menu-${Date.now()}-${Math.random()}.jpg`;
+              itemImageUrl = await uploadImage(item.itemImage as File, fileName);
+            } catch (error) {
+              console.error("Failed to upload menu item image:", error);
+            }
+          }
+          return {
+            ...item,
+            price: item.price.toString(),
+            itemImage: itemImageUrl,
+          };
+        })
+      );
+
+      // Since we only have one event, structure all data under it
+      const eventData = {
+        ...events[0],
+        coverImage: coverImageUrl || events[0].coverImage,
+        tickets: events[0].ticketTypes.map((ticket) => ({
+          ...ticket,
+          price: ticket.price.toString(),
+          quantity: ticket.quantity.toString(),
+        })),
+        menuItems: processedMenuItems,
+        happyHourTimings,
+        galleryPhotos: uploadedGalleryPhotos,
+        promoVideos: uploadedPromoVideos,
+        guestExperience: {
+          dressCode,
+          entryRules,
+          tableLayoutMap,
+          parkingInfo,
+          accessibilityInfo,
+        },
+      };
+
+      const payload = {
+        events: [eventData],
+      };
+
+      const response = await apiClient.post("/api/club/event", payload);
+      
+      if (response.data.success) {
+        Alert.alert("Success", "Event created successfully!");
+        // Reset form or navigate away
+      } else {
+        Alert.alert("Error", response.data.message || "Failed to create event");
+      }
+    } catch (error: any) {
+      console.error("Error creating event:", error);
+      const errorMessage = error.response?.data?.message || "Failed to create event";
+      Alert.alert("Error", errorMessage);
     } finally {
       setSubmitting(false);
     }

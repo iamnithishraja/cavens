@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import Club from "../models/clubModel";
 import eventModel from "../models/eventModel";
+import { createEventSchema } from "../schemas/eventSchema";
+import type { CustomRequest } from "../types";
 
 export const createClub = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -44,31 +46,51 @@ export const createClub = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-
-export const saveEventData = async (req: Request, res: Response): Promise<void> => {
+export const saveEventData = async (req: CustomRequest, res: Response): Promise<void> => {
   try {
-    const { clubId, events } = req.body;
-
-    // Enforce at most one event
-    const normalizedEvents = Array.isArray(events) ? events.slice(0, 1) : [];
-
-    const payload = {
-      clubId: clubId || undefined,
-      events: normalizedEvents,
-      updatedAt: new Date(),
-    };
-
-    if (clubId) {
-      const doc = await eventModel.findOneAndUpdate({ clubId }, payload, { upsert: true, new: true });
-      res.status(200).json({ success: true, data: doc });
+    // Validate request body using Zod
+    const validationResult = createEventSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      res.status(400).json({ 
+        success: false, 
+        message: "Validation failed", 
+        errors: validationResult.error.issues 
+      });
       return;
     }
 
-    const doc = await eventModel.create(payload);
-    res.status(201).json({ success: true, data: doc });
+    const { events } = validationResult.data;
+    const eventData = events[0]; // We only allow one event per request
+
+    // Get clubId from the authenticated user
+    if (!req.user || !req.user.club) {
+      res.status(400).json({ success: false, message: "Club not associated with user" });
+      return;
+    }
+
+    const clubId = req.user.club;
+
+    // Check if club exists
+    const club = await Club.findById(clubId);
+    if (!club) {
+      res.status(404).json({ success: false, message: "Club not found" });
+      return;
+    }
+
+    // Create the event with clubId
+    const event = await eventModel.create({
+      ...eventData,
+      clubId,
+    });
+
+    res.status(201).json({ 
+      success: true, 
+      message: "Event created successfully",
+      data: event 
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Error creating event:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
