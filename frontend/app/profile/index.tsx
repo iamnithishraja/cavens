@@ -39,19 +39,14 @@ const ProfileScreen = () => {
     setIsLoading(true);
 
     try {
-      console.log("Completing profile:", { name: name.trim(), email: email.trim() });
+      
       
       const res = await apiClient.post("/api/user/completeProfile", {
         name: name.trim(),
         email: email.trim(),
       });
 
-      if (res.data.success) {
-        console.log("Profile completed successfully:", res.data);
-        
-        // Refresh user context to update authentication status
-        
-        
+      if (res.data.success) {        
         Alert.alert(
           "Success",
           "Profile completed successfully!",

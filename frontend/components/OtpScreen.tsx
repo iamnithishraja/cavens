@@ -14,7 +14,7 @@ const OtpScreen = ({
   phoneNumber: string;
   onBack: () => void;
 }) => {
-  console.log("OTP Screen for phone:", phoneNumber);
+  
   const [otp, setOtp] = useState(["", "", "", ""]);
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const router = useRouter();
@@ -58,7 +58,7 @@ const OtpScreen = ({
     }
   
     try {
-      console.log("Sending OTP:", otpString, "and phone number:", phoneNumber);
+      
       const res = await apiClient.post("/api/user/verify-otp", {
         phone: phoneNumber.trim(),
         otp: otpString,
@@ -67,7 +67,7 @@ const OtpScreen = ({
       if (res.data.success) {
         const { token, user, role, isProfileComplete } = res.data;
   
-        console.log("Response from server:", res.data);
+        
   
         // Save token and user (merge role + completion flag into user for later use)
         const userData = { ...user, role, isProfileComplete };
@@ -83,7 +83,7 @@ const OtpScreen = ({
           router.replace("/userTabs");
         }
   
-        console.log("OTP verified, navigation handled");
+        
       } else {
         Alert.alert("Error", res.data.message || "Invalid OTP");
       }
@@ -103,10 +103,10 @@ const OtpScreen = ({
         phone: phoneNumber.trim()
       });
       if (res.status === 200) {
-        console.log("OTP sent successfully");
+        
         Alert.alert("Success", "OTP sent successfully to " + getMaskedPhoneNumber(phoneNumber));
       } 
-      console.log("Response:", res.data);
+      
     } catch (error) {
       console.error("Error sending OTP:", error);
     }

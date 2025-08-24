@@ -28,16 +28,16 @@ const Auth = () => {
   const [showOtpScreen, setShowOtpScreen] = useState(false);
 
   const handleGetOtp = async () => {
-    console.log("Phone Number:", phoneNumber);
+    
     try {
       const res = await apiClient.post("/api/user/onboarding", {
         phone: phoneNumber.trim()
       });
       if (res.status === 200) {
-        console.log("OTP sent successfully");
+        
         setShowOtpScreen(true);
       } 
-      console.log("Response:", res.data);
+      
     } catch (error) {
       console.error("Error sending OTP:", error);
     }

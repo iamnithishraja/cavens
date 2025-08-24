@@ -488,8 +488,7 @@ const CreateEventForm = () => {
                   currentSection === index && styles.navItemActive,
                 ]}
                 onPress={() => {
-                  console.log(`Navigating to section: ${section}`); // Debug log
-                  setCurrentSection(index); // Update currentSection state
+                  setCurrentSection(index);
                 }}
               >
                 <Text

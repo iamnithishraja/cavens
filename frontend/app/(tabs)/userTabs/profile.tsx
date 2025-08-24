@@ -47,13 +47,13 @@ export default function ProfileScreen() {
       const storedClubData = await store.get('clubData');
       
       if (storedRole) {
-        console.log('📱 Found stored user role:', storedRole);
+        console.log('Found stored user role:', storedRole);
       }
       if (storedClubData) {
-        console.log('🏢 Found stored club data:', storedClubData);
+        console.log('Found stored club data:', storedClubData);
       }
     } catch (error) {
-      console.error('❌ Error loading stored user data:', error);
+      console.log(' Error loading stored user data:', error);
     }
   };
 
@@ -79,16 +79,11 @@ export default function ProfileScreen() {
           // Clear club data if no club is associated
           await store.delete('clubData');
         }
-        
-        console.log('Profile data fetched and stored:', {
-          role: userData.role,
-          hasClub: !!response.data.data.club
-        });
       } else {
         Alert.alert('Error', 'Failed to fetch profile data');
       }
     } catch (error: any) {
-      console.log('Error fetching profile:', error);
+      
       Alert.alert('Error', 'Failed to load profile. Please try again.');
     } finally {
       setLoading(false);
@@ -100,7 +95,7 @@ export default function ProfileScreen() {
     try {
       const response = await apiClient.post('/api/user/switch-to-club');
       if (response.data.success) {
-        console.log('Successfully switched to club role');
+        
         
         // Store user data in the same format as your layout expects
         const userData = {
@@ -124,13 +119,11 @@ export default function ProfileScreen() {
         Alert.alert('Error', 'Failed to switch to club mode. Please try again.');
       }
     } catch (error: any) {
-      console.log('Error switching to club:', error.response?.status, error.response?.data);
+     
       if (error.response?.status === 400) {
         if (error.response?.data?.message?.includes('No club associated')) {
-          console.log('No club associated with user - redirecting to club registration');
-          router.push('/club-registration');
+           router.push('/club-registration');
         } else if (error.response?.data?.message?.includes('not yet approved')) {
-          console.log('Club pending approval');
           router.push('/club/details');
         } else {
           Alert.alert('Error', error.response?.data?.message || 'Something went wrong.');
