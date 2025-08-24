@@ -31,6 +31,6 @@ app.use("/api/file", fileRoute);
 app.use("/api/club", clubRoute);
 app.use("/api/v1/admin", adminRoute);
 
-app.listen(3000, () => {
+app.listen(process.env.PORT, () => {
   console.log(`Server is running on port 3000`);
 });
