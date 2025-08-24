@@ -18,6 +18,7 @@ const OtpScreen = ({
   const [otp, setOtp] = useState(["", "", "", ""]);
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const router = useRouter();
+  
 
   // Function to mask phone number (show first 2 and last 2 digits)
   const getMaskedPhoneNumber = (phone: string) => {
@@ -48,38 +49,42 @@ const OtpScreen = ({
       inputRefs.current[index - 1]?.focus();
     }
   };
-
   const handleVerifyOtp = async () => {
     const otpString = otp.join("");
-
+  
     if (otpString.length !== 4) {
       Alert.alert("Error", "Please enter complete OTP");
       return;
     }
-
+  
     try {
-      console.log("Sending OTP:", otpString, "and phone number:", phoneNumber); // Debug log
+      console.log("Sending OTP:", otpString, "and phone number:", phoneNumber);
       const res = await apiClient.post("/api/user/verify-otp", {
         phone: phoneNumber.trim(),
         otp: otpString,
       });
-
+  
       if (res.data.success) {
-        const { isProfileComplete, user, token } = res.data;
-        console.log("Response from server:", res.data); // Debug log
-        // store token if you want (AsyncStorage or Zustand)
-        store.set("token", token);
-
-        if (isProfileComplete) {
-          console.log("OTP verified, navigating to dashboard");
-             
+        const { token, user, role, isProfileComplete } = res.data;
+  
+        console.log("Response from server:", res.data);
+  
+        // Save token and user (merge role + completion flag into user for later use)
+        const userData = { ...user, role, isProfileComplete };
+        await store.set("token", token);
+        await store.set("user", JSON.stringify(userData));
+  
+        // Handle navigation
+        if (!isProfileComplete) {
+          router.replace("/profile");
+        } else if (role === "admin") {
+          router.replace("/adminTabs");
         } else {
-          // New user → go to profile completion screen
-          console.log("OTP verified, navigating to profile completion");
-          router.navigate('/profile');
+          router.replace("/userTabs");
         }
-      }
-       else {
+  
+        console.log("OTP verified, navigation handled");
+      } else {
         Alert.alert("Error", res.data.message || "Invalid OTP");
       }
     } catch (error: any) {
@@ -90,9 +95,8 @@ const OtpScreen = ({
       );
     }
   };
-  // const handleVerifyOtp=()=>{
-  //   router.navigate('/profile');
-  // }
+  
+  
   const handleResendOtp=async()=>{
     try {
       const res = await apiClient.post("/api/user/onboarding", {

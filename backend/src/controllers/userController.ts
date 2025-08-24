@@ -10,6 +10,7 @@ import z from "zod";
 import { generateToken } from "../utils/token";
 import { completeProfileSchema } from "../schemas/onboardingSchema";
 import type { CustomRequest } from "../types";
+import Club from "../models/clubModel";
 
 async function onboarding(req: Request, res: Response) {
   try {
@@ -168,4 +169,120 @@ async function completeProfile(req: CustomRequest, res: Response) {
     return;
   }
 }
+
+export const getUserProfile = async (req: CustomRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "User not authenticated" });
+      return;
+    }
+
+    const user = await User.findById(req.user._id).populate('club');
+    
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    // Check if user has an associated club
+    let clubData = null;
+    let clubStatus = null;
+
+    if (user.club) {
+      const club = await Club.findById(user.club);
+      if (club) {
+        const status = club.isApproved ? 'approved' : 'pending';
+        clubData = {
+          id: club._id,
+          name: club.name,
+          status: status
+        };
+        clubStatus = status;
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          isPhoneVerified: user.isPhoneVerified,
+        },
+        club: clubData,
+        clubStatus: clubStatus
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+export const switchToClub = async (req: CustomRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "User not authenticated" });
+      return;
+    }
+
+    const user = await User.findById(req.user._id).populate('club');
+    
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    // Check if user has an associated club
+    if (!user.club) {
+      res.status(400).json({ success: false, message: "No club associated with user" });
+      return;
+    }
+
+    const club = await Club.findById(user.club);
+    if (!club) {
+      res.status(404).json({ success: false, message: "Associated club not found" });
+      return;
+    }
+
+    // Check if club is approved
+    if (!club.isApproved) {
+      res.status(400).json({ 
+        success: false, 
+        message: "Club is not yet approved by admin",
+        clubStatus: 'pending'
+      });
+      return;
+    }
+
+    // Update user role to club
+    user.role = 'club';
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Successfully switched to club role",
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+        club: {
+          id: club._id,
+          name: club.name,
+          status: club.isApproved ? 'approved' : 'pending'
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Error switching to club role:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 export { onboarding, verifyOtp, completeProfile };

@@ -1,11 +1,13 @@
 import express from 'express';
-import { onboarding, verifyOtp, completeProfile } from '../controllers/userController';
-import { isAuthenticated } from '../middleware/auth';
+import { onboarding, verifyOtp, completeProfile, getUserProfile, switchToClub } from '../controllers/userController';
+import { isAuthenticated, isProfileCompleted } from '../middleware/auth';
 
 const userRoute = express.Router();
 
 userRoute.post('/onboarding', onboarding);
 userRoute.post('/verify-otp', verifyOtp);
 userRoute.post('/completeProfile', isAuthenticated ,completeProfile);
+userRoute.get('/profile', isAuthenticated, isProfileCompleted, getUserProfile);
+userRoute.post('/switch-to-club', isAuthenticated, isProfileCompleted, switchToClub);
 
 export default userRoute;

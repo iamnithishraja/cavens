@@ -63,3 +63,32 @@ export async function isAuthenticated(
     return;
   }
 }
+
+export async function isProfileCompleted(
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "User not authenticated" });
+      return;
+    }
+
+    // Check if user has completed their profile (has name)
+    if (!req.user.name) {
+      res.status(403).json({ 
+        success: false, 
+        message: "Profile not completed",
+        requiresProfileUpdate: true
+      });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    console.error("Profile completion check error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+    return;
+  }
+}

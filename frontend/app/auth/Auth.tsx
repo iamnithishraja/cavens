@@ -70,7 +70,7 @@ const Auth = () => {
         {/* Main Content Card with better spacing */}
         <View style={styles.contentContainer}>
           {showOtpScreen ? (
-            <OtpScreen phoneNumber={phoneNumber} onBack={() => router.back()} />
+            <OtpScreen phoneNumber={phoneNumber} onBack={() => setShowOtpScreen(false)} />
           ) : (
             <LinearGradient
               colors={Colors.gradients.card as [string, string]}

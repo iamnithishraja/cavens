@@ -7,10 +7,12 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/Colors";
 import apiClient, { baseUrl } from "@/app/api/client";
+
 
 import TextField from "../ui/TextField";
 import TextArea from "../ui/TextArea";
@@ -32,6 +34,7 @@ const VENUE_TYPES = [
 ] as const;
 
 const ClubDetailsForm = () => {
+  
   const [name, setName] = useState("");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [description, setDescription] = useState("");
@@ -110,6 +113,12 @@ const ClubDetailsForm = () => {
         durationMs,
         data: response.data,
       });
+      
+      if (response.data.success) {
+        Alert.alert("Success", "Club details submitted successfully! Please wait for admin approval.");
+        // Refresh user profile to get updated club status
+        
+      }
     } catch (error: unknown) {
       const durationMs = Date.now() - startTime;
       if (error && typeof error === "object" && (error as any).response) {
@@ -120,8 +129,10 @@ const ClubDetailsForm = () => {
           data: err.response?.data,
           message: err.message,
         });
+        Alert.alert("Error", err.response?.data?.message || "Failed to submit club details");
       } else {
         console.error("[ClubDetails] Unexpected error", { durationMs, error });
+        Alert.alert("Error", "Something went wrong. Please try again.");
       }
     } finally {
       setSubmitting(false);

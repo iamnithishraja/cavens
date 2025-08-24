@@ -6,11 +6,13 @@ import apiClient from "@/app/api/client";
 import { useRouter } from "expo-router";
 import BrandHeader from "@/components/common/BrandHeader";
 
+
 const ProfileScreen = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -46,6 +48,10 @@ const ProfileScreen = () => {
 
       if (res.data.success) {
         console.log("Profile completed successfully:", res.data);
+        
+        // Refresh user context to update authentication status
+        
+        
         Alert.alert(
           "Success",
           "Profile completed successfully!",
@@ -53,8 +59,7 @@ const ProfileScreen = () => {
             {
               text: "Continue",
               onPress: () => {
-                // Navigate to dashboard/main app
-                router.replace("/(tabs)"); // or wherever your main app starts
+                router.push('/(tabs)/userTabs');
               },
             },
           ]
