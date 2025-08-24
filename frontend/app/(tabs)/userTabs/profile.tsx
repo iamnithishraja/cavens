@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import apiClient from '@/app/api/client';
 import { store } from '@/utils';
 import { Ionicons } from '@expo/vector-icons';
+import { triggerUserRoleCheck } from '@/app/_layout';
 
 interface User {
   id: string;
@@ -152,7 +153,12 @@ export default function ProfileScreen() {
               Alert.alert('Info', 'You are already using club role.', [
                 {
                   text: 'OK',
-                  onPress: () => router.replace('/(tabs)/adminTabs')
+                  onPress: () => {
+                  // Trigger the root layout to re-check user role
+                  triggerUserRoleCheck();
+                  // Navigate to admin tabs
+                  router.replace('/(tabs)/adminTabs');
+                }
                 }
               ]);
             } else if (message === 'No club associated with user') {

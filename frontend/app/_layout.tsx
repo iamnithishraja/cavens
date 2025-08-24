@@ -6,6 +6,13 @@ import { store } from "@/utils";
 import Background from "@/components/common/Background";
 import { AppState } from "react-native";
 
+// Global flag to force user role re-check
+let forceUserCheck = false;
+
+export const triggerUserRoleCheck = () => {
+  forceUserCheck = true;
+};
+
 export default function RootLayout() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<{ role: string } | null>(null);
@@ -54,7 +61,13 @@ export default function RootLayout() {
     return () => subscription?.remove();
   }, []);
 
-
+  // Check for forced user role re-check
+  useEffect(() => {
+    if (forceUserCheck) {
+      forceUserCheck = false;
+      checkUser();
+    }
+  }, [forceUserCheck]);
 
   if (loading) {
     return (
@@ -66,9 +79,6 @@ export default function RootLayout() {
     );
   }
 
-  
-
-  
   let initialRouteName = "auth";
   
   if (user?.role === "club" || user?.role === "admin") {
