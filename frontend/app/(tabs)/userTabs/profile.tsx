@@ -122,16 +122,17 @@ export default function ProfileScreen() {
         // Update local state if you have setProfileData
         // setProfileData({ user, club });
         
-        // Success message
-        Alert.alert('Success', 'Successfully switched to club mode!', [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Force navigation to club tabs
-              router.replace('/(tabs)/adminTabs');
-            }
-          }
-        ]);
+                 // Success message
+         Alert.alert('Success', 'Successfully switched to club mode!', [
+           {
+             text: 'OK',
+             onPress: () => {
+               // Navigate directly to admin tabs since role is now "club"
+               console.log('🔄 Navigating to admin tabs...');
+               router.navigate('/(tabs)/adminTabs');
+             }
+           }
+         ]);
         
       } else {
         Alert.alert('Error', response.data.message || 'Failed to switch to club mode.');

@@ -4,26 +4,57 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { View, ActivityIndicator } from "react-native";
 import { store } from "@/utils";
 import Background from "@/components/common/Background";
+import { AppState } from "react-native";
 
 export default function RootLayout() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<{ role: string } | null>(null);
 
-  useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const saved = await store.get("user");
-        if (saved) {
-          setUser(JSON.parse(saved));
+  const checkUser = async () => {
+    try {
+      const saved = await store.get("user");
+      
+      if (saved) {
+        const userData = JSON.parse(saved);
+        
+        // Validate user data structure
+        if (userData && typeof userData.role === 'string') {
+          setUser(userData);
+        } else {
+          setUser(null);
+          await store.delete('user');
         }
-      } catch (err) {
-        console.error("Failed to load user:", err);
-      } finally {
-        setLoading(false);
+      } else {
+        setUser(null);
       }
-    };
+    } catch (err) {
+      console.error("Failed to load user:", err);
+      setUser(null);
+      // Clear corrupted user data
+      await store.delete('user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     checkUser();
   }, []);
+
+  // Listen for app state changes to refresh user data
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: string) => {
+      if (nextAppState === 'active') {
+        // Refresh user data when app becomes active
+        checkUser();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription?.remove();
+  }, []);
+
+
 
   if (loading) {
     return (
@@ -35,13 +66,27 @@ export default function RootLayout() {
     );
   }
 
+  
+
+  
+  let initialRouteName = "auth";
+  
+  if (user?.role === "club" || user?.role === "admin") {
+    initialRouteName = "(tabs)/adminTabs";
+  } else if (user?.role === "user") {
+    initialRouteName = "(tabs)/userTabs";
+  }
+
   return (
     <SafeAreaProvider>
       <Background >
-      <Stack screenOptions={{ headerShown: false }}>
-        {!user && <Stack.Screen name="auth" />} 
-        {user?.role === "admin" && <Stack.Screen name="tabs/adminTabs" />}
-        {user?.role === "user" && <Stack.Screen name="tabs/userTabs" />}
+      <Stack 
+        screenOptions={{ headerShown: false }}
+        initialRouteName={initialRouteName}
+      >
+        <Stack.Screen name="auth" />
+        <Stack.Screen name="(tabs)/adminTabs" />
+        <Stack.Screen name="(tabs)/userTabs" />
       </Stack>
       </Background>
     </SafeAreaProvider>
