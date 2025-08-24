@@ -27,11 +27,11 @@ export default function RootLayout() {
 
   if (loading) {
     return (
-      
+      <SafeAreaProvider>
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" />
         </View>
-      
+      </SafeAreaProvider>
     );
   }
 

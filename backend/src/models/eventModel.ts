@@ -11,6 +11,7 @@ const eventSchema = new mongoose.Schema({
     coverImage: String,
     tickets: [ticketSchema],
     menuItems: [menuItemSchema],
+    
     guestExperience: {
       dressCode: String,
       entryRules: String,

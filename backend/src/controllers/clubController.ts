@@ -3,9 +3,14 @@ import Club from "../models/clubModel";
 import eventModel from "../models/eventModel";
 import { createEventSchema } from "../schemas/eventSchema";
 import type { CustomRequest } from "../types";
+import User from "../models/userModel";
 
-export const createClub = async (req: Request, res: Response): Promise<void> => {
+export const createClub = async (req: CustomRequest, res: Response): Promise<void> => {
   try {
+    if(!req.user){
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
     const {
       name,
       email,
@@ -24,7 +29,7 @@ export const createClub = async (req: Request, res: Response): Promise<void> => 
       res.status(400).json({ message: "Missing required fields" });
       return;
     }
-
+     
     const club = await Club.create({
       name,
       email,
@@ -38,7 +43,13 @@ export const createClub = async (req: Request, res: Response): Promise<void> => 
       coverBannerUrl,
       photos,
     });
-
+    await User.findByIdAndUpdate(
+      req.user._id, 
+      { club: club._id }, 
+      { new: true }
+    );
+    
+    console.log(club);
     res.status(201).json({ success: true, club });
   } catch (error) {
     console.error(error);

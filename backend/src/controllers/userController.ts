@@ -221,45 +221,46 @@ export const getUserProfile = async (req: CustomRequest, res: Response): Promise
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+const switchToClub = async (req: CustomRequest, res: Response): Promise<void> => {
+  console.log("switch to club");
 
-export const switchToClub = async (req: CustomRequest, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "User not authenticated" });
       return;
     }
 
-    const user = await User.findById(req.user._id).populate('club');
-    
+    const user = await User.findById(req.user._id).populate("club");
+
     if (!user) {
       res.status(404).json({ success: false, message: "User not found" });
       return;
     }
 
-    // Check if user has an associated club
+    if (user.role === "club") {
+      res.status(400).json({ success: false, message: "User is already using club role" });
+      return;
+    }
+
     if (!user.club) {
       res.status(400).json({ success: false, message: "No club associated with user" });
       return;
     }
 
-    const club = await Club.findById(user.club);
-    if (!club) {
-      res.status(404).json({ success: false, message: "Associated club not found" });
-      return;
-    }
+    const clubDoc = user.club as any; // populated club
 
-    // Check if club is approved
-    if (!club.isApproved) {
-      res.status(400).json({ 
-        success: false, 
+    if (!clubDoc.isApproved) {
+      res.status(403).json({
+        success: false,
         message: "Club is not yet approved by admin",
-        clubStatus: 'pending'
+        clubStatus: "pending",
       });
       return;
     }
 
-    // Update user role to club
-    user.role = 'club';
+    // ✅ Switch role
+    user.role = "club";
+    user.updatedAt = new Date();
     await user.save();
 
     res.status(200).json({
@@ -273,11 +274,11 @@ export const switchToClub = async (req: CustomRequest, res: Response): Promise<v
           role: user.role,
         },
         club: {
-          id: club._id,
-          name: club.name,
-          status: club.isApproved ? 'approved' : 'pending'
-        }
-      }
+          id: clubDoc._id,
+          name: clubDoc.name,
+          status: "approved",
+        },
+      },
     });
   } catch (error) {
     console.error("Error switching to club role:", error);
@@ -285,4 +286,4 @@ export const switchToClub = async (req: CustomRequest, res: Response): Promise<v
   }
 };
 
-export { onboarding, verifyOtp, completeProfile };
+export { onboarding, verifyOtp, completeProfile, switchToClub };

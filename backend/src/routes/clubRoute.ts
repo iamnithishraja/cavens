@@ -5,7 +5,7 @@ import { isClub } from '../middleware/isClub';
 
 const clubRoute = express.Router();
 
-clubRoute.post('/', createClub); 
+clubRoute.post('/', isAuthenticated, createClub); 
 clubRoute.post('/event', isAuthenticated, isClub, saveEventData);
 
 export default clubRoute;
