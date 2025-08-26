@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/Colors";
 
 type Props = {
@@ -8,48 +7,46 @@ type Props = {
   subtitle?: string;
 };
 
-const BrandHeader = ({ title = "caven", subtitle = "Your nightlife, curated." }: Props) => {
+const BrandHeader = ({ title = "caVén", subtitle = "Your nightlife, curated." }: Props) => {
   return (
-    <LinearGradient
-      colors={Colors.gradients.background as [string, string]}
-      style={styles.container}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
-      <View style={styles.row}>
-        <Image source={require("@/assets/images/icon.png")} style={styles.logo} />
-        <Text style={styles.brand}>caVén</Text>
+    <View style={styles.container}>
+      <View style={styles.brandRow}>
+        <Image source={require("@/assets/images/adaptive-icon.png")} style={styles.logo} />
+        <Text style={styles.brandText}>{title}</Text>
       </View>
       <Text style={styles.subtitle}>{subtitle}</Text>
-    </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 64,
+    paddingTop: 60,
     paddingHorizontal: 24,
-    paddingBottom: 20
+    paddingBottom: 20,
   },
-  row: {
+  brandRow: {
     flexDirection: "row",
-    alignItems: "center"
+    alignItems: "center",
+    marginBottom: 6,
   },
   logo: {
-    width: 36,
-    height: 36,
-    marginRight: 10,
-    borderRadius: 8
+    width: 32,
+    height: 32,
+    marginRight: 12,
+    borderRadius: 6,
   },
-  brand: {
-    fontSize: 34,
+  brandText: {
+    fontSize: 28,
     color: Colors.textPrimary,
-    fontWeight: "800"
+    fontWeight: "800",
+    letterSpacing: -0.5,
   },
   subtitle: {
-    marginTop: 6,
     color: Colors.textSecondary,
-    fontSize: 14
+    fontSize: 15,
+    fontWeight: '400',
+    opacity: 0.8,
   }
 });
 

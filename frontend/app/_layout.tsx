@@ -5,6 +5,7 @@ import { View, ActivityIndicator } from "react-native";
 import { store } from "@/utils";
 import Background from "@/components/common/Background";
 import { AppState } from "react-native";
+import Auth from "./auth/Auth";
 
 // Global flag to force user role re-check
 let forceUserCheck = false;
@@ -90,14 +91,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <Background >
-      <Stack 
-        screenOptions={{ headerShown: false }}
-        initialRouteName={initialRouteName}
-      >
-        <Stack.Screen name="auth" />
-        <Stack.Screen name="(tabs)/adminTabs" />
-        <Stack.Screen name="(tabs)/userTabs" />
-      </Stack>
+      <Auth />
       </Background>
     </SafeAreaProvider>
   );

@@ -1,12 +1,20 @@
-import { LinearGradient } from "expo-linear-gradient";
+import React from "react";
+import { View, StyleSheet } from "react-native";
 import { Colors } from "@/constants/Colors";
 
 const Background = ({ children }: { children: React.ReactNode }) => {
   return (
-    <LinearGradient colors={Colors.gradients.background as [string, string]} style={{ flex: 1 }}>
+    <View style={styles.container}>
       {children}
-    </LinearGradient>
+    </View>
   );
 };
 
-export default Background; 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+});
+
+export default Background;

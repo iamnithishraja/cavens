@@ -9,15 +9,18 @@ import {
   KeyboardAvoidingView,
   Platform,
   Linking,
-  StatusBar
+  StatusBar,
+  Dimensions
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/Colors";
 import apiClient from "@/app/api/client";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Country, DEFAULT_COUNTRY } from "@/constants/country";
 import BrandHeader from "@/components/common/BrandHeader";
 import OtpScreen from "@/components/OtpScreen";
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width, height } = Dimensions.get('window');
 
 const Auth = () => {
   const router = useRouter();
@@ -27,22 +30,19 @@ const Auth = () => {
   const [countryQuery] = useState("");
   const [showOtpScreen, setShowOtpScreen] = useState(false);
 
+
   const handleGetOtp = async () => {
-    
     try {
       const res = await apiClient.post("/api/user/onboarding", {
         phone: phoneNumber.trim()
       });
       if (res.status === 200) {
-        
         setShowOtpScreen(true);
       } 
-      
     } catch (error) {
       console.error("Error sending OTP:", error);
     }
   };
-
 
   const openLink = async (url: string) => {
     try {
@@ -50,68 +50,73 @@ const Auth = () => {
     } catch {}
   };
 
+
+
   return (
-    <LinearGradient
-      colors={Colors.gradients.background as [string, string]}
-      style={styles.container}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+  
+      {/* Subtle Pattern Overlay - Top 20% Glow */}
+      <View style={styles.patternOverlay}>
+        <LinearGradient
+          colors={['rgba(43, 44, 20, 0.5)', 'transparent', 'transparent']}
+          locations={[0.1, 0.3, 1]}
+          style={styles.topGlow}
+        />
+      </View>
+
       <KeyboardAvoidingView 
         style={styles.keyboardContainer} 
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        {/* Enhanced Brand Header with more space */}
+        {/* Brand Header */}
         <View style={styles.headerSection}>
           <BrandHeader />
+          
+          {/* Decorative Line */}
+          <LinearGradient
+            colors={[Colors.primary, Colors.primaryDark, Colors.primary]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.decorativeLine}
+          />
         </View>
 
-        {/* Main Content Card with better spacing */}
+        {/* Main Content */}
         <View style={styles.contentContainer}>
           {showOtpScreen ? (
             <OtpScreen phoneNumber={phoneNumber} onBack={() => setShowOtpScreen(false)} />
           ) : (
-            <LinearGradient
-              colors={Colors.gradients.card as [string, string]}
-              style={styles.card}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              {/* Subtle glow effect */}
-              <LinearGradient
-                colors={Colors.gradients.blueGlow as [string, string]}
-                style={styles.glowOverlay}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0.3 }}
-              />
-              
-              <View style={styles.cardContent}>
-                <Text style={styles.title}>Log in or sign up</Text>
-                <Text style={styles.subtitle}>Enter your mobile number to continue</Text>
+            <View style={styles.authContent}>
+              {/* Welcome Section */}
+              <View style={styles.welcomeSection}>
+                <Text style={styles.welcomeText}>Welcome back</Text>
+                <View style={styles.subtitleContainer}>
+                  <View style={styles.subtitleDot} />
+                  <Text style={styles.subtitle}>Enter your mobile number to continue</Text>
+                </View>
+              </View>
 
-                {/* Phone Input Section */}
-                <View style={styles.inputSection}>
-                  <Text style={styles.inputLabel}>Mobile Number</Text>
-                  
-                  <View style={styles.phoneRow}>
-                    <Pressable
-                      style={styles.countryBox}
-                      onPress={() => router.push({ pathname: "../auth/country", params: { q: countryQuery } })}
-                      accessibilityRole="button"
+              {/* Phone Input Section */}
+              <View style={styles.inputSection}>
+                <Text style={styles.inputLabel}>MOBILE NUMBER</Text>
+                
+                <View style={styles.phoneContainer}>
+                  <Pressable
+                    style={styles.countrySelector}
+                    onPress={() => router.push({ pathname: "../auth/country", params: { q: countryQuery } })}
+                  >
+                    <LinearGradient
+                      colors={[Colors.backgroundSecondary, Colors.backgroundTertiary]}
+                      style={styles.countrySelectorGradient}
                     >
-                      <LinearGradient
-                        colors={[Colors.surfaceElevated, Colors.surface]}
-                        style={styles.countryBoxGradient}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                      >
-                        <Text style={styles.countryFlag}>{country.flag}</Text>
-                        <Text style={styles.countryCode}>{country.dialCode}</Text>
-                      </LinearGradient>
-                    </Pressable>
+                      <Text style={styles.countryFlag}>{country.flag}</Text>
+                      <Text style={styles.countryCode}>{country.dialCode}</Text>
+                    </LinearGradient>
+                  </Pressable>
 
-                    <View style={styles.phoneInputContainer}>
+                  <View style={styles.phoneInputWrapper}>
+                    <View style={styles.inputContainer}>
                       <TextInput
                         style={styles.phoneInput}
                         placeholder="Mobile number"
@@ -123,226 +128,252 @@ const Auth = () => {
                         textContentType="telephoneNumber"
                         maxLength={12}
                       />
-                      <LinearGradient
-                        colors={[Colors.borderBlue, 'transparent']}
-                        style={styles.inputUnderline}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                      />
                     </View>
                   </View>
                 </View>
-
-                {/* Action Section */}
-                <View style={styles.actionSection}>
-                  <TouchableOpacity style={styles.buttonWrapper} onPress={handleGetOtp}>
-                    <LinearGradient
-                      colors={[Colors.accentYellow, '#F7C84A']}
-                      style={styles.button}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                    >
-                      <Text style={styles.buttonText}>Continue</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-
-                  <View style={styles.otpNote}>
-                    <View style={styles.otpNoteDot} />
-                    <Text style={styles.otpNoteText}>We will send you a one-time password (OTP)</Text>
-                  </View>
-                </View>
               </View>
-            </LinearGradient>
-          )}
 
-          {/* Terms Section - Outside the card for better separation */}
-          <View style={styles.termsSection}>
-            <View style={styles.termsDivider} />
-            <Text style={styles.termsIntro}>By continuing, you agree to our</Text>
-            <View style={styles.termsLinks}>
-              <Pressable onPress={() => openLink("https://example.com/terms")}> 
-                <Text style={styles.link}>Terms of Service</Text>
-              </Pressable>
-              <Text style={styles.termsSeparator}>•</Text>
-              <Pressable onPress={() => openLink("https://example.com/privacy")}> 
-                <Text style={styles.link}>Privacy Policy</Text>
-              </Pressable>
-              <Text style={styles.termsSeparator}>•</Text>
-              <Pressable onPress={() => openLink("https://example.com/content-policies")}>
-                <Text style={styles.link}>Content Policies</Text>
-              </Pressable>
+              {/* Continue Button */}
+              <TouchableOpacity 
+                style={styles.continueButton} 
+                onPress={handleGetOtp}
+                disabled={phoneNumber.length === 0}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={Colors.gradients.button}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.buttonGradient}
+                >
+                  <Text style={styles.continueButtonText}>
+                    Continue
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              {/* OTP Info */}
+              <View style={styles.otpInfo}>
+                <View style={styles.otpDot} />
+                <Text style={styles.otpText}>We&apos;ll send you a one-time password</Text>
+              </View>
             </View>
+          )}
+        </View>
+
+        {/* Bottom Terms Section */}
+        <View style={styles.bottomSection}>
+          <LinearGradient
+            colors={[Colors.primary, 'transparent', Colors.primary]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.divider}
+          />
+          
+          <Text style={styles.termsIntro}>By continuing, you agree to our</Text>
+          <View style={styles.termsLinks}>
+            <Pressable onPress={() => openLink("https://example.com/terms")} style={styles.termsPressable}> 
+              <Text style={styles.termsLink}>Terms of Service</Text>
+            </Pressable>
+            <View style={styles.termsDot} />
+            <Pressable onPress={() => openLink("https://example.com/privacy")} style={styles.termsPressable}> 
+              <Text style={styles.termsLink}>Privacy Policy</Text>
+            </Pressable>
+            <View style={styles.termsDot} />
+            <Pressable onPress={() => openLink("https://example.com/content-policies")} style={styles.termsPressable}>
+              <Text style={styles.termsLink}>Content Policies</Text>
+            </Pressable>
           </View>
         </View>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.background,
+  },
+  patternOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+  },
+  topGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: height * 0.5, 
+    borderRadius: 0,
   },
   keyboardContainer: {
     flex: 1,
   },
   headerSection: {
-    paddingTop: Platform.OS === 'ios' ? 20 : 40,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+  },
+  decorativeLine: {
+    height: 2,
+    width: 60,
+    marginHorizontal: 24,
+    marginTop: 12,
+    borderRadius: 1,
   },
   contentContainer: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 40,
-    paddingBottom: 40,
-  },
-  card: {
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
-    shadowColor: Colors.accentBlue,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  glowOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 120,
-    opacity: 0.3,
-  },
-  cardContent: {
-    padding: 32,
-    paddingTop: 40,
-  },
-  title: {
-    fontSize: 28,
-    color: Colors.textPrimary,
-    fontWeight: "800",
-    marginBottom: 8,
-    textAlign: 'left',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    marginBottom: 40,
-    lineHeight: 22,
-  },
-  inputSection: {
-    marginBottom: 48,
-  },
-  inputLabel: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-    marginBottom: 16,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  phoneRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 16,
-  },
-  countryBox: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
-  },
-  countryBoxGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 18,
-    minWidth: 100,
+    paddingHorizontal: 24,
     justifyContent: 'center',
   },
-  countryFlag: {
-    fontSize: 20,
-    marginRight: 8,
+  authContent: {
+    paddingVertical: 40,
   },
-  countryCode: {
+  welcomeSection: {
+    marginBottom: 80,
+  },
+  welcomeText: {
+    fontSize: 42,
     color: Colors.textPrimary,
-    fontSize: 16,
-    fontWeight: "700",
+    fontWeight: '800',
+    marginBottom: 16,
+    letterSpacing: -1.2,
+    textAlign: 'left',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
-  phoneInputContainer: {
-    flex: 1,
-    position: 'relative',
-  },
-  phoneInput: {
-    fontSize: 18,
-    color: Colors.textPrimary,
-    paddingVertical: 20,
-    paddingHorizontal: 4,
-    fontWeight: '500',
-    backgroundColor: 'transparent',
-  },
-  inputUnderline: {
-    height: 2,
-    borderRadius: 1,
-    marginTop: 4,
-  },
-  actionSection: {
-    gap: 24,
-  },
-  buttonWrapper: {
-    borderRadius: 16,
-    shadowColor: Colors.accentYellow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  button: {
-    height: 56,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 16,
-  },
-  buttonText: {
-    color: Colors.button.text,
-    fontSize: 18,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-  },
-  otpNote: {
+  subtitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
+    gap: 10,
   },
-  otpNoteDot: {
+  subtitleDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Colors.accentBlue,
+    backgroundColor: Colors.primary,
   },
-  otpNoteText: {
+  subtitle: {
+    fontSize: 17,
     color: Colors.textSecondary,
-    fontSize: 14,
-    fontWeight: '500',
+    lineHeight: 26,
+    fontWeight: '400',
   },
-  termsSection: {
-    marginTop: 32,
+  inputSection: {
+    marginBottom: 50,
+  },
+  inputLabel: {
+    fontSize: 11,
+    color: Colors.primary,
+    fontWeight: '700',
+    marginBottom: 20,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  phoneContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
   },
-  termsDivider: {
+  countrySelector: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  countrySelectorGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    minWidth: 100,
+    justifyContent: 'center',
+    borderRadius: 16,
+  },
+  countryFlag: {
+    fontSize: 22,
+    marginRight: 10,
+  },
+  countryCode: {
+    color: Colors.textPrimary,
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  phoneInputWrapper: {
+    flex: 1,
+  },
+  inputContainer: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 16,
+    backgroundColor: Colors.backgroundSecondary,
+    overflow: 'hidden',
+  },
+  phoneInput: {
+    fontSize: 19,
+    color: Colors.textPrimary,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    fontWeight: '600',
+    backgroundColor: 'transparent',
+    letterSpacing: 0.5,
+  },
+
+  continueButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    alignItems: 'center',
+    marginBottom: 32,
+    minHeight: 64,
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  buttonGradient: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  continueButtonText: {
+    color: Colors.button.text,
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  otpInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 8,
+  },
+  otpDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: Colors.primary,
+  },
+  otpText: {
+    color: Colors.textSecondary,
+    fontSize: 15,
+    fontWeight: '400',
+  },
+  bottomSection: {
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === 'ios' ? 50 : 40,
+    alignItems: 'center',
+  },
+  divider: {
     height: 1,
-    width: 60,
-    backgroundColor: Colors.borderBlue,
-    opacity: 0.5,
+    width: 80,
+    marginBottom: 32,
   },
   termsIntro: {
     color: Colors.textMuted,
-    fontSize: 13,
+    fontSize: 14,
+    marginBottom: 16,
     textAlign: 'center',
+    fontWeight: '400',
   },
   termsLinks: {
     flexDirection: 'row',
@@ -351,15 +382,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
   },
-  link: {
-    color: Colors.accentBlue,
-    fontSize: 13,
-    fontWeight: '600',
-    textDecorationLine: "underline",
+  termsPressable: {
+    paddingVertical: 4,
+    paddingHorizontal: 2,
   },
-  termsSeparator: {
-    color: Colors.textMuted,
-    fontSize: 12,
+  termsLink: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+    textDecorationColor: Colors.primary,
+  },
+  termsDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: Colors.textMuted,
     opacity: 0.6,
   },
 });
