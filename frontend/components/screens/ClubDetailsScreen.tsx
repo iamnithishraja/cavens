@@ -9,10 +9,8 @@ import {
   Platform,
   Alert,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/Colors";
 import apiClient, { baseUrl } from "@/app/api/client";
-
 
 import TextField from "../ui/TextField";
 import TextArea from "../ui/TextArea";
@@ -151,239 +149,234 @@ const ClubDetailsForm = () => {
   };
 
   return (
-      <SafeAreaView style={styles.safeArea} edges={[]}>
-        <ClubDetailsHeader 
-          onBack={handleBack}
-          onMenu={handleMenu}
-          title="Club Details"
-        />
-        
-        <KeyboardAvoidingView 
-          style={styles.keyboardContainer} 
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+    <SafeAreaView style={styles.safeArea} edges={[]}>
+      <ClubDetailsHeader 
+        onBack={handleBack}
+        onMenu={handleMenu}
+        title="Club Details"
+      />
+      
+      <KeyboardAvoidingView 
+        style={styles.keyboardContainer} 
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
         >
-          <ScrollView
-            contentContainerStyle={styles.scrollContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.contentContainer}>
-              <LinearGradient
-                colors={Colors.gradients.card as [string, string]}
-                style={styles.card}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                {/* Subtle glow effect */}
-                <LinearGradient
-                  colors={Colors.gradients.blueGlow as [string, string]}
-                  style={styles.glowOverlay}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0.3 }}
-                />
-                
-                <View style={styles.cardContent}>
-                  {/* Club Name and Logo Row */}
-                  <View style={styles.rowAlignTop}>
-                    <View style={styles.nameInputContainer}>
-                      <TextField
-                        label="Club Name"
-                        value={name}
-                        onChangeText={(t) => {
-                          setName(t);
-                          if (t.trim()) clearError("name");
-                        }}
-                        placeholder="Enter club name"
-                      />
-                      {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
-                    </View>
-                    <View style={styles.logoContainer}>
-                      <ImageUploader
-                        label="Club Logo"
-                        multiple={false}
-                        onUploaded={(urls) => setLogoUrl(urls[0] || null)}
-                        existingUrls={logoUrl ? [logoUrl] : []}
-                      />
-                    </View>
-                  </View>
-
-                  {/* Contact Information */}
-                  <View style={styles.sectionSpacing}>
-                    <TextField
-                      label="Email"
-                      value={email}
-                      onChangeText={(t) => {
-                        setEmail(t);
-                        if (t.trim()) clearError("email");
-                      }}
-                      placeholder="contact@club.com"
-                      keyboardType="email-address"
-                    />
-                    {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
-                  </View>
-
-                  <View style={styles.sectionSpacing}>
-                    <PhoneInput 
-                      label="Phone" 
-                      value={phone} 
-                      onChangeText={(t: string) => {
-                        setPhone(t);
-                        if (t.trim()) clearError("phone");
-                      }} 
-                    />
-                    {errors.phone ? <Text style={styles.errorText}>{errors.phone}</Text> : null}
-                  </View>
-
-                  {/* Cover Banner */}
-                  <View style={styles.sectionSpacing}>
-                    <ImageUploader
-                      label="Cover Banner"
-                      multiple={false}
-                      onUploaded={(urls) => setCoverBannerUrl(urls[0] || null)}
-                      existingUrls={coverBannerUrl ? [coverBannerUrl] : []}
-                      fullWidth
-                      aspectRatio={16 / 9}
-                      mediaTypes={ImagePicker.MediaTypeOptions.All}
-                      fileNamePrefix="cover-"
-                    />
-                  </View>
-
-                  {/* Description */}
-                  <View style={styles.sectionSpacing}>
-                    <TextArea
-                      label="Short Description / Vibe"
-                      value={description}
-                      onChangeText={(t) => {
-                        setDescription(t);
-                        if (t.trim()) clearError("description");
-                      }}
-                      placeholder="e.g. Luxury rooftop lounge with house & techno beats"
-                    />
-                    {errors.description ? <Text style={styles.errorText}>{errors.description}</Text> : null}
-                  </View>
-
-                  {/* Photos */}
-                  <View style={styles.sectionSpacing}>
-                    <ImageUploader
-                      label="Photos (crowd shots, interiors, stage)"
-                      multiple
-                      onUploaded={(urls) => setPhotos(urls)}
-                      existingUrls={photos}
-                      fullWidth
-                      aspectRatio={16 / 9}
-                    />
-                  </View>
-
-                  {/* Venue Type */}
-                  <View style={styles.sectionSpacing}>
-                    <ChipSelector
-                      label="Type of Venue"
-                      options={[...VENUE_TYPES]}
-                      value={typeOfVenue}
-                      onChange={(v) => {
-                        setTypeOfVenue(v);
-                        clearError("typeOfVenue");
-                        if (v !== "Other") clearError("otherVenue");
-                      }}
-                    />
-                    {typeOfVenue === "Other" && (
-                      <View style={{ marginTop: 12 }}>
-                        <TextField
-                          label="Specify Venue Type"
-                          value={otherVenue}
-                          onChangeText={(t) => {
-                            setOtherVenue(t);
-                            if (t.trim()) clearError("otherVenue");
-                          }}
-                          placeholder="Enter venue type"
-                        />
-                        {errors.otherVenue ? <Text style={styles.errorText}>{errors.otherVenue}</Text> : null}
-                      </View>
-                    )}
-                    {errors.typeOfVenue ? <Text style={styles.errorText}>{errors.typeOfVenue}</Text> : null}
-                  </View>
-
-                  {/* Location */}
-                  <View style={styles.sectionSpacing}>
-                    <TextField
-                      label="Address"
-                      value={address}
-                      onChangeText={(t) => {
-                        setAddress(t);
-                        if (t.trim()) clearError("address");
-                      }}
-                      placeholder="Street, City, Country"
-                    />
-                    {errors.address ? <Text style={styles.errorText}>{errors.address}</Text> : null}
-                  </View>
-
-                  <View style={styles.sectionSpacing}>
-                    <TextField
-                      label="Maps Link"
-                      value={mapLink}
-                      onChangeText={(t) => {
-                        setMapLink(t);
-                        if (t.trim()) clearError("mapLink");
-                      }}
-                      placeholder="https://maps.google.com/..."
-                    />
-                    {errors.mapLink ? <Text style={styles.errorText}>{errors.mapLink}</Text> : null}
-                  </View>
-
-                  {/* Operating Days */}
-                  <View style={styles.sectionSpacing}>
-                    <DaysSelector 
-                      value={operatingDays} 
-                      onChange={(days) => {
-                        setOperatingDays(days);
-                        if (days && days.length > 0) clearError("operatingDays");
-                      }} 
-                    />
-                    {errors.operatingDays ? <Text style={styles.errorText}>{errors.operatingDays}</Text> : null}
-                  </View>
-
-                  {/* Submit Button */}
-                  <View style={styles.actionSection}>
-                    <TouchableOpacity
-                      disabled={submitting}
-                      style={styles.buttonWrapper}
-                      onPress={handleSubmit}
-                      activeOpacity={0.8}
-                    >
-                      <LinearGradient
-                        colors={[Colors.accentYellow, "#F7C84A"]}
-                        style={styles.button}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                      >
-                        <Text style={styles.buttonText}>
-                          {submitting ? "Submitting..." : "Save Club Details"}
-                        </Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-
-                    {/* Status Note */}
-                    <View style={styles.statusNote}>
-                      <View style={styles.statusNoteDot} />
-                      <Text style={styles.statusNoteText}>
-                        Your club details will be reviewed before going live
-                      </Text>
-                    </View>
-                  </View>
+          <View style={styles.contentContainer}>
+            
+            {/* Club Name and Logo Row */}
+            <View style={styles.section}>
+              <View style={styles.rowAlignTop}>
+                <View style={styles.nameInputContainer}>
+                  <TextField
+                    label="Club Name"
+                    value={name}
+                    onChangeText={(t) => {
+                      setName(t);
+                      if (t.trim()) clearError("name");
+                    }}
+                    placeholder="Enter club name"
+                  />
+                  {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
                 </View>
-              </LinearGradient>
+                <View style={styles.logoContainer}>
+                  <ImageUploader
+                    label="Club Logo"
+                    multiple={false}
+                    onUploaded={(urls) => setLogoUrl(urls[0] || null)}
+                    existingUrls={logoUrl ? [logoUrl] : []}
+                  />
+                </View>
+              </View>
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+
+            {/* Contact Information */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Contact Information</Text>
+              
+              <View style={styles.inputSpacing}>
+                <TextField
+                  label="Email"
+                  value={email}
+                  onChangeText={(t) => {
+                    setEmail(t);
+                    if (t.trim()) clearError("email");
+                  }}
+                  placeholder="contact@club.com"
+                  keyboardType="email-address"
+                />
+                {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+              </View>
+
+              <View style={styles.inputSpacing}>
+                <PhoneInput 
+                  label="Phone" 
+                  value={phone} 
+                  onChangeText={(t: string) => {
+                    setPhone(t);
+                    if (t.trim()) clearError("phone");
+                  }} 
+                />
+                {errors.phone ? <Text style={styles.errorText}>{errors.phone}</Text> : null}
+              </View>
+            </View>
+
+            {/* Media */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Media</Text>
+              
+              <View style={styles.inputSpacing}>
+                <ImageUploader
+                  label="Cover Banner"
+                  multiple={false}
+                  onUploaded={(urls) => setCoverBannerUrl(urls[0] || null)}
+                  existingUrls={coverBannerUrl ? [coverBannerUrl] : []}
+                  fullWidth
+                  aspectRatio={16 / 9}
+                  mediaTypes={ImagePicker.MediaTypeOptions.All}
+                  fileNamePrefix="cover-"
+                />
+              </View>
+
+              <View style={styles.inputSpacing}>
+                <ImageUploader
+                  label="Photos (crowd shots, interiors, stage)"
+                  multiple
+                  onUploaded={(urls) => setPhotos(urls)}
+                  existingUrls={photos}
+                  fullWidth
+                  aspectRatio={16 / 9}
+                />
+              </View>
+            </View>
+
+            {/* About */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>About</Text>
+              
+              <View style={styles.inputSpacing}>
+                <TextArea
+                  label="Short Description / Vibe"
+                  value={description}
+                  onChangeText={(t) => {
+                    setDescription(t);
+                    if (t.trim()) clearError("description");
+                  }}
+                  placeholder="e.g. Luxury rooftop lounge with house & techno beats"
+                />
+                {errors.description ? <Text style={styles.errorText}>{errors.description}</Text> : null}
+              </View>
+
+              <View style={styles.inputSpacing}>
+                <ChipSelector
+                  label="Type of Venue"
+                  options={[...VENUE_TYPES]}
+                  value={typeOfVenue}
+                  onChange={(v) => {
+                    setTypeOfVenue(v);
+                    clearError("typeOfVenue");
+                    if (v !== "Other") clearError("otherVenue");
+                  }}
+                />
+                {typeOfVenue === "Other" && (
+                  <View style={{ marginTop: 12 }}>
+                    <TextField
+                      label="Specify Venue Type"
+                      value={otherVenue}
+                      onChangeText={(t) => {
+                        setOtherVenue(t);
+                        if (t.trim()) clearError("otherVenue");
+                      }}
+                      placeholder="Enter venue type"
+                    />
+                    {errors.otherVenue ? <Text style={styles.errorText}>{errors.otherVenue}</Text> : null}
+                  </View>
+                )}
+                {errors.typeOfVenue ? <Text style={styles.errorText}>{errors.typeOfVenue}</Text> : null}
+              </View>
+            </View>
+
+            {/* Location */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Location</Text>
+              
+              <View style={styles.inputSpacing}>
+                <TextField
+                  label="Address"
+                  value={address}
+                  onChangeText={(t) => {
+                    setAddress(t);
+                    if (t.trim()) clearError("address");
+                  }}
+                  placeholder="Street, City, Country"
+                />
+                {errors.address ? <Text style={styles.errorText}>{errors.address}</Text> : null}
+              </View>
+
+              <View style={styles.inputSpacing}>
+                <TextField
+                  label="Maps Link"
+                  value={mapLink}
+                  onChangeText={(t) => {
+                    setMapLink(t);
+                    if (t.trim()) clearError("mapLink");
+                  }}
+                  placeholder="https://maps.google.com/..."
+                />
+                {errors.mapLink ? <Text style={styles.errorText}>{errors.mapLink}</Text> : null}
+              </View>
+            </View>
+
+            {/* Operating Schedule */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Operating Schedule</Text>
+              
+              <View style={styles.inputSpacing}>
+                <DaysSelector 
+                  value={operatingDays} 
+                  onChange={(days) => {
+                    setOperatingDays(days);
+                    if (days && days.length > 0) clearError("operatingDays");
+                  }} 
+                />
+                {errors.operatingDays ? <Text style={styles.errorText}>{errors.operatingDays}</Text> : null}
+              </View>
+            </View>
+
+            {/* Submit Button */}
+            <View style={styles.submitSection}>
+              <TouchableOpacity
+                disabled={submitting}
+                style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+                onPress={handleSubmit}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.submitButtonText}>
+                  {submitting ? "Submitting..." : "Save Club Details"}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Status Note */}
+              <View style={styles.statusNote}>
+                <Text style={styles.statusNoteText}>
+                  • Your club details will be reviewed before going live
+                </Text>
+              </View>
+            </View>
+            
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   safeArea: {
     flex: 1,
+    backgroundColor: Colors.background,
   },
   keyboardContainer: {
     flex: 1,
@@ -393,37 +386,22 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingTop: 8,
     paddingBottom: 40,
   },
-  card: {
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
-    shadowColor: Colors.accentBlue,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    position: "relative",
-    overflow: "hidden",
+  section: {
+    marginBottom: 32,
   },
-  glowOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 120,
-    opacity: 0.3,
-  },
-  cardContent: {
-    padding: 24,
-    paddingTop: 32,
+  sectionTitle: {
+    fontSize: 18,
+    color: Colors.textPrimary,
+    fontWeight: "600",
+    marginBottom: 16,
+    letterSpacing: 0.3,
   },
   rowAlignTop: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: 24,
   },
   nameInputContainer: {
     flex: 1,
@@ -432,56 +410,45 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 110,
   },
-  sectionSpacing: {
-    marginBottom: 24,
+  inputSpacing: {
+    marginBottom: 16,
   },
-  actionSection: {
+  submitSection: {
     marginTop: 16,
-    gap: 20,
+    gap: 16,
   },
-  buttonWrapper: {
-    borderRadius: 16,
-    shadowColor: Colors.accentYellow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  button: {
+  submitButton: {
     height: 56,
+    backgroundColor: Colors.primary,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 16,
+    borderRadius: 28,
   },
-  buttonText: {
+  submitButtonDisabled: {
+    backgroundColor: Colors.textMuted,
+  },
+  submitButtonText: {
     color: Colors.button.text,
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "700",
     letterSpacing: 0.5,
   },
   statusNote: {
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  statusNoteDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.accentBlue,
+    paddingHorizontal: 20,
   },
   statusNoteText: {
     color: Colors.textSecondary,
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "400",
     textAlign: "center",
+    lineHeight: 20,
   },
   errorText: {
-    color: "#FF6B6B",
+    color: Colors.error,
     fontSize: 12,
     marginTop: 6,
-    fontWeight: "600",
+    fontWeight: "500",
   },
 });
 

@@ -8,6 +8,10 @@ import { AppState } from "react-native";
 import Auth from "./auth/Auth";
 import ProfileScreen from "./profile";
 import OtpScreen from "@/components/OtpScreen";
+import QrScreen from "./(tabs)/adminTabs/qr";
+import CreateEventRoute from "./create-event";
+import CreateEventForm from "@/components/screens/CreateEventForm";
+import ClubDetailsScreen from "@/components/screens/ClubDetailsScreen";
 
 // Global flag to force user role re-check
 let forceUserCheck = false;
@@ -93,7 +97,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <Background >
-      <Auth />
+        <Auth />
       </Background>
     </SafeAreaProvider>
   );

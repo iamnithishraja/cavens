@@ -7,7 +7,6 @@ import {
   StatusBar,
   Platform,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -27,36 +26,27 @@ const ClubDetailsHeader: React.FC<ClubDetailsHeaderProps> = ({
 
   return (
     <>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      <LinearGradient
-        colors={Colors.gradients.dark as [string, string]}
-        style={[styles.header, { paddingTop: insets.top + (Platform.OS === 'ios' ? 10 : 20) }]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      <StatusBar barStyle="light-content" backgroundColor={Colors.background} />
+      <View 
+        style={[
+          styles.header, 
+          { paddingTop: insets.top + (Platform.OS === 'ios' ? 10 : 20) }
+        ]}
       >
-        {/* Subtle glow overlay */}
-        <LinearGradient
-          colors={Colors.gradients.blueGlow as [string, string]}
-          style={styles.glowOverlay}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0.4 }}
-        />
-        
         <View style={styles.headerContent}>
           {/* Left side - Back button */}
           <TouchableOpacity
-            style={styles.iconButton}
+            style={styles.backButton}
             onPress={onBack}
-            activeOpacity={0.7}
+            activeOpacity={0.6}
           >
-            <LinearGradient
-              colors={[Colors.surfaceElevated, Colors.surface]}
-              style={styles.iconButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
-            </LinearGradient>
+            <View style={styles.backButtonCircle}>
+              <Ionicons 
+                name="chevron-back" 
+                size={24} 
+                color={Colors.textPrimary} 
+              />
+            </View>
           </TouchableOpacity>
 
           {/* Center - Title */}
@@ -64,53 +54,31 @@ const ClubDetailsHeader: React.FC<ClubDetailsHeaderProps> = ({
             <Text style={styles.title}>{title}</Text>
           </View>
 
-          {/* Right side - Menu button */}
+          {/* Right side - Menu button (optional, for symmetry) */}
           <TouchableOpacity
-            style={styles.iconButton}
+            style={styles.menuButton}
             onPress={onMenu}
-            activeOpacity={0.7}
+            activeOpacity={0.6}
           >
-            <LinearGradient
-              colors={[Colors.surfaceElevated, Colors.surface]}
-              style={styles.iconButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <Ionicons name="ellipsis-horizontal" size={22} color={Colors.textPrimary} />
-            </LinearGradient>
+            <Ionicons 
+              name="ellipsis-horizontal" 
+              size={24} 
+              color={Colors.textMuted} 
+            />
           </TouchableOpacity>
         </View>
 
-        {/* Bottom border accent */}
-        <LinearGradient
-          colors={[Colors.accentBlue + "40", "transparent"]}
-          style={styles.bottomAccent}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-        />
-      </LinearGradient>
+        {/* Accent line under header */}
+        <View style={styles.accentLine} />
+      </View>
     </>
   );
 };
 
 const styles = StyleSheet.create({
   header: {
-    position: "relative",
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderBlue,
-    shadowColor: Colors.accentBlue,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  glowOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    opacity: 0.25,
+    backgroundColor: Colors.background,
+    borderBottomWidth: 0,
   },
   headerContent: {
     flexDirection: "row",
@@ -120,20 +88,19 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     height: 60,
   },
-  iconButton: {
+  backButton: {
     width: 40,
     height: 40,
-    borderRadius: 12,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
-  },
-  iconButtonGradient: {
-    width: "100%",
-    height: "100%",
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 12,
+  },
+  backButtonCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.backgroundSecondary,
+    justifyContent: "center",
+    alignItems: "center",
   },
   titleContainer: {
     flex: 1,
@@ -141,18 +108,25 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     color: Colors.textPrimary,
-    fontWeight: "800",
-    letterSpacing: 0.5,
+    fontWeight: "600",
+    letterSpacing: 0.3,
     textAlign: "center",
   },
-  bottomAccent: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 1,
+  menuButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  accentLine: {
+    height: 2,
+    backgroundColor: Colors.primary,
+    width: 50,
+    alignSelf: "flex-start",
+    marginLeft: 20,
+    marginBottom: 8,
   },
 });
 

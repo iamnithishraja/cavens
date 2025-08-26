@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/Colors";
 
 const DAYS = [
@@ -26,18 +25,25 @@ const DaysSelector = ({ value, onChange }: Props) => {
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>Operating Days</Text>
+      <Text style={styles.label}>OPERATING DAYS</Text>
       <View style={styles.row}>
         {DAYS.map((day) => {
           const selected = value.includes(day);
           return (
-            <TouchableOpacity key={day} onPress={() => toggleDay(day)} style={[styles.chip, selected && styles.selectedChip]}>
-              <LinearGradient
-                colors={selected ? [Colors.accentBlue, Colors.borderBlue] : [Colors.surfaceElevated, Colors.surface]}
-                style={styles.chipBg}
-              >
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{day.slice(0, 3)}</Text>
-              </LinearGradient>
+            <TouchableOpacity 
+              key={day} 
+              onPress={() => toggleDay(day)} 
+              style={[
+                styles.chip, 
+                selected ? styles.selectedChip : styles.unselectedChip
+              ]}
+            >
+              <Text style={[
+                styles.chipText, 
+                selected ? styles.chipTextSelected : styles.chipTextUnselected
+              ]}>
+                {day.slice(0, 3)}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -48,15 +54,15 @@ const DaysSelector = ({ value, onChange }: Props) => {
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 16,
+    marginBottom: 24,
   },
   label: {
     fontSize: 12,
-    color: Colors.textSecondary,
+    color: Colors.primary,
     fontWeight: "600",
-    marginBottom: 8,
+    marginBottom: 16,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   row: {
     flexDirection: "row",
@@ -64,27 +70,31 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    borderRadius: 999,
-    overflow: "hidden",
-  },
-  chipBg: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.borderBlue,
+    minWidth: 48,
+    alignItems: 'center',
   },
-  selectedChip: {},
+  selectedChip: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  unselectedChip: {
+    backgroundColor: Colors.backgroundSecondary,
+    borderColor: Colors.border,
+  },
   chipText: {
-    color: Colors.textSecondary,
+    fontSize: 14,
     fontWeight: "600",
   },
   chipTextSelected: {
     color: Colors.button.text,
-    fontWeight: "800",
+  },
+  chipTextUnselected: {
+    color: Colors.textSecondary,
   },
 });
 
 export default DaysSelector;
-
-

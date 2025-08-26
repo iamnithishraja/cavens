@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { VideoView, useVideoPlayer } from "expo-video";
-import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import { Colors } from "@/constants/Colors";
 import apiClient from "@/app/api/client";
@@ -20,8 +19,20 @@ type Props = {
 
 type Item = { key: string; uri: string; uploading?: boolean; remote?: boolean };
 
-const ImageUploader = ({ label, multiple = false, existingUrls = [], onUploaded, fullWidth = false, squareSize = 90, aspectRatio = 16 / 9, mediaTypes = ImagePicker.MediaTypeOptions.Images, fileNamePrefix }: Props) => {
-  const [items, setItems] = useState<Item[]>(existingUrls.map((u, i) => ({ key: `${i}-${u}`, uri: u, uploading: false, remote: true })));
+const ImageUploader = ({ 
+  label, 
+  multiple = false, 
+  existingUrls = [], 
+  onUploaded, 
+  fullWidth = false, 
+  squareSize = 90, 
+  aspectRatio = 16 / 9, 
+  mediaTypes = ImagePicker.MediaTypeOptions.Images, 
+  fileNamePrefix 
+}: Props) => {
+  const [items, setItems] = useState<Item[]>(
+    existingUrls.map((u, i) => ({ key: `${i}-${u}`, uri: u, uploading: false, remote: true }))
+  );
 
   const handlePick = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -39,7 +50,11 @@ const ImageUploader = ({ label, multiple = false, existingUrls = [], onUploaded,
     const assets = multiple ? result.assets : [result.assets[0]];
 
     // Optimistically add placeholders so UI shows immediately
-    const optimisticItems: Item[] = assets.map((a) => ({ key: `${a.assetId || a.uri}-${Date.now()}`, uri: a.uri, uploading: true }));
+    const optimisticItems: Item[] = assets.map((a) => ({ 
+      key: `${a.assetId || a.uri}-${Date.now()}`, 
+      uri: a.uri, 
+      uploading: true 
+    }));
     setItems((prev) => (multiple ? [...prev, ...optimisticItems] : [...optimisticItems]));
 
     // Start uploads in background; don't block add button
@@ -81,23 +96,41 @@ const ImageUploader = ({ label, multiple = false, existingUrls = [], onUploaded,
       <Text style={styles.label}>{label}</Text>
       <View style={[fullWidth ? styles.list : styles.grid]}>
         {items.map((it, i) => (
-          <View key={it.key} style={[fullWidth ? styles.fullWrapper : styles.thumbWrapper, fullWidth && { aspectRatio }]}> 
+          <View 
+            key={it.key} 
+            style={[
+              fullWidth ? styles.fullWrapper : styles.thumbWrapper, 
+              fullWidth && { aspectRatio },
+              it.uploading && styles.uploadingWrapper
+            ]}
+          > 
             {isVideo(it.uri) ? (
               <VideoPreview uri={it.uri} style={fullWidth ? styles.fullImage : styles.thumb} />
             ) : (
               <Image source={{ uri: it.uri }} style={fullWidth ? styles.fullImage : styles.thumb} />
             )}
-            {/* Loading spinner removed as per request */}
+            {it.uploading && (
+              <View style={styles.uploadOverlay}>
+                <Text style={styles.uploadText}>Uploading...</Text>
+              </View>
+            )}
             <TouchableOpacity style={styles.removeBtn} onPress={() => handleRemove(i)}>
               <Text style={styles.removeText}>×</Text>
             </TouchableOpacity>
           </View>
         ))}
         {(multiple || items.length === 0) && (
-          <TouchableOpacity style={[fullWidth ? styles.fullAddWrapper : styles.addWrapper, fullWidth && { aspectRatio }]} onPress={handlePick}>
-            <LinearGradient colors={[Colors.surfaceElevated, Colors.surface]} style={[fullWidth ? styles.fullAddCard : styles.addCard]}>
+          <TouchableOpacity 
+            style={[
+              fullWidth ? styles.fullAddWrapper : styles.addWrapper, 
+              fullWidth && { aspectRatio }
+            ]} 
+            onPress={handlePick}
+          >
+            <View style={[fullWidth ? styles.fullAddCard : styles.addCard]}>
+              <Text style={styles.addIcon}>+</Text>
               <Text style={styles.addText}>{multiple ? "Add Photos" : "Upload"}</Text>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         )}
       </View>
@@ -189,15 +222,15 @@ const VideoPreview = ({ uri, style }: { uri: string; style: any }) => {
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 16,
+    marginBottom: 24,
   },
   label: {
     fontSize: 12,
-    color: Colors.textSecondary,
+    color: Colors.primary,
     fontWeight: "600",
-    marginBottom: 8,
+    marginBottom: 16,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   grid: {
     flexDirection: "row",
@@ -214,15 +247,20 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
     borderWidth: 1,
-    borderColor: Colors.borderBlue,
+    borderColor: Colors.border,
+    backgroundColor: Colors.backgroundSecondary,
   },
   fullWrapper: {
     width: "100%",
-    borderRadius: 16,
+    borderRadius: 12,
     overflow: "hidden",
     position: "relative",
     borderWidth: 1,
-    borderColor: Colors.borderBlue,
+    borderColor: Colors.border,
+    backgroundColor: Colors.backgroundSecondary,
+  },
+  uploadingWrapper: {
+    opacity: 0.7,
   },
   thumb: {
     width: "100%",
@@ -235,15 +273,20 @@ const styles = StyleSheet.create({
   },
   uploadOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: "rgba(0,0,0,0.6)",
     alignItems: "center",
     justifyContent: "center",
   },
+  uploadText: {
+    color: Colors.textPrimary,
+    fontSize: 12,
+    fontWeight: "600",
+  },
   removeBtn: {
     position: "absolute",
-    top: 4,
-    right: 4,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    top: 8,
+    right: 8,
+    backgroundColor: Colors.primary,
     borderRadius: 12,
     width: 24,
     height: 24,
@@ -251,22 +294,54 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   removeText: {
-    color: "#fff",
+    color: Colors.button.text,
     fontSize: 16,
     lineHeight: 16,
     fontWeight: "800",
     marginTop: -1,
   },
-  addWrapper: { width: 90, height: 90, borderRadius: 12, overflow: "hidden" },
-  addCard: { flex: 1, alignItems: "center", justifyContent: "center", borderRadius: 12, borderWidth: 1, borderColor: Colors.borderBlue },
-  fullAddWrapper: { width: "100%", borderRadius: 16, overflow: "hidden" },
-  fullAddCard: { alignItems: "center", justifyContent: "center", height: 56, borderRadius: 16, borderWidth: 1, borderColor: Colors.borderBlue },
+  addWrapper: { 
+    width: 90, 
+    height: 90, 
+    borderRadius: 12, 
+    overflow: "hidden" 
+  },
+  addCard: { 
+    flex: 1, 
+    alignItems: "center", 
+    justifyContent: "center", 
+    borderRadius: 12, 
+    borderWidth: 2,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+    backgroundColor: Colors.backgroundSecondary,
+  },
+  fullAddWrapper: { 
+    width: "100%", 
+    borderRadius: 12, 
+    overflow: "hidden" 
+  },
+  fullAddCard: { 
+    alignItems: "center", 
+    justifyContent: "center", 
+    height: 120, 
+    borderRadius: 12, 
+    borderWidth: 2,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+    backgroundColor: Colors.backgroundSecondary,
+  },
+  addIcon: {
+    color: Colors.primary,
+    fontSize: 24,
+    fontWeight: "800",
+    marginBottom: 4,
+  },
   addText: {
     color: Colors.textSecondary,
-    fontWeight: "700",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
 
 export default ImageUploader;
-
-

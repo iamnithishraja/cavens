@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/Colors";
 
 type Props<T extends string> = {
@@ -18,13 +17,20 @@ const ChipSelector = <T extends string>({ label, options, value, onChange }: Pro
         {options.map((opt) => {
           const selected = value === opt;
           return (
-            <TouchableOpacity key={opt} onPress={() => onChange(opt)} style={[styles.chip, selected && styles.selectedChip]}>
-              <LinearGradient
-                colors={selected ? [Colors.accentBlue, Colors.borderBlue] : [Colors.surfaceElevated, Colors.surface]}
-                style={styles.chipBg}
-              >
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{opt}</Text>
-              </LinearGradient>
+            <TouchableOpacity 
+              key={opt} 
+              onPress={() => onChange(opt)} 
+              style={[
+                styles.chip, 
+                selected ? styles.selectedChip : styles.unselectedChip
+              ]}
+            >
+              <Text style={[
+                styles.chipText, 
+                selected ? styles.chipTextSelected : styles.chipTextUnselected
+              ]}>
+                {opt}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -35,43 +41,45 @@ const ChipSelector = <T extends string>({ label, options, value, onChange }: Pro
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 16,
+    marginBottom: 24,
   },
   label: {
     fontSize: 12,
-    color: Colors.textSecondary,
+    color: Colors.primary,
     fontWeight: "600",
-    marginBottom: 8,
+    marginBottom: 16,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   row: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 12,
   },
   chip: {
-    borderRadius: 999,
-    overflow: "hidden",
-  },
-  chipBg: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: Colors.borderBlue,
   },
-  selectedChip: {},
+  selectedChip: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  unselectedChip: {
+    backgroundColor: Colors.backgroundSecondary,
+    borderColor: Colors.border,
+  },
   chipText: {
-    color: Colors.textSecondary,
+    fontSize: 14,
     fontWeight: "600",
   },
   chipTextSelected: {
     color: Colors.button.text,
-    fontWeight: "800",
+  },
+  chipTextUnselected: {
+    color: Colors.textSecondary,
   },
 });
 
 export default ChipSelector;
-
-
