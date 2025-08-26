@@ -99,7 +99,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <Background >
-      <UserHomeScreen />
+        <Auth /> 
       </Background>
     </SafeAreaProvider>
   );
