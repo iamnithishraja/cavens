@@ -3,58 +3,6 @@ import type { EventItem } from "./types";
 // Sample data matching backend eventSchema
 export const SAMPLE_EVENTS: EventItem[] = [
   {
-    _id: "evt-dxb-001",
-    name: "Sunset House Sessions",
-    date: "2025-09-05",
-    time: "9:00 PM",
-    djArtists: "DJ Noura, Khaled Beats",
-    description: "Experience deep house under the stars with panoramic views of Dubai Marina.",
-    coverImage: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1600&auto=format&fit=crop",
-    tickets: [
-      { 
-        _id: "gen", 
-        name: "General", 
-        price: 150, 
-        description: "General admission ticket",
-        quantityAvailable: 120,
-        quantitySold: 0
-      },
-      { 
-        _id: "vip", 
-        name: "VIP", 
-        price: 350, 
-        description: "VIP access with premium seating",
-        quantityAvailable: 40,
-        quantitySold: 0
-      },
-    ],
-    menuItems: [
-      {
-        _id: "drink1",
-        name: "Signature Cocktail",
-        price: "45 AED",
-        itemImage: "https://images.unsplash.com/photo-1546173159-315724a31696?w=400",
-        description: "House special cocktail",
-        category: "Drinks",
-        customCategory: "Cocktails"
-      }
-    ],
-    guestExperience: {
-      dressCode: "Smart Casual",
-      entryRules: "Valid ID required, 21+ only",
-      tableLayoutMap: "https://example.com/layout1.jpg",
-      parkingInfo: "Valet parking available",
-      accessibilityInfo: "Wheelchair accessible"
-    },
-    galleryPhotos: [
-      "https://images.unsplash.com/photo-1464375117522-1311d6a5b81f?q=80&w=1600&auto=format&fit=crop",
-    ],
-    promoVideos: [
-      "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
-    ],
-    happyHourTimings: "6:00 PM - 8:00 PM",
-  },
-  {
     _id: "evt-ad-002",
     name: "Techno Oasis",
     date: "2025-09-12",

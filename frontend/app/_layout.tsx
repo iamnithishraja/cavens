@@ -12,6 +12,8 @@ import QrScreen from "./(tabs)/adminTabs/qr";
 import CreateEventRoute from "./create-event";
 import CreateEventForm from "@/components/screens/CreateEventForm";
 import ClubDetailsScreen from "@/components/screens/ClubDetailsScreen";
+import HomeScreen from "./(tabs)/userTabs/home";
+import UserHomeScreen from "@/components/screens/userHomeScreen";
 
 // Global flag to force user role re-check
 let forceUserCheck = false;
@@ -97,7 +99,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <Background >
-        <Auth />
+      <UserHomeScreen />
       </Background>
     </SafeAreaProvider>
   );

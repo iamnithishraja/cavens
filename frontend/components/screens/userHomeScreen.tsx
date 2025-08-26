@@ -71,14 +71,9 @@ const UserHomeScreen = () => {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
-        <LinearGradient
-          colors={Colors.gradients.background as [string, string]}
-          style={styles.fullBackground}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
+        <View style={styles.fullBackground}>
           <EventDetailsScreen event={selected} />
-        </LinearGradient>
+        </View>
       </SafeAreaView>
     );
   }
@@ -97,16 +92,7 @@ const UserHomeScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
-      <LinearGradient
-        colors={[
-          Colors.gradients.background[0],
-          Colors.gradients.background[1],
-          Colors.gradients.background[1]
-        ]}
-        style={styles.fullBackground}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-      >
+      <View style={styles.fullBackground}>
         {/* Fixed Header */}
         <View style={styles.fixedHeader}>
           {/* Location Header */}
@@ -168,7 +154,7 @@ const UserHomeScreen = () => {
                       style={styles.featuredImage}
                     />
                     <LinearGradient
-                      colors={['transparent', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.9)']}
+                      colors={Colors.gradients.overlay as [string, string]}
                       style={styles.featuredOverlay}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 0, y: 1 }}
@@ -243,12 +229,7 @@ const UserHomeScreen = () => {
                   source={{ uri: event.coverImage }}
                   style={styles.clubImage}
                 />
-                <LinearGradient
-                  colors={[Colors.gradients.card[0], Colors.gradients.card[1]]}
-                  style={styles.cardGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
+                <View style={styles.cardSurface}>
                   <View style={styles.clubInfo}>
                     <View>
                       <Text style={styles.clubName} numberOfLines={2}>{event.name}</Text>
@@ -272,12 +253,12 @@ const UserHomeScreen = () => {
                       <Text style={styles.ticketButtonText}>GET TICKETS</Text>
                     </TouchableOpacity>
                   </View>
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             ))}
           </View>
         </ScrollView>
-      </LinearGradient>
+      </View>
     </SafeAreaView>
   );
 }
@@ -288,6 +269,7 @@ const styles = StyleSheet.create({
   },
   fullBackground: {
     flex: 1,
+    backgroundColor: Colors.background,
   },
   container: {
     flex: 1,
@@ -304,7 +286,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     backgroundColor: Colors.background,
     paddingTop: 8,
-    shadowColor: '#000',
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -325,7 +307,7 @@ const styles = StyleSheet.create({
   locationIcon: {
     width: 24,
     height: 24,
-    tintColor: Colors.accentBlue,
+    tintColor: Colors.blueAccent,
     marginRight: 8,
   },
   locationText: {
@@ -382,7 +364,7 @@ const styles = StyleSheet.create({
   },
   activeIndicator: {
     width: 20,
-    backgroundColor: Colors.accentYellow,
+    backgroundColor: Colors.tabActive,
     opacity: 1,
   },
   // Featured Event
@@ -390,14 +372,14 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: Colors.surfaceElevated,
-    shadowColor: Colors.accentBlue,
+    backgroundColor: Colors.backgroundSecondary,
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
     borderWidth: 1,
-    borderColor: Colors.borderBlue,
+    borderColor: Colors.border,
   },
   featuredImage: {
     width: '100%',
@@ -447,7 +429,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   distanceText: {
-    color: Colors.textPrimary,
+    color: Colors.distance,
     fontSize: 16,
     fontWeight: '500',
     marginBottom: 16,
@@ -456,7 +438,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   bookButton: {
-    backgroundColor: Colors.accentYellow,
+    backgroundColor: Colors.button.background,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 24,
@@ -473,7 +455,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: Colors.withOpacity.white10,
     marginBottom: 16,
   },
   tab: {
@@ -483,7 +465,7 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: Colors.accentYellow,
+    borderBottomColor: Colors.tabActive,
   },
   tabText: {
     color: Colors.textSecondary,
@@ -503,18 +485,19 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     height: 100,
-    shadowColor: Colors.accentBlue,
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
     borderWidth: 1,
-    borderColor: Colors.borderBlue,
+    borderColor: Colors.withOpacity.white10,
   },
-  cardGradient: {
+  cardSurface: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: 'rgba(11, 17, 32, 0.85)',
+    // backgroundColor: Colors.backgroundSecondary,
+    // borderLeftWidth: 0,
   },
   clubImage: {
     width: 100,
@@ -534,7 +517,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   clubGenre: {
-    color: Colors.textSecondary,
+    color: Colors.genre,
     fontSize: 14,
   },
   ratingDistanceContainer: {
@@ -550,10 +533,10 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     marginRight: 2,
-    tintColor: Colors.accentYellow,
+    tintColor: Colors.rating,
   },
   clubDistanceText: {
-    color: Colors.textSecondary,
+    color: Colors.distance,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -562,7 +545,7 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
   ticketButton: {
-    backgroundColor: Colors.accentYellow,
+    backgroundColor: Colors.button.background,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 12,
