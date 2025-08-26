@@ -10,7 +10,6 @@ import {
   Alert,
   StatusBar,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/Colors";
 
 // Import existing components
@@ -44,7 +43,6 @@ const CreateEventForm = () => {
   const [tableLayoutMap, setTableLayoutMap] = useState<string | null>(null);
   const [parkingInfo, setParkingInfo] = useState("");
   const [accessibilityInfo, setAccessibilityInfo] = useState("");
-
 
   const [submitting, setSubmitting] = useState(false);
   const [currentSection, setCurrentSection] = useState(0);
@@ -351,7 +349,7 @@ const CreateEventForm = () => {
   // Basics section removed
 
   const renderTicketingSection = () => (
-    <>
+    <View>
       <EventsTicketingSection
         events={events}
         onAddEvent={addEvent}
@@ -371,20 +369,16 @@ const CreateEventForm = () => {
         <TouchableOpacity
           style={styles.continueBtn}
           onPress={() => setCurrentSection(1)}
+          activeOpacity={0.8}
         >
-          <LinearGradient
-            colors={[Colors.accentBlue, "#4A90E2"]}
-            style={styles.continueGradient}
-          >
-            <Text style={styles.continueText}>Continue</Text>
-          </LinearGradient>
+          <Text style={styles.continueText}>Continue</Text>
         </TouchableOpacity>
       )}
-    </>
+    </View>
   );
 
   const renderMenuSection = () => (
-    <>
+    <View>
       <MenuSection
         items={menuItems}
         onAddItem={addMenuItem}
@@ -398,20 +392,16 @@ const CreateEventForm = () => {
         <TouchableOpacity
           style={styles.continueBtn}
           onPress={() => setCurrentSection(2)}
+          activeOpacity={0.8}
         >
-          <LinearGradient
-            colors={[Colors.accentBlue, "#4A90E2"]}
-            style={styles.continueGradient}
-          >
-            <Text style={styles.continueText}>Continue</Text>
-          </LinearGradient>
+          <Text style={styles.continueText}>Continue</Text>
         </TouchableOpacity>
       )}
-    </>
+    </View>
   );
 
   const renderGallerySection = () => (
-    <>
+    <View>
       <GalleryMediaSection
         galleryPhotos={galleryPhotos}
         setGalleryPhotos={setGalleryPhotos}
@@ -423,16 +413,12 @@ const CreateEventForm = () => {
         <TouchableOpacity
           style={styles.continueBtn}
           onPress={() => setCurrentSection(3)}
+          activeOpacity={0.8}
         >
-          <LinearGradient
-            colors={[Colors.accentBlue, "#4A90E2"]}
-            style={styles.continueGradient}
-          >
-            <Text style={styles.continueText}>Continue</Text>
-          </LinearGradient>
+          <Text style={styles.continueText}>Continue</Text>
         </TouchableOpacity>
       )}
-    </>
+    </View>
   );
 
   const renderGuestExperienceSection = () => (
@@ -447,7 +433,6 @@ const CreateEventForm = () => {
       setParkingInfo={setParkingInfo}
       accessibilityInfo={accessibilityInfo}
       setAccessibilityInfo={setAccessibilityInfo}
-
     />
   );
 
@@ -469,6 +454,7 @@ const CreateEventForm = () => {
   return (
     <SafeAreaView style={styles.safeArea} edges={[]}>
       <Header title="Add Event" />
+      
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -478,7 +464,7 @@ const CreateEventForm = () => {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.navScroll} // Ensure proper scrolling behavior
+            contentContainerStyle={styles.navScroll}
           >
             {sections.map((section, index) => (
               <TouchableOpacity
@@ -487,9 +473,8 @@ const CreateEventForm = () => {
                   styles.navItem,
                   currentSection === index && styles.navItemActive,
                 ]}
-                onPress={() => {
-                  setCurrentSection(index);
-                }}
+                onPress={() => setCurrentSection(index)}
+                activeOpacity={0.7}
               >
                 <Text
                   style={[
@@ -510,46 +495,23 @@ const CreateEventForm = () => {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.contentContainer}>
-            <LinearGradient
-              colors={Colors.gradients.card as [string, string]}
-              style={styles.card}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <LinearGradient
-                colors={Colors.gradients.blueGlow as [string, string]}
-                style={styles.glowOverlay}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0.3 }}
-              />
+            {renderCurrentSection()}
 
-              <View style={styles.cardContent}>
-                {renderCurrentSection()}
-
-                {/* Submit Button */}
-                <View style={styles.actionSection}>
-                  {currentSection === sections.length - 1 && (
-                    <TouchableOpacity
-                      disabled={submitting}
-                      style={styles.buttonWrapper}
-                      onPress={handleSubmit}
-                      activeOpacity={0.8}
-                    >
-                      <LinearGradient
-                        colors={[Colors.accentYellow, "#F7C84A"]}
-                        style={styles.button}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                      >
-                        <Text style={styles.buttonText}>
-                          {submitting ? "Creating..." : "Create Event"}
-                        </Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  )}
-                </View>
+            {/* Submit Button */}
+            {currentSection === sections.length - 1 && (
+              <View style={styles.submitSection}>
+                <TouchableOpacity
+                  disabled={submitting}
+                  style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+                  onPress={handleSubmit}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.submitButtonText}>
+                    {submitting ? "Creating..." : "Create Event"}
+                  </Text>
+                </TouchableOpacity>
               </View>
-            </LinearGradient>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -561,35 +523,28 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: Colors.background,
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0, // Adjust for Android status bar
   },
   keyboardContainer: {
     flex: 1,
-    paddingBottom: 20, // Ensure content doesn't overlap with the bottom area
   },
   sectionNav: {
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.borderBlue,
-    zIndex: 1, // Ensure navigation is above other elements
+    borderBottomColor: Colors.separator,
   },
   navScroll: {
-    flexGrow: 0, // Prevent stretching
+    flexGrow: 0,
   },
   navItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     marginRight: 12,
     borderRadius: 20,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
-    elevation: 2, // Add elevation to make it clickable
+    backgroundColor: Colors.backgroundSecondary,
   },
   navItemActive: {
-    backgroundColor: Colors.accentBlue,
-    borderColor: Colors.accentBlue,
+    backgroundColor: Colors.primary,
   },
   navText: {
     color: Colors.textSecondary,
@@ -597,98 +552,50 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   navTextActive: {
-    color: Colors.textPrimary,
+    color: Colors.button.text,
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingTop: 20, // Add padding to ensure navigation is not overlapped
+    paddingTop: 8,
   },
   contentContainer: {
     paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingTop: 16,
     paddingBottom: 40,
   },
-  card: {
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
-    shadowColor: Colors.accentBlue,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    position: "relative",
-    overflow: "hidden",
-  },
-  glowOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 120,
-    opacity: 0.3,
-  },
-  cardContent: {
-    padding: 24,
-    paddingTop: 32,
-  },
-  actionSection: {
-    marginTop: 32,
-    gap: 20,
-  },
-  buttonWrapper: {
-    borderRadius: 16,
-    shadowColor: Colors.accentYellow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  button: {
-    height: 56,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 16,
-  },
-  buttonText: {
-    color: Colors.button.text,
-    fontSize: 18,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-  },
-  statusNote: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  statusNoteDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.accentBlue,
-  },
-  statusNoteText: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    fontWeight: "500",
-    textAlign: "center",
-  },
   continueBtn: {
-    alignSelf: "center",
-
-  },
-  continueGradient: {
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
+    backgroundColor: Colors.primary,
+    height: 48,
+    borderRadius: 24,
     justifyContent: "center",
+    alignItems: "center",
+    marginTop: 24,
+    alignSelf: "center",
+    paddingHorizontal: 32,
   },
   continueText: {
     color: Colors.button.text,
-    fontWeight: "800",
+    fontWeight: "700",
     fontSize: 16,
+  },
+  submitSection: {
+    marginTop: 32,
+  },
+  submitButton: {
+    height: 56,
+    backgroundColor: Colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 28,
+  },
+  submitButtonDisabled: {
+    backgroundColor: Colors.textMuted,
+  },
+  submitButtonText: {
+    color: Colors.button.text,
+    fontSize: 18,
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
 });
 

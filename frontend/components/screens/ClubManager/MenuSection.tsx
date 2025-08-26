@@ -8,7 +8,6 @@ import {
   FlatList,
   StyleSheet as RNStyleSheet,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "@/constants/Colors";
 import TextField from "../../ui/TextField";
@@ -36,31 +35,23 @@ const CategoryPicker: React.FC<{
 
   return (
     <SafeAreaView style={styles.pickerRoot} edges={["bottom"]}>
-      {/* Scrim to allow closing by tapping outside */}
       <Pressable style={styles.pickerScrim} onPress={onClose} />
-
-      {/* Half-height bottom sheet */}
-      <LinearGradient
-        colors={Colors.gradients.card as [string, string]}
-        style={styles.pickerSheet}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <View style={styles.pickerGrabber} />
+      
+      <View style={styles.pickerSheet}>
+        <View style={styles.pickerHandle} />
         <Text style={styles.pickerTitle}>Choose Category</Text>
 
         <FlatList
           data={CATEGORY_OPTIONS}
           keyExtractor={(item) => item}
           renderItem={({ item }) => (
-            <Pressable style={styles.pickerRow} onPress={() => onSelect(item)}>
-              <Text style={styles.pickerRowText}>{item}</Text>
+            <Pressable style={styles.categoryOption} onPress={() => onSelect(item)}>
+              <Text style={styles.categoryOptionText}>{item}</Text>
             </Pressable>
           )}
-          ItemSeparatorComponent={() => <View style={styles.pickerSep} />}
-          style={{ flexGrow: 0 }}
+          ItemSeparatorComponent={() => <View style={styles.categorySeparator} />}
         />
-      </LinearGradient>
+      </View>
     </SafeAreaView>
   );
 };
@@ -104,199 +95,251 @@ const MenuSection: React.FC<Props> = ({
   };
 
   return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Interactive Menu</Text>
-
-      <View style={styles.headerRow}>
-        <Text style={styles.headerLabel}>Menu Items</Text>
-        <TouchableOpacity style={styles.addMenuItemBtn} onPress={onAddItem}>
-          <Text style={styles.addMenuItemText}>+ Add Item</Text>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.sectionTitle}>Menu</Text>
+        <TouchableOpacity style={styles.addButton} onPress={onAddItem}>
+          <Text style={styles.addButtonText}>+ Add Item</Text>
         </TouchableOpacity>
       </View>
 
-      {items.map((item) => (
-        <View key={item.id} style={styles.menuItemCard}>
-          <LinearGradient
-            colors={Colors.gradients.card as [string, string]}
-            style={styles.menuItemGradient}
-          >
-            <View style={styles.topRow}>
-              <TouchableOpacity
-                style={styles.categorySelector}
-                onPress={() => openCategoryPicker(item.id)}
-              >
-                <Text style={styles.categorySelectorLabel}>Category</Text>
-                <Text style={styles.categorySelectorText}>
-                  {item.category === "Other"
-                    ? item.customCategory || "Other"
-                    : item.category}
-                </Text>
-              </TouchableOpacity>
-              <View style={styles.namePriceRow}>
-                <View style={styles.nameInput}>
-                  <TextField
-                    label="Item Name"
-                    value={item.name}
-                    onChangeText={(value) =>
-                      onUpdateItem(item.id, "name", value)
-                    }
-                    placeholder="e.g. Chicken Wings"
-                  />
-                </View>
-                <View style={styles.priceInput}>
-                  <TextField
-                    label="Price"
-                    value={item.price}
-                    onChangeText={(value) =>
-                      onUpdateItem(item.id, "price", value)
-                    }
-                    placeholder="650"
-                    keyboardType="numeric"
-                  />
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.removeMenuItemBtn}
-                onPress={() => onRemoveItem(item.id)}
-              >
-                <Text style={styles.removeMenuItemText}>×</Text>
-              </TouchableOpacity>
+      {items.length === 0 && (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>No menu items added yet</Text>
+          <Text style={styles.emptyStateSubtext}>Tap &quot;Add Item&quot; to get started</Text>
+        </View>
+      )}
+
+      {items.map((item, index) => (
+        <View key={item.id} style={styles.menuItem}>
+          {/* Item Header */}
+          <View style={styles.itemHeader}>
+            <View style={styles.itemNumber}>
+              <Text style={styles.itemNumberText}>{String(index + 1).padStart(2, '0')}</Text>
             </View>
+            <TouchableOpacity
+              style={styles.removeButton}
+              onPress={() => onRemoveItem(item.id)}
+            >
+              <Text style={styles.removeButtonText}>×</Text>
+            </TouchableOpacity>
+          </View>
 
-            {item.category === "Other" && (
-              <View style={{ marginTop: 12 }}>
-                <TextField
-                  label="Custom Category"
-                  value={item.customCategory || ""}
-                  onChangeText={(value) =>
-                    onUpdateItem(item.id, "customCategory", value)
-                  }
-                  placeholder="Enter category"
-                />
-              </View>
-            )}
+          {/* Category Selection */}
+          <TouchableOpacity
+            style={styles.categoryButton}
+            onPress={() => openCategoryPicker(item.id)}
+          >
+            <Text style={styles.categoryLabel}>CATEGORY</Text>
+            <Text style={styles.categoryValue}>
+              {item.category === "Other"
+                ? item.customCategory || "Other"
+                : item.category}
+            </Text>
+          </TouchableOpacity>
 
+          {/* Custom Category Input */}
+          {item.category === "Other" && (
+            <View style={styles.customCategoryContainer}>
+              <TextField
+                label="Custom Category"
+                value={item.customCategory || ""}
+                onChangeText={(value) =>
+                  onUpdateItem(item.id, "customCategory", value)
+                }
+                placeholder="Enter category name"
+              />
+            </View>
+          )}
+
+          {/* Item Name and Price */}
+          <View style={styles.nameAndPrice}>
+            <View style={styles.nameContainer}>
+              <TextField
+                label="Item Name"
+                value={item.name}
+                onChangeText={(value) => onUpdateItem(item.id, "name", value)}
+                placeholder="Enter item name"
+              />
+            </View>
+            <View style={styles.priceContainer}>
+              <TextField
+                label="Price"
+                value={item.price}
+                onChangeText={(value) => onUpdateItem(item.id, "price", value)}
+                placeholder="₹0"
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+
+          {/* Description */}
+          <View style={styles.descriptionContainer}>
             <TextField
               label="Description"
               value={item.description}
-              onChangeText={(value) =>
-                onUpdateItem(item.id, "description", value)
-              }
-              placeholder="Short description about the item"
+              onChangeText={(value) => onUpdateItem(item.id, "description", value)}
+              placeholder="Brief description of the item"
             />
+          </View>
 
-            <View style={{ marginTop: 12 }}>
-              <ImageUploader
-                label="Item Image"
-                multiple={false}
-                existingUrls={item.itemImage ? [item.itemImage] : []}
-                onUploaded={(urls) =>
-                  onUpdateItem(item.id, "itemImage", urls[0] || "")
-                }
-                squareSize={90}
-                fileNamePrefix={`menu-item-${
-                  item.name
-                    ? item.name.toLowerCase().replace(/\s+/g, "-") + "-"
-                    : ""
-                }`}
-              />
-            </View>
-          </LinearGradient>
+          {/* Image Upload */}
+          <View style={styles.imageContainer}>
+            <Text style={styles.imageLabel}>ITEM IMAGE</Text>
+            <ImageUploader
+              label=""
+              multiple={false}
+              existingUrls={item.itemImage ? [item.itemImage] : []}
+              onUploaded={(urls) =>
+                onUpdateItem(item.id, "itemImage", urls[0] || "")
+              }
+              squareSize={80}
+              fileNamePrefix={`menu-item-${
+                item.name
+                  ? item.name.toLowerCase().replace(/\s+/g, "-") + "-"
+                  : ""
+              }`}
+            />
+          </View>
+
+          {/* Separator Line */}
+          {index < items.length - 1 && <View style={styles.itemSeparator} />}
         </View>
       ))}
 
       {/* Category Picker Modal */}
-      {categoryPickerVisible && (
-        <CategoryPicker
-          visible={categoryPickerVisible}
-          onSelect={selectCategory}
-          onClose={() => setCategoryPickerVisible(false)}
-        />
-      )}
+      <CategoryPicker
+        visible={categoryPickerVisible}
+        onSelect={selectCategory}
+        onClose={() => setCategoryPickerVisible(false)}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  section: { marginBottom: 32 },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: Colors.textPrimary,
-    marginBottom: 24,
-    letterSpacing: 0.5,
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
   },
-  sectionSpacing: { marginBottom: 24 },
-  headerRow: {
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 32,
   },
-  headerLabel: { color: Colors.textPrimary, fontWeight: "700" },
-  addMenuItemBtn: {
-    backgroundColor: Colors.accentYellow,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  addMenuItemText: {
-    color: Colors.button.text,
-    fontSize: 12,
+  sectionTitle: {
+    fontSize: 24,
     fontWeight: "700",
+    color: Colors.textPrimary,
   },
-  menuItemCard: { marginBottom: 16, borderRadius: 16, overflow: "hidden" },
-  menuItemGradient: {
-    padding: 14,
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
-    borderRadius: 16,
+  addButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
-  topRow: { gap: 12, marginBottom: 12 },
-  namePriceRow: { flexDirection: "row", gap: 12 },
-  nameInput: { flex: 3 },
-  priceInput: { flex: 1 },
-  removeMenuItemBtn: {
-    backgroundColor: "rgba(255, 107, 107, 0.2)",
-    borderRadius: 8,
-    width: 28,
-    height: 28,
+  addButtonText: {
+    color: Colors.button.text,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  emptyState: {
     alignItems: "center",
-    justifyContent: "center",
-    alignSelf: "flex-end",
+    paddingVertical: 60,
   },
-  removeMenuItemText: { color: "#FF6B6B", fontSize: 14, fontWeight: "800" },
-  categorySelector: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  categorySelectorLabel: {
+  emptyStateText: {
     color: Colors.textSecondary,
-    fontSize: 11,
+    fontSize: 16,
     marginBottom: 4,
   },
-  categorySelectorText: { color: Colors.textPrimary, fontWeight: "600" },
-  dropdown: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
-    borderRadius: 8,
+  emptyStateSubtext: {
+    color: Colors.textMuted,
+    fontSize: 14,
+  },
+  menuItem: {
+    marginBottom: 40,
+  },
+  itemHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  itemNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  itemNumberText: {
+    color: Colors.button.text,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  removeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.backgroundSecondary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  removeButtonText: {
+    color: Colors.error,
+    fontSize: 18,
+    fontWeight: "300",
+  },
+  categoryButton: {
+    marginBottom: 20,
+  },
+  categoryLabel: {
+    color: Colors.primary,
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  categoryValue: {
+    color: Colors.textPrimary,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  customCategoryContainer: {
+    marginBottom: 20,
+  },
+  nameAndPrice: {
+    flexDirection: "row",
+    gap: 16,
+    marginBottom: 20,
+  },
+  nameContainer: {
+    flex: 2,
+  },
+  priceContainer: {
+    flex: 1,
+  },
+  descriptionContainer: {
+    marginBottom: 20,
+  },
+  imageContainer: {
+    marginBottom: 20,
+  },
+  imageLabel: {
+    color: Colors.primary,
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 1,
     marginBottom: 12,
-    overflow: "hidden",
   },
-  dropdownItem: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderBlue,
+  itemSeparator: {
+    height: 1,
+    backgroundColor: Colors.separator,
+    marginTop: 20,
   },
-  dropdownItemText: { color: Colors.textPrimary },
-  dropdownClose: { padding: 12, alignItems: "center" },
-  dropdownCloseText: { color: Colors.textSecondary, fontWeight: "600" },
-
+  
   // Category Picker Styles
   pickerRoot: {
     position: "absolute",
@@ -304,54 +347,47 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "transparent",
     justifyContent: "flex-end",
     zIndex: 1000,
   },
   pickerScrim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(7,11,20,0.35)",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
   },
   pickerSheet: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 8,
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-    borderTopColor: Colors.borderBlue,
-    borderTopWidth: RNStyleSheet.hairlineWidth,
-    maxHeight: "75%",
+    backgroundColor: Colors.backgroundSecondary,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 40,
+    maxHeight: "70%",
   },
-  pickerGrabber: {
+  pickerHandle: {
     alignSelf: "center",
-    width: 44,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: Colors.borderBlue,
-    marginBottom: 8,
-    opacity: 0.8,
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.textMuted,
+    marginBottom: 20,
   },
   pickerTitle: {
     color: Colors.textPrimary,
     fontSize: 20,
     fontWeight: "700",
-    marginBottom: 12,
+    marginBottom: 24,
   },
-  pickerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
+  categoryOption: {
+    paddingVertical: 16,
   },
-  pickerRowText: {
-    flex: 1,
+  categoryOptionText: {
     color: Colors.textPrimary,
     fontSize: 16,
     fontWeight: "500",
   },
-  pickerSep: {
-    height: RNStyleSheet.hairlineWidth,
-    backgroundColor: Colors.borderBlue,
+  categorySeparator: {
+    height: 1,
+    backgroundColor: Colors.separator,
   },
 });
 

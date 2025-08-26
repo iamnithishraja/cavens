@@ -82,47 +82,49 @@ const EventsTicketingSection: React.FC<Props> = ({
 
   return (
     <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Event Details</Text>
+      
       {events.map((event) => (
         <View key={event.id} style={styles.eventContainer}>
-          <View style={styles.ticketCardHeader}>
-            <Text style={styles.ticketCardTitle}>Event</Text>
-          </View>
-
-          <View style={styles.eventBasicInfo}>
+          
+          <View style={styles.inputSpacing}>
             <TextField
               label="Event Name"
               value={event.name}
               onChangeText={(value) => onUpdateEvent(event.id, "name", value)}
               placeholder="e.g. Saturday Night Vibes, DJ Nucleya Live"
             />
+          </View>
 
-            <View style={styles.ticketRow}>
-              <TouchableOpacity
-                style={[styles.ticketInput, styles.pickerField]}
-                onPress={() => {
-                  setTempDate(parseDateString(event.date));
-                  setDatePickerFor(event.id);
-                }}
-              >
-                <Text style={styles.pickerLabel}>Date</Text>
-                <Text style={styles.pickerValue}>
-                  {event.date || "Pick a date"}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.ticketInput, styles.pickerField]}
-                onPress={() => {
-                  setTempTime(parseTimeString(event.time));
-                  setTimePickerFor({ id: event.id, kind: "time" });
-                }}
-              >
-                <Text style={styles.pickerLabel}>Time</Text>
-                <Text style={styles.pickerValue}>
-                  {event.time || "Pick time"}
-                </Text>
-              </TouchableOpacity>
-            </View>
+          <View style={styles.dateTimeRow}>
+            <TouchableOpacity
+              style={[styles.dateTimeInput, styles.pickerField]}
+              onPress={() => {
+                setTempDate(parseDateString(event.date));
+                setDatePickerFor(event.id);
+              }}
+            >
+              <Text style={styles.pickerLabel}>Date</Text>
+              <Text style={styles.pickerValue}>
+                {event.date || "Pick a date"}
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.dateTimeInput, styles.pickerField]}
+              onPress={() => {
+                setTempTime(parseTimeString(event.time));
+                setTimePickerFor({ id: event.id, kind: "time" });
+              }}
+            >
+              <Text style={styles.pickerLabel}>Time</Text>
+              <Text style={styles.pickerValue}>
+                {event.time || "Pick time"}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
+          <View style={styles.inputSpacing}>
             <TextField
               label="Performing DJs / Artists"
               value={event.djArtists}
@@ -131,7 +133,9 @@ const EventsTicketingSection: React.FC<Props> = ({
               }
               placeholder="DJ Nucleya, DJ Chetas, Local Artists"
             />
+          </View>
 
+          <View style={styles.inputSpacing}>
             <TextArea
               label="Event Description"
               value={event.description}
@@ -140,38 +144,38 @@ const EventsTicketingSection: React.FC<Props> = ({
               }
               placeholder="Join us for an electrifying night of house and techno beats..."
             />
-
-            <View style={styles.eventImageUpload}>
-              <ImageUploader
-                label="Event Cover Image"
-                multiple={false}
-                onUploaded={(urls) =>
-                  onUpdateEvent(event.id, "coverImage", urls[0] || null)
-                }
-                existingUrls={event.coverImage ? [event.coverImage] : []}
-                fullWidth
-                aspectRatio={16 / 9}
-              />
-            </View>
           </View>
 
-          <View style={styles.eventTicketsSection}>
-            <View style={styles.eventTicketsHeader}>
-              <Text style={styles.eventTicketsTitle}>
-                Ticket Types for this Event
-              </Text>
+          <View style={styles.inputSpacing}>
+            <ImageUploader
+              label="Event Cover Image"
+              multiple={false}
+              onUploaded={(urls) =>
+                onUpdateEvent(event.id, "coverImage", urls[0] || null)
+              }
+              existingUrls={event.coverImage ? [event.coverImage] : []}
+              fullWidth
+              aspectRatio={16 / 9}
+            />
+          </View>
+
+          {/* Tickets Section */}
+          <View style={styles.ticketsSection}>
+            <View style={styles.ticketsHeader}>
+              <Text style={styles.ticketsTitle}>Ticket Types</Text>
               <TouchableOpacity
-                style={styles.addEventTicketBtn}
+                style={styles.addTicketBtn}
                 onPress={() => onAddTicket(event.id)}
+                activeOpacity={0.7}
               >
-                <Text style={styles.addEventTicketText}>+ Ticket</Text>
+                <Text style={styles.addTicketText}>+ Add Ticket</Text>
               </TouchableOpacity>
             </View>
 
             {event.ticketTypes.map((ticket) => (
-              <View key={ticket.id} style={styles.eventTicketItem}>
-                <View style={styles.eventTicketRow}>
-                  <View style={styles.eventTicketInput}>
+              <View key={ticket.id} style={styles.ticketItem}>
+                <View style={styles.ticketRow}>
+                  <View style={styles.ticketInputFlex}>
                     <TextField
                       label="Type"
                       value={ticket.name}
@@ -181,7 +185,7 @@ const EventsTicketingSection: React.FC<Props> = ({
                       placeholder="General"
                     />
                   </View>
-                  <View style={styles.eventTicketInput}>
+                  <View style={styles.ticketInputFlex}>
                     <TextField
                       label="Price"
                       value={ticket.price}
@@ -193,14 +197,16 @@ const EventsTicketingSection: React.FC<Props> = ({
                     />
                   </View>
                   <TouchableOpacity
-                    style={styles.removeEventTicketBtn}
+                    style={styles.removeTicketBtn}
                     onPress={() => onRemoveTicket(event.id, ticket.id)}
+                    activeOpacity={0.7}
                   >
-                    <Text style={styles.removeEventTicketBtnText}>×</Text>
+                    <Text style={styles.removeTicketText}>×</Text>
                   </TouchableOpacity>
                 </View>
-                <View style={styles.eventTicketRow}>
-                  <View style={styles.eventTicketInput}>
+                
+                <View style={styles.ticketQuantityRow}>
+                  <View style={styles.ticketInputHalf}>
                     <TextField
                       label="Quantity"
                       value={ticket.quantity}
@@ -212,7 +218,8 @@ const EventsTicketingSection: React.FC<Props> = ({
                     />
                   </View>
                 </View>
-                <View style={styles.eventTicketDescription}>
+                
+                <View style={styles.inputSpacing}>
                   <TextArea
                     label="Description"
                     value={ticket.description}
@@ -228,6 +235,7 @@ const EventsTicketingSection: React.FC<Props> = ({
         </View>
       ))}
 
+      {/* Date Picker Modal */}
       {datePickerFor && (
         <View style={styles.pickerOverlay}>
           <View style={styles.pickerContainer}>
@@ -251,22 +259,22 @@ const EventsTicketingSection: React.FC<Props> = ({
                 }}
               />
             </View>
-            <View style={styles.pickerButtonsRow}>
-              <TouchableOpacity
-                onPress={() => {
-                  const commit = tempDate || new Date();
-                  onUpdateEvent(datePickerFor, "date", formatDate(commit));
-                  setDatePickerFor(null);
-                  setTempDate(null);
-                }}
-                style={styles.pickerSaveBtn}
-              >
-                <Text style={styles.pickerSaveText}>Save</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              onPress={() => {
+                const commit = tempDate || new Date();
+                onUpdateEvent(datePickerFor, "date", formatDate(commit));
+                setDatePickerFor(null);
+                setTempDate(null);
+              }}
+              style={styles.pickerSaveBtn}
+            >
+              <Text style={styles.pickerSaveText}>Save</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
+
+      {/* Time Picker Modal */}
       {timePickerFor && (
         <View style={styles.pickerOverlay}>
           <View style={styles.pickerContainer}>
@@ -291,19 +299,17 @@ const EventsTicketingSection: React.FC<Props> = ({
                 }}
               />
             </View>
-            <View style={styles.pickerButtonsRow}>
-              <TouchableOpacity
-                onPress={() => {
-                  const commit = tempTime || new Date();
-                  onUpdateEvent(timePickerFor.id, "time", formatTime(commit));
-                  setTimePickerFor(null);
-                  setTempTime(null);
-                }}
-                style={styles.pickerSaveBtn}
-              >
-                <Text style={styles.pickerSaveText}>Save</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              onPress={() => {
+                const commit = tempTime || new Date();
+                onUpdateEvent(timePickerFor.id, "time", formatTime(commit));
+                setTimePickerFor(null);
+                setTempTime(null);
+              }}
+              style={styles.pickerSaveBtn}
+            >
+              <Text style={styles.pickerSaveText}>Save</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -313,270 +319,155 @@ const EventsTicketingSection: React.FC<Props> = ({
 
 const styles = StyleSheet.create({
   section: {
-    marginBottom: 32,
-  },
-  eventContainer: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "800",
+    fontSize: 18,
     color: Colors.textPrimary,
-    marginBottom: 24,
-    letterSpacing: 0.5,
-  },
-  sectionSpacing: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 12,
-    color: Colors.textSecondary,
     fontWeight: "600",
-    marginBottom: 12,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    marginBottom: 16,
+    letterSpacing: 0.3,
   },
-  ticketHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  eventContainer: {
     marginBottom: 16,
   },
-  addTicketBtn: {
-    borderRadius: 12,
-  },
-  addTicketGradient: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  addTicketText: {
-    color: Colors.button.text,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  eventCard: {
-    marginBottom: 20,
-    borderRadius: 16,
-    overflow: "hidden",
-  },
-  eventCardGradient: {
-    padding: 20,
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
-    borderRadius: 16,
-  },
-  ticketCardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  inputSpacing: {
     marginBottom: 16,
   },
-  ticketCardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: Colors.textPrimary,
-  },
-  removeTicketBtn: {
-    backgroundColor: "rgba(255, 107, 107, 0.2)",
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  removeTicketText: {
-    color: "#FF6B6B",
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  eventBasicInfo: {
-    gap: 16,
-    marginBottom: 20,
-  },
-  ticketRow: {
+  dateTimeRow: {
     flexDirection: "row",
     gap: 12,
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  ticketInput: {
+  dateTimeInput: {
     flex: 1,
-  },
-  eventImageUpload: {
-    marginTop: 8,
-  },
-  eventTicketsSection: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.borderBlue,
-    paddingTop: 16,
-  },
-  eventTicketsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  eventTicketsTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: Colors.textPrimary,
-  },
-  addEventTicketBtn: {
-    backgroundColor: Colors.surface,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
-  },
-  addEventTicketText: {
-    color: Colors.accentBlue,
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  eventTicketItem: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
-  },
-  eventTicketRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 8,
-    alignItems: "flex-start",
-  },
-  eventTicketInput: {
-    flex: 1,
-  },
-  removeEventTicketBtn: {
-    backgroundColor: "rgba(255, 107, 107, 0.2)",
-    borderRadius: 8,
-    width: 28,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 16,
-  },
-  removeEventTicketBtnText: {
-    color: "#FF6B6B",
-    fontSize: 14,
-    fontWeight: "800",
   },
   pickerField: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
+    backgroundColor: Colors.backgroundSecondary,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 14,
     minHeight: 56,
   },
-  pickerLabel: { color: Colors.textSecondary, fontSize: 12, marginBottom: 4 },
-  pickerValue: { color: Colors.textPrimary, fontWeight: "700" },
-  eventTicketDescription: {
-    marginTop: 8,
+  pickerLabel: {
+    color: Colors.textSecondary,
+    fontSize: 12,
+    marginBottom: 4,
+    fontWeight: "500",
   },
+  pickerValue: {
+    color: Colors.textPrimary,
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  
+  // Tickets Section
+  ticketsSection: {
+    marginTop: 24,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.separator,
+  },
+  ticketsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  ticketsTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+  },
+  addTicketBtn: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  addTicketText: {
+    color: Colors.button.text,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  ticketItem: {
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  ticketRow: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  ticketInputFlex: {
+    flex: 1,
+  },
+  ticketQuantityRow: {
+    flexDirection: "row",
+    marginBottom: 12,
+  },
+  ticketInputHalf: {
+    flex: 0.5,
+  },
+  removeTicketBtn: {
+    backgroundColor: Colors.error + "20",
+    borderRadius: 8,
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 16,
+  },
+  removeTicketText: {
+    color: Colors.error,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  
+  // Picker Modal
   pickerOverlay: {
     position: "absolute",
     top: 0,
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.6)",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 1000,
   },
-  pickerWheelContainer: {
-    width: "100%",
-    alignSelf: "center",
-  },
-  pickerWheel: {
-    width: "100%",
+  pickerContainer: {
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: 16,
     padding: 20,
+    margin: 20,
+    minWidth: 280,
+    alignItems: "center",
   },
   pickerTitle: {
     color: Colors.textPrimary,
-    fontWeight: "800",
-    fontSize: 16,
-    marginBottom: 8,
+    fontWeight: "600",
+    fontSize: 18,
+    marginBottom: 16,
   },
-  pickerCloseBtn: {
-    alignSelf: "flex-end",
-    marginTop: 8,
-    backgroundColor: Colors.accentBlue,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  pickerCloseText: {
-    color: Colors.button.text,
-    fontWeight: "700",
-  },
-  pickerButtonsRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: 8,
+  pickerWheelContainer: {
+    width: "100%",
+    alignItems: "center",
+    marginBottom: 16,
   },
   pickerSaveBtn: {
-    backgroundColor: Colors.accentBlue,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
   },
   pickerSaveText: {
     color: Colors.button.text,
-    fontWeight: "800",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  modalContent: {
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
-    padding: 24,
-    margin: 20,
-    width: '85%',
-    maxHeight: '70%',
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
-  },
-  
-  pickerHeader: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  
-  pickerContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 200,
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
-    padding: 12,
-  },
-  
-  saveButtonContainer: {
-    marginTop: 20,
-    alignItems: 'flex-end',
-  },
-  
-  saveButton: {
-    backgroundColor: Colors.accentBlue,
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 12,
+    fontWeight: "600",
+    fontSize: 16,
   },
 });
 
