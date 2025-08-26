@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -14,20 +14,20 @@ import {
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import apiClient from "@/app/api/client";
-import { useRouter, useLocalSearchParams } from "expo-router";
 import { Country, DEFAULT_COUNTRY } from "@/constants/country";
 import BrandHeader from "@/components/common/BrandHeader";
 import OtpScreen from "@/components/OtpScreen";
 import { LinearGradient } from 'expo-linear-gradient';
+import CountryPickerModal from "@/components/ui/CountryPickerModal";
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
 const Auth = () => {
-  const router = useRouter();
-  useLocalSearchParams<{ code?: string; dialCode?: string; flag?: string }>();
+  
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [country] = useState<Country>(DEFAULT_COUNTRY);
+  const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
   const [countryQuery] = useState("");
+  const [showCountryModal, setShowCountryModal] = useState(false);
   const [showOtpScreen, setShowOtpScreen] = useState(false);
 
 
@@ -69,21 +69,21 @@ const Auth = () => {
         style={styles.keyboardContainer} 
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        {/* Brand Header */}
-        <View style={styles.headerSection}>
-          <BrandHeader />
-          
-          {/* Decorative Line */}
-          <LinearGradient
-            colors={[Colors.primary, Colors.primaryDark, Colors.primary]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.decorativeLine}
-          />
-        </View>
+        {/* Brand Header (hidden on OTP) */}
+        {!showOtpScreen && (
+          <View style={styles.headerSection}>
+            <BrandHeader />
+            <LinearGradient
+              colors={[Colors.primary, Colors.primaryDark, Colors.primary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.decorativeLine}
+            />
+          </View>
+        )}
 
         {/* Main Content */}
-        <View style={styles.contentContainer}>
+        <View style={showOtpScreen ? styles.contentContainerOtp : styles.contentContainer}>
           {showOtpScreen ? (
             <OtpScreen phoneNumber={phoneNumber} onBack={() => setShowOtpScreen(false)} />
           ) : (
@@ -104,7 +104,7 @@ const Auth = () => {
                 <View style={styles.phoneContainer}>
                   <Pressable
                     style={styles.countrySelector}
-                    onPress={() => router.push({ pathname: "../auth/country", params: { q: countryQuery } })}
+                    onPress={() => setShowCountryModal(true)}
                   >
                     <LinearGradient
                       colors={[Colors.backgroundSecondary, Colors.backgroundTertiary]}
@@ -141,7 +141,7 @@ const Auth = () => {
                 activeOpacity={0.8}
               >
                 <LinearGradient
-                  colors={Colors.gradients.button}
+                  colors={Colors.gradients.button as [string, string]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.buttonGradient}
@@ -161,31 +161,41 @@ const Auth = () => {
           )}
         </View>
 
-        {/* Bottom Terms Section */}
-        <View style={styles.bottomSection}>
-          <LinearGradient
-            colors={[Colors.primary, 'transparent', Colors.primary]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.divider}
-          />
-          
-          <Text style={styles.termsIntro}>By continuing, you agree to our</Text>
-          <View style={styles.termsLinks}>
-            <Pressable onPress={() => openLink("https://example.com/terms")} style={styles.termsPressable}> 
-              <Text style={styles.termsLink}>Terms of Service</Text>
-            </Pressable>
-            <View style={styles.termsDot} />
-            <Pressable onPress={() => openLink("https://example.com/privacy")} style={styles.termsPressable}> 
-              <Text style={styles.termsLink}>Privacy Policy</Text>
-            </Pressable>
-            <View style={styles.termsDot} />
-            <Pressable onPress={() => openLink("https://example.com/content-policies")} style={styles.termsPressable}>
-              <Text style={styles.termsLink}>Content Policies</Text>
-            </Pressable>
+        {/* Bottom Terms Section (hidden on OTP) */}
+        {!showOtpScreen && (
+          <View style={styles.bottomSection}>
+            <LinearGradient
+              colors={[Colors.primary, 'transparent', Colors.primary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.divider}
+            />
+            <Text style={styles.termsIntro}>By continuing, you agree to our</Text>
+            <View style={styles.termsLinks}>
+              <Pressable onPress={() => openLink("https://example.com/terms")} style={styles.termsPressable}> 
+                <Text style={styles.termsLink}>Terms of Service</Text>
+              </Pressable>
+              <View style={styles.termsDot} />
+              <Pressable onPress={() => openLink("https://example.com/privacy")} style={styles.termsPressable}> 
+                <Text style={styles.termsLink}>Privacy Policy</Text>
+              </Pressable>
+              <View style={styles.termsDot} />
+              <Pressable onPress={() => openLink("https://example.com/content-policies")} style={styles.termsPressable}>
+                <Text style={styles.termsLink}>Content Policies</Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
+        )}
       </KeyboardAvoidingView>
+      <CountryPickerModal
+        visible={showCountryModal}
+        onClose={() => setShowCountryModal(false)}
+        onSelect={(c) => {
+          setCountry(c);
+          setShowCountryModal(false);
+        }}
+        initialQuery={countryQuery}
+      />
     </View>
   );
 };
@@ -223,6 +233,10 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     paddingHorizontal: 24,
+    justifyContent: 'center',
+  },
+  contentContainerOtp: {
+    flex: 1,
     justifyContent: 'center',
   },
   authContent: {
