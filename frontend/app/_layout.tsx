@@ -6,6 +6,8 @@ import { store } from "@/utils";
 import Background from "@/components/common/Background";
 import { AppState } from "react-native";
 import Auth from "./auth/Auth";
+import ProfileScreen from "./profile";
+import OtpScreen from "@/components/OtpScreen";
 
 // Global flag to force user role re-check
 let forceUserCheck = false;
