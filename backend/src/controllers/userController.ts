@@ -1,3 +1,5 @@
+import clubModel from "../models/clubModel.js";
+import axios from "axios";
 import User from "../models/userModel";
 import {
   onbooardingSchema,
@@ -11,6 +13,8 @@ import { generateToken } from "../utils/token";
 import { completeProfileSchema } from "../schemas/onboardingSchema";
 import type { CustomRequest } from "../types";
 import Club from "../models/clubModel";
+import eventModel from "../models/eventModel";
+import { haversineDistance, extractLatLonFromLongUrl, resolveShortUrl } from "../utils/geoLocation";
 
 async function onboarding(req: Request, res: Response) {
   try {
@@ -286,4 +290,66 @@ const switchToClub = async (req: CustomRequest, res: Response): Promise<void> =>
   }
 };
 
-export { onboarding, verifyOtp, completeProfile, switchToClub };
+
+
+const getNearbyEvents = async (req:CustomRequest, res:Response) => {
+  try {
+    const { latitude, longitude } = req.body;
+
+    if (!latitude || !longitude) {
+       res.status(400).json({ message: "Latitude and longitude required" });
+       return;
+    }
+
+    // get clubs with events
+    const clubs = await clubModel.find({ events: { $exists: true, $not: { $size: 0 } } })
+      .populate("events");
+
+    const results = [];
+
+    for (const club of clubs) {
+      let mapUrl = club.mapLink;
+      let coords = null;
+
+      // check if it's a short url
+      if (mapUrl.includes("goo.gl") || mapUrl.includes("maps.app.goo.gl")) {
+        const resolved = await resolveShortUrl(mapUrl);
+        if (resolved) {
+          coords = extractLatLonFromLongUrl(resolved);
+        }
+      } else {
+        coords = extractLatLonFromLongUrl(mapUrl);
+      }
+
+      if (!coords) continue;
+
+      const distance = haversineDistance(
+        latitude,
+        longitude,
+        coords.lat,
+        coords.lon
+      );
+
+      results.push({
+        club,
+        distanceInMeters: distance,
+      });
+    }
+
+    // sort by distance
+    results.sort((a, b) => a.distanceInMeters - b.distanceInMeters);
+
+     res.json({
+      userLocation: { latitude, longitude },
+      clubs: results,
+    });
+    return;
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+    return;
+  }
+};
+
+
+export { onboarding, verifyOtp, completeProfile, switchToClub, getNearbyEvents };
