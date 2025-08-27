@@ -71,10 +71,13 @@ const OtpScreen = ({
   
         if (!isProfileComplete) {
           router.replace("/profile");
-        } else if (role === "admin") {
-          router.replace("/adminTabs");
+        } else if (role === "club" || role === "admin") {
+          router.replace("/(tabs)/adminTabs");
+        } else if (role === "user") {
+          router.replace("/(tabs)/userTabs");
         } else {
-          router.replace("/userTabs");
+          // Default fallback
+          router.replace("/(tabs)/userTabs");
         }
       } else {
         Alert.alert("Error", res.data.message || "Invalid OTP");
