@@ -33,15 +33,27 @@ interface Event {
     name: string;
     price: number;
     description: string;
+    quantityAvailable?: number;
   }>;
   venue?: string;
   galleryPhotos?: string[];
+  promoVideos?: string[];
   happyHourTimings?: string;
   menuItems?: Array<{
+    _id: string;
     name: string;
     price: number;
     description: string;
+    category?: string;
+    itemImage?: string;
   }>;
+  guestExperience?: {
+    dressCode?: string;
+    entryRules?: string;
+    tableLayoutMap?: string;
+    parkingInfo?: string;
+    accessibilityInfo?: string;
+  };
 }
 
 export default function EventDetailsScreen() {
@@ -61,10 +73,8 @@ export default function EventDetailsScreen() {
   const fetchEventDetails = async () => {
     try {
       setLoading(true);
-      
-      console.log(eventId);
       const response = await apiClient.get(`/api/event/event/${eventId}`);
-      console.log(response.data.data);
+      console.log(response.data);
 
 
       if (response.data.success) {
@@ -263,12 +273,23 @@ export default function EventDetailsScreen() {
                 <Text style={styles.sectionTitle}>Menu Items</Text>
                 <View style={styles.menuContainer}>
                   {event.menuItems.map((item, index) => (
-                    <View key={index} style={styles.menuCard}>
+                    <View key={item._id || index} style={styles.menuCard}>
                       <View style={styles.menuInfo}>
                         <Text style={styles.menuName}>{item.name}</Text>
                         <Text style={styles.menuDescription}>{item.description}</Text>
+                        {item.category && (
+                          <Text style={styles.menuCategory}>{item.category}</Text>
+                        )}
                       </View>
-                      <Text style={styles.menuPrice}>AED {item.price}</Text>
+                      <View style={styles.menuRight}>
+                        {item.itemImage && (
+                          <Image 
+                            source={{ uri: item.itemImage }}
+                            style={styles.menuItemImage}
+                          />
+                        )}
+                        <Text style={styles.menuPrice}>AED {item.price}</Text>
+                      </View>
                     </View>
                   ))}
                 </View>
@@ -295,6 +316,70 @@ export default function EventDetailsScreen() {
               </View>
             )}
 
+            {/* Promo Videos */}
+            {event.promoVideos && event.promoVideos.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Promo Videos</Text>
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.galleryContainer}
+                >
+                  {event.promoVideos.map((video, index) => (
+                    <View key={index} style={styles.videoContainer}>
+                      <Ionicons name="play-circle" size={48} color={Colors.primary} />
+                      <Text style={styles.videoText}>Video {index + 1}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Guest Experience */}
+            {event.guestExperience && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Guest Experience</Text>
+                
+                {event.guestExperience.dressCode && (
+                  <View style={styles.guestInfoCard}>
+                    <Text style={styles.guestInfoTitle}>Dress Code</Text>
+                    <Text style={styles.guestInfoContent}>{event.guestExperience.dressCode}</Text>
+                  </View>
+                )}
+
+                {event.guestExperience.entryRules && (
+                  <View style={styles.guestInfoCard}>
+                    <Text style={styles.guestInfoTitle}>Entry Rules</Text>
+                    <Text style={styles.guestInfoContent}>{event.guestExperience.entryRules}</Text>
+                  </View>
+                )}
+
+                {event.guestExperience.parkingInfo && (
+                  <View style={styles.guestInfoCard}>
+                    <Text style={styles.guestInfoTitle}>Parking Information</Text>
+                    <Text style={styles.guestInfoContent}>{event.guestExperience.parkingInfo}</Text>
+                  </View>
+                )}
+
+                {event.guestExperience.accessibilityInfo && (
+                  <View style={styles.guestInfoCard}>
+                    <Text style={styles.guestInfoTitle}>Accessibility</Text>
+                    <Text style={styles.guestInfoContent}>{event.guestExperience.accessibilityInfo}</Text>
+                  </View>
+                )}
+
+                {event.guestExperience.tableLayoutMap && (
+                  <View style={styles.guestInfoCard}>
+                    <Text style={styles.guestInfoTitle}>Table Layout</Text>
+                    <Image 
+                      source={{ uri: event.guestExperience.tableLayoutMap }}
+                      style={styles.tableLayoutImage}
+                    />
+                  </View>
+                )}
+              </View>
+            )}
+
             {/* Tickets */}
             {event.tickets && event.tickets.length > 0 && (
               <View style={styles.section}>
@@ -305,6 +390,11 @@ export default function EventDetailsScreen() {
                       <View style={styles.ticketInfo}>
                         <Text style={styles.ticketName}>{ticket.name}</Text>
                         <Text style={styles.ticketDescription}>{ticket.description}</Text>
+                        {ticket.quantityAvailable !== undefined && (
+                          <Text style={styles.ticketQuantity}>
+                            Available: {ticket.quantityAvailable} tickets
+                          </Text>
+                        )}
                       </View>
                       <Text style={styles.ticketPrice}>AED {ticket.price}</Text>
                     </View>
@@ -470,6 +560,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
   },
+  ticketQuantity: {
+    fontSize: 12,
+    color: Colors.primary,
+    fontWeight: '500',
+    marginTop: 4,
+  },
   ticketPrice: {
     fontSize: 18,
     fontWeight: '700',
@@ -539,5 +635,63 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 12,
     resizeMode: 'cover',
+  },
+  menuCategory: {
+    fontSize: 12,
+    color: Colors.primary,
+    fontWeight: '500',
+    marginTop: 4,
+  },
+  menuRight: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  menuItemImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    resizeMode: 'cover',
+  },
+  videoContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    marginRight: 12,
+    backgroundColor: Colors.backgroundSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.withOpacity.white10,
+  },
+  videoText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 4,
+  },
+  guestInfoCard: {
+    backgroundColor: Colors.backgroundSecondary,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Colors.withOpacity.white10,
+  },
+  guestInfoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: 8,
+  },
+  guestInfoContent: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+  tableLayoutImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    resizeMode: 'cover',
+    marginTop: 8,
   },
 });
