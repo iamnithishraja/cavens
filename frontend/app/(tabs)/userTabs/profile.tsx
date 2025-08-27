@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Dimensions, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Dimensions, ScrollView, StatusBar, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
 import { useRouter } from 'expo-router';
@@ -29,7 +29,7 @@ interface ProfileData {
   clubStatus: 'approved' | 'pending' | null;
 }
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function ProfileScreen() {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
@@ -277,47 +277,57 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <LinearGradient
-        colors={Colors.gradients.background as [string, string]}
-        style={styles.container}
-      >
-        <View style={[styles.content, styles.centered]}>
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        
+        {/* Subtle Pattern Overlay */}
+        <View style={styles.patternOverlay}>
           <LinearGradient
-            colors={Colors.gradients.blueGlow as [string, string]}
-            style={styles.loadingContainer}
-          >
-            <ActivityIndicator size="large" color={Colors.accentYellow} />
-            <Text style={styles.loadingText}>Loading profile...</Text>
-          </LinearGradient>
+            colors={['rgba(43, 44, 20, 0.5)', 'transparent', 'transparent']}
+            locations={[0.1, 0.3, 1]}
+            style={styles.topGlow}
+          />
         </View>
-      </LinearGradient>
+
+        <View style={[styles.content, styles.centered]}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={styles.loadingText}>Loading profile...</Text>
+          </View>
+        </View>
+      </View>
     );
   }
 
   if (!profileData) {
     return (
-      <LinearGradient
-        colors={Colors.gradients.background as [string, string]}
-        style={styles.container}
-      >
-        <View style={[styles.content, styles.centered]}>
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        
+        {/* Subtle Pattern Overlay */}
+        <View style={styles.patternOverlay}>
           <LinearGradient
-            colors={Colors.gradients.card as [string, string]}
-            style={styles.errorContainer}
-          >
-            <Ionicons name="alert-circle-outline" size={48} color="#FF6B6B" />
+            colors={['rgba(43, 44, 20, 0.5)', 'transparent', 'transparent']}
+            locations={[0.1, 0.3, 1]}
+            style={styles.topGlow}
+          />
+        </View>
+
+        <View style={[styles.content, styles.centered]}>
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={48} color={Colors.error} />
             <Text style={styles.errorText}>Failed to load profile data</Text>
             <TouchableOpacity style={styles.retryButton} onPress={fetchUserProfile}>
               <LinearGradient
-                colors={[Colors.accentYellow, "#F7C84A"]}
+                colors={Colors.gradients.button as [string, string]}
                 style={styles.retryGradient}
               >
                 <Text style={styles.retryButtonText}>Retry</Text>
               </LinearGradient>
             </TouchableOpacity>
-          </LinearGradient>
+          </View>
         </View>
-      </LinearGradient>
+      </View>
     );
   }
 
@@ -326,57 +336,49 @@ export default function ProfileScreen() {
   // If user is a club user, show club management interface
   if (user?.role === 'club') {
     return (
-      <LinearGradient
-        colors={Colors.gradients.background as [string, string]}
-        style={styles.container}
-      >
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        
+        {/* Subtle Pattern Overlay */}
+        <View style={styles.patternOverlay}>
+          <LinearGradient
+            colors={['rgba(43, 44, 20, 0.5)', 'transparent', 'transparent']}
+            locations={[0.1, 0.3, 1]}
+            style={styles.topGlow}
+          />
+        </View>
+
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.content}>
             {/* Profile Header Section */}
             <View style={styles.profileHeader}>
-              <LinearGradient
-                colors={Colors.gradients.blueGlow as [string, string]}
-                style={styles.profilePictureContainer}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <View style={styles.profilePicture}>
-                  <Text style={styles.profileInitial}>
-                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                  </Text>
-                </View>
-              </LinearGradient>
+              <View style={styles.profilePictureContainer}>
+                <LinearGradient
+                  colors={[Colors.primary, Colors.primaryDark]}
+                  style={styles.profilePictureGradient}
+                >
+                  <View style={styles.profilePicture}>
+                    <Text style={styles.profileInitial}>
+                      {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </Text>
+                  </View>
+                </LinearGradient>
+              </View>
               
               <Text style={styles.userName}>{user?.name || 'User'}</Text>
               <Text style={styles.userEmail}>{user?.email || 'No email'}</Text>
-              <View style={styles.roleBadge}>
-                <LinearGradient
-                  colors={[Colors.accentYellow, "#F7C84A"]}
-                  style={styles.roleBadgeGradient}
-                >
-                  <Ionicons name="business" size={14} color={Colors.button.text} />
-                  <Text style={styles.roleBadgeText}>Club Manager</Text>
-                </LinearGradient>
+              
+              <View style={styles.roleBadgeContainer}>
+                <View style={styles.roleDot} />
+                <Text style={styles.roleBadgeText}>Club Manager</Text>
               </View>
             </View>
 
             {/* Club Status Card */}
-            <LinearGradient
-              colors={Colors.gradients.card as [string, string]}
-              style={styles.clubStatusCard}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <LinearGradient
-                colors={Colors.gradients.blueGlow as [string, string]}
-                style={styles.glowOverlay}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0.3 }}
-              />
-              
+            <View style={styles.clubStatusCard}>
               <View style={styles.clubStatusContent}>
                 <View style={styles.clubStatusHeader}>
-                  <Ionicons name="business" size={20} color={Colors.accentBlue} />
+                  <Ionicons name="business" size={20} color={Colors.primary} />
                   <Text style={styles.clubStatusTitle}>Club Management</Text>
                 </View>
                 <Text style={styles.subtitle}>You are currently in club mode</Text>
@@ -384,128 +386,110 @@ export default function ProfileScreen() {
                 {club && (
                   <View style={styles.clubDetails}>
                     <Text style={styles.clubName}>{club.name}</Text>
-                    <View style={styles.approvedBadge}>
-                      <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
+                    <View style={styles.approvedBadgeContainer}>
+                      <View style={styles.approvedDot} />
                       <Text style={styles.statusText}>Active & Approved</Text>
                     </View>
                   </View>
                 )}
               </View>
-            </LinearGradient>
+            </View>
 
             {/* Account Actions */}
             <View style={styles.accountActions}>
               <TouchableOpacity style={styles.actionButton} onPress={handlePrivacyPolicy}>
-                <LinearGradient
-                  colors={Colors.gradients.card as [string, string]}
-                  style={styles.actionButtonGradient}
-                >
+                <View style={styles.actionButtonContent}>
                   <Ionicons name="shield-checkmark-outline" size={20} color={Colors.textPrimary} />
                   <Text style={styles.actionButtonText}>Privacy Policy</Text>
                   <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
               
               <TouchableOpacity style={styles.actionButton} onPress={handleDeleteAccount}>
-                <LinearGradient
-                  colors={['rgba(255, 107, 107, 0.1)', 'rgba(255, 107, 107, 0.05)']}
-                  style={styles.actionButtonGradient}
-                >
-                  <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
-                  <Text style={[styles.actionButtonText, { color: '#FF6B6B' }]}>Delete Account</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#FF6B6B" />
-                </LinearGradient>
+                <View style={styles.actionButtonContent}>
+                  <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                  <Text style={[styles.actionButtonText, { color: Colors.error }]}>Delete Account</Text>
+                  <Ionicons name="chevron-forward" size={16} color={Colors.error} />
+                </View>
               </TouchableOpacity>
               
               <TouchableOpacity style={styles.actionButton} onPress={handleLogout}>
-                <LinearGradient
-                  colors={['rgba(255, 107, 107, 0.1)', 'rgba(255, 107, 107, 0.05)']}
-                  style={styles.actionButtonGradient}
-                >
-                  <Ionicons name="log-out-outline" size={20} color="#FF6B6B" />
-                  <Text style={[styles.actionButtonText, { color: '#FF6B6B' }]}>Logout</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#FF6B6B" />
-                </LinearGradient>
+                <View style={styles.actionButtonContent}>
+                  <Ionicons name="log-out-outline" size={20} color={Colors.error} />
+                  <Text style={[styles.actionButtonText, { color: Colors.error }]}>Logout</Text>
+                  <Ionicons name="chevron-forward" size={16} color={Colors.error} />
+                </View>
               </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
-      </LinearGradient>
+      </View>
     );
   }
 
   // Normal user profile
   return (
-    <LinearGradient
-      colors={Colors.gradients.background as [string, string]}
-      style={styles.container}
-    >
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      
+      {/* Subtle Pattern Overlay */}
+      <View style={styles.patternOverlay}>
+        <LinearGradient
+          colors={['rgba(43, 44, 20, 0.5)', 'transparent', 'transparent']}
+          locations={[0.1, 0.3, 1]}
+          style={styles.topGlow}
+        />
+      </View>
+
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           {/* Profile Header Section */}
           <View style={styles.profileHeader}>
-            <LinearGradient
-              colors={Colors.gradients.blueGlow as [string, string]}
-              style={styles.profilePictureContainer}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <View style={styles.profilePicture}>
-                <Text style={styles.profileInitial}>
-                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                </Text>
-              </View>
-            </LinearGradient>
+            <View style={styles.profilePictureContainer}>
+              <LinearGradient
+                colors={[Colors.primary, Colors.primaryDark]}
+                style={styles.profilePictureGradient}
+              >
+                <View style={styles.profilePicture}>
+                  <Text style={styles.profileInitial}>
+                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                  </Text>
+                </View>
+              </LinearGradient>
+            </View>
             
             <Text style={styles.userName}>{user?.name || 'User'}</Text>
             <Text style={styles.userEmail}>{user?.email || 'No email'}</Text>
-            <View style={styles.roleBadge}>
-              <LinearGradient
-                colors={['rgba(78, 162, 255, 0.3)', 'rgba(78, 162, 255, 0.1)']}
-                style={styles.roleBadgeGradient}
-              >
-                <Ionicons name="person" size={14} color={Colors.accentBlue} />
-                <Text style={styles.userRoleBadgeText}>User</Text>
-              </LinearGradient>
+            
+            <View style={styles.roleBadgeContainer}>
+              <View style={styles.roleDot} />
+              <Text style={styles.roleBadgeText}>User</Text>
             </View>
           </View>
 
           {/* Club Status Section */}
           {club && (
-            <LinearGradient
-              colors={Colors.gradients.card as [string, string]}
-              style={styles.clubStatusCard}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <LinearGradient
-                colors={Colors.gradients.blueGlow as [string, string]}
-                style={styles.glowOverlay}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0.3 }}
-              />
-              
+            <View style={styles.clubStatusCard}>
               <View style={styles.clubStatusContent}>
                 <View style={styles.clubStatusHeader}>
-                  <Ionicons name="business" size={20} color={Colors.accentBlue} />
+                  <Ionicons name="business" size={20} color={Colors.primary} />
                   <Text style={styles.clubStatusTitle}>Your Club</Text>
                 </View>
                 <Text style={styles.clubName}>{club.name}</Text>
                 <View style={[
-                  styles.statusBadge,
-                  clubStatus === 'approved' ? styles.approvedBadge : styles.pendingBadge
+                  styles.statusBadgeContainer,
+                  clubStatus === 'approved' ? styles.approvedBadgeContainer : styles.pendingBadgeContainer
                 ]}>
-                  <Ionicons 
-                    name={clubStatus === 'approved' ? 'checkmark-circle' : 'time'} 
-                    size={16} 
-                    color={clubStatus === 'approved' ? '#22C55E' : '#FBBF24'} 
-                  />
+                  <View style={[
+                    styles.statusDot,
+                    clubStatus === 'approved' ? styles.approvedDot : styles.pendingDot
+                  ]} />
                   <Text style={styles.statusText}>
                     {clubStatus === 'approved' ? 'Approved' : 'Pending Approval'}
                   </Text>
                 </View>
               </View>
-            </LinearGradient>
+            </View>
           )}
 
           {/* Switch to Club Button */}
@@ -513,12 +497,13 @@ export default function ProfileScreen() {
             style={styles.switchButton}
             onPress={handleSwitchToClub}
             disabled={isSwitching}
+            activeOpacity={0.8}
           >
             <LinearGradient
-              colors={[Colors.accentYellow, "#F7C84A", "#F4B93A"]}
-              style={styles.switchGradient}
+              colors={Colors.gradients.button as [string, string]}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.switchGradient}
             >
               {isSwitching ? (
                 <ActivityIndicator color={Colors.button.text} />
@@ -534,55 +519,59 @@ export default function ProfileScreen() {
           {/* Account Actions */}
           <View style={styles.accountActions}>
             <TouchableOpacity style={styles.actionButton} onPress={handlePrivacyPolicy}>
-              <LinearGradient
-                colors={Colors.gradients.card as [string, string]}
-                style={styles.actionButtonGradient}
-              >
+              <View style={styles.actionButtonContent}>
                 <Ionicons name="shield-checkmark-outline" size={20} color={Colors.textPrimary} />
                 <Text style={styles.actionButtonText}>Privacy Policy</Text>
                 <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.actionButton} onPress={handleDeleteAccount}>
-              <LinearGradient
-                colors={['rgba(255, 107, 107, 0.1)', 'rgba(255, 107, 107, 0.05)']}
-                style={styles.actionButtonGradient}
-              >
-                <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
-                <Text style={[styles.actionButtonText, { color: '#FF6B6B' }]}>Delete Account</Text>
-                <Ionicons name="chevron-forward" size={16} color="#FF6B6B" />
-              </LinearGradient>
+              <View style={styles.actionButtonContent}>
+                <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                <Text style={[styles.actionButtonText, { color: Colors.error }]}>Delete Account</Text>
+                <Ionicons name="chevron-forward" size={16} color={Colors.error} />
+              </View>
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.actionButton} onPress={handleLogout}>
-              <LinearGradient
-                colors={['rgba(255, 107, 107, 0.1)', 'rgba(255, 107, 107, 0.05)']}
-                style={styles.actionButtonGradient}
-              >
-                <Ionicons name="log-out-outline" size={20} color="#FF6B6B" />
-                <Text style={[styles.actionButtonText, { color: '#FF6B6B' }]}>Logout</Text>
-                <Ionicons name="chevron-forward" size={16} color="#FF6B6B" />
-              </LinearGradient>
+              <View style={styles.actionButtonContent}>
+                <Ionicons name="log-out-outline" size={20} color={Colors.error} />
+                <Text style={[styles.actionButtonText, { color: Colors.error }]}>Logout</Text>
+                <Ionicons name="chevron-forward" size={16} color={Colors.error} />
+              </View>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.background,
+  },
+  patternOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+  },
+  topGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: height * 0.5,
+    borderRadius: 0,
   },
   scrollView: {
     flex: 1,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'ios' ? 80 : 60,
     paddingBottom: 100, // Extra padding for tab bar
   },
   centered: {
@@ -593,113 +582,91 @@ const styles = StyleSheet.create({
   // Profile Header Section
   profileHeader: {
     alignItems: 'center',
-    marginBottom: 32,
-    marginTop: 50,
+    marginBottom: 60,
   },
   profilePictureContainer: {
+    marginBottom: 24,
+  },
+  profilePictureGradient: {
     width: 120,
     height: 120,
     borderRadius: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-    padding: 3,
-    shadowColor: Colors.accentBlue,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
+    padding: 4,
   },
   profilePicture: {
-    width: 114,
-    height: 114,
-    borderRadius: 57,
-    backgroundColor: Colors.surface,
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    backgroundColor: Colors.backgroundSecondary,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: Colors.accentBlue,
   },
   profileInitial: {
     fontSize: 42,
     fontWeight: '800',
-    color: Colors.accentBlue,
+    color: Colors.primary,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   userName: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: '800',
     color: Colors.textPrimary,
-    marginBottom: 4,
+    marginBottom: 8,
     textAlign: 'center',
+    letterSpacing: -0.8,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   userEmail: {
     fontSize: 16,
     color: Colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 20,
+    fontWeight: '400',
   },
-  roleBadge: {
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  roleBadgeGradient: {
+  roleBadgeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 6,
+    gap: 8,
+  },
+  roleDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.primary,
   },
   roleBadgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.button.text,
+    color: Colors.primary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  userRoleBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.accentBlue,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1.5,
   },
 
   // Club Status Section
   clubStatusCard: {
-    borderRadius: 24,
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.borderBlue,
-    marginBottom: 24,
-    shadowColor: Colors.accentBlue,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    position: 'relative',
+    borderColor: Colors.border,
+    marginBottom: 40,
     overflow: 'hidden',
-  },
-  glowOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 120,
-    opacity: 0.3,
   },
   clubStatusContent: {
     padding: 32,
-    paddingTop: 40,
   },
   clubStatusHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
+    gap: 12,
   },
   clubStatusTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: Colors.textPrimary,
-    marginLeft: 12,
+    letterSpacing: 0.3,
   },
   subtitle: {
     fontSize: 16,
@@ -707,6 +674,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 22,
+    fontWeight: '400',
   },
   clubDetails: {
     alignItems: 'center',
@@ -714,90 +682,100 @@ const styles = StyleSheet.create({
   clubName: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.accentBlue,
-    marginBottom: 12,
+    color: Colors.primary,
+    marginBottom: 16,
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
-  statusBadge: {
+  statusBadgeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
+    gap: 8,
   },
-  approvedBadge: {
-    backgroundColor: 'rgba(34, 197, 94, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.3)',
+  approvedBadgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  pendingBadge: {
-    backgroundColor: 'rgba(251, 191, 36, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.3)',
+  pendingBadgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  approvedDot: {
+    backgroundColor: Colors.success,
+  },
+  pendingDot: {
+    backgroundColor: Colors.warning,
   },
   statusText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.textPrimary,
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 
   // Switch Button
   switchButton: {
-    width: '100%',
-    borderRadius: 16,
-    marginBottom: 24,
-    shadowColor: Colors.accentYellow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
+    backgroundColor: 'transparent',
+    borderRadius: 20,
+    marginBottom: 50,
+    overflow: 'hidden',
   },
   switchGradient: {
-    height: 56,
+    height: 64,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 20,
     gap: 12,
   },
   switchButtonText: {
     color: Colors.button.text,
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 17,
+    fontWeight: '700',
     letterSpacing: 0.5,
   },
 
   // Account Actions
   accountActions: {
-    gap: 12,
+    gap: 16,
   },
   actionButton: {
+    backgroundColor: Colors.backgroundSecondary,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
     overflow: 'hidden',
   },
-  actionButtonGradient: {
+  actionButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
-    gap: 12,
+    padding: 20,
+    gap: 16,
   },
   actionButtonText: {
     flex: 1,
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     color: Colors.textPrimary,
+    letterSpacing: 0.3,
   },
 
   // Loading and Error States
   loadingContainer: {
+    backgroundColor: Colors.backgroundSecondary,
     padding: 40,
     borderRadius: 20,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.borderBlue,
+    borderColor: Colors.border,
   },
   loadingText: {
     color: Colors.textSecondary,
@@ -806,30 +784,32 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   errorContainer: {
+    backgroundColor: Colors.backgroundSecondary,
     padding: 40,
     borderRadius: 20,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.borderBlue,
+    borderColor: Colors.border,
   },
   errorText: {
-    color: '#FF6B6B',
+    color: Colors.error,
     fontSize: 16,
     textAlign: 'center',
     marginVertical: 16,
     fontWeight: '500',
   },
   retryButton: {
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
   },
   retryGradient: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
   },
   retryButtonText: {
     color: Colors.button.text,
     fontSize: 16,
     fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });

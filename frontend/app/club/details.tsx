@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, StatusBar, Platform, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
 import ClubDetailsForm from "@/components/screens/ClubDetailsScreen";
 import { store } from '@/utils';
+
+const { height } = Dimensions.get('window');
 
 export default function ClubDetailsRoute() {
   const [club, setClub] = useState<any>(null);
@@ -21,104 +23,195 @@ export default function ClubDetailsRoute() {
   };
 
   // If user has a club and it's pending approval, show pending message
-  if (club && club.status === 'pending') {
+  
     return (
-      <SafeAreaView style={styles.container}>
-        <LinearGradient
-          colors={Colors.gradients.background as [string, string]}
-          style={styles.gradient}
-        >
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        
+        {/* Subtle Pattern Overlay */}
+        <View style={styles.patternOverlay}>
+          <LinearGradient
+            colors={['rgba(43, 44, 20, 0.5)', 'transparent', 'transparent']}
+            locations={[0.1, 0.3, 1]}
+            style={styles.topGlow}
+          />
+        </View>
+
+        <SafeAreaView style={styles.safeArea}>
           <View style={styles.content}>
-            <LinearGradient
-              colors={Colors.gradients.card as [string, string]}
-              style={styles.card}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <LinearGradient
-                colors={Colors.gradients.blueGlow as [string, string]}
-                style={styles.glowOverlay}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0.3 }}
-              />
+            <View style={styles.card}>
               <View style={styles.cardContent}>
-                <Text style={styles.title}>Pending Approval</Text>
-                <Text style={styles.subtitle}>Your club is under review</Text>
-                <Text style={styles.description}>
-                  Thank you for submitting your club details. Our admin team is currently reviewing your application.
-                  You will be notified once your club is approved.
-                </Text>
-                <Text style={styles.clubName}>{club.name}</Text>
+                {/* Status Icon */}
+                <View style={styles.iconContainer}>
+                  <View style={styles.pendingIconBorder}>
+                    <View style={styles.pendingIcon}>
+                      <Text style={styles.pendingIconText}>⏳</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Main Content */}
+                <View style={styles.textContent}>
+                  <Text style={styles.title}>Pending Approval</Text>
+                  
+                  <View style={styles.subtitleContainer}>
+                    <View style={styles.subtitleDot} />
+                    <Text style={styles.subtitle}>Your club is under review</Text>
+                  </View>
+
+                  <Text style={styles.description}>
+                    Thank you for submitting your club details. Our admin team is currently reviewing your application.
+                    You will be notified once your club is approved.
+                  </Text>
+
+                  {/* Club Name Badge */}
+                  
+                </View>
               </View>
-            </LinearGradient>
+            </View>
           </View>
-        </LinearGradient>
-      </SafeAreaView>
+        </SafeAreaView>
+      </View>
     );
-  }
+  
 
   // Otherwise show the club details form
-  return <ClubDetailsForm />;
+  // return <ClubDetailsForm />;
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.background,
   },
-  gradient: {
-    flex: 1,
+  patternOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
   },
-  content: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-  },
-  card: {
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
-    shadowColor: Colors.accentBlue,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  glowOverlay: {
+  topGlow: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 120,
-    opacity: 0.3,
+    height: height * 0.5,
+    borderRadius: 0,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 24,
+    justifyContent: 'center',
+    paddingTop: Platform.OS === 'ios' ? 20 : 40,
+  },
+  card: {
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
   },
   cardContent: {
-    padding: 32,
+    padding: 40,
     alignItems: 'center',
+  },
+
+  // Icon Section
+  iconContainer: {
+    marginBottom: 32,
+  },
+  pendingIconBorder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.backgroundTertiary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.warning,
+  },
+  pendingIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: Colors.backgroundSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pendingIconText: {
+    fontSize: 24,
+  },
+
+  // Text Content
+  textContent: {
+    alignItems: 'center',
+    width: '100%',
   },
   title: {
     fontSize: 32,
     fontWeight: '800',
     color: Colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: 16,
+    textAlign: 'center',
+    letterSpacing: -0.8,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  subtitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 24,
+  },
+  subtitleDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.warning,
   },
   subtitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.accentBlue,
-    marginBottom: 16,
+    color: Colors.warning,
+    letterSpacing: 0.3,
   },
   description: {
     fontSize: 16,
     color: Colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 24,
+    lineHeight: 26,
+    marginBottom: 32,
+    fontWeight: '400',
+    maxWidth: 280,
+  },
+
+  // Club Badge
+  clubBadgeContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  clubBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.backgroundTertiary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: 10,
+  },
+  clubDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.primary,
   },
   clubName: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
-    color: Colors.accentYellow,
+    color: Colors.primary,
+    letterSpacing: 0.3,
+    textAlign: 'center',
   },
 });
