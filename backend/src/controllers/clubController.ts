@@ -59,50 +59,107 @@ export const createClub = async (req: CustomRequest, res: Response): Promise<voi
 
 export const saveEventData = async (req: CustomRequest, res: Response): Promise<void> => {
   try {
-    // Validate request body using Zod
-    const validationResult = createEventSchema.safeParse(req.body);
-    if (!validationResult.success) {
-      res.status(400).json({ 
-        success: false, 
-        message: "Validation failed", 
-        errors: validationResult.error.issues 
-      });
-      return;
-    }
-
-    const { events } = validationResult.data;
-    const eventData = events[0]; // We only allow one event per request
-
-    // Get clubId from the authenticated user
+    // Ensure user has a club
     if (!req.user || !req.user.club) {
       res.status(400).json({ success: false, message: "Club not associated with user" });
       return;
     }
 
     const clubId = req.user.club;
-
-    // Check if club exists
     const club = await Club.findById(clubId);
     if (!club) {
       res.status(404).json({ success: false, message: "Club not found" });
       return;
     }
 
-    // Create the event with clubId
-    const event = await eventModel.create({
-      ...eventData,
-      clubId,
-    });
+    const {
+      name,
+      date,
+      time,
+      description,
+      coverImage,
+      djArtists,
+      tickets = [],
+      menuItems = [],
+      happyHourTimings = "",
+      galleryPhotos = [],
+      promoVideos = [],
+      guestExperience = {},
+    } = req.body;
+     console.log(req.body);
+    // Basic required fields check
+    if (!name?.trim() || !date?.trim() || !time?.trim() || !description?.trim()) {
+      res.status(400).json({ success: false, message: "Event name, date, time, and description are required" });
+      return;
+    }
 
-    res.status(201).json({ 
-      success: true, 
-      message: "Event created successfully",
-      data: event 
+    // Normalize tickets
+    // Normalize tickets
+const processedTickets = tickets.map((ticket: any) => ({
+  name: ticket.name || ticket.type,  // <-- FIX: use name if available, fallback to type
+  type: ticket.type,                 // keep type if schema has it
+  price: Number(ticket.price),
+  quantityAvailable: Number(ticket.quantityAvailable),
+  description: ticket.description || "",
+  soldCount: 0,
+}));
+
+
+    // Normalize menu items
+    const processedMenuItems = menuItems.map((item: any) => ({
+      name: item.name,
+      price: item.price.toString(),
+      description: item.description || "",
+      category: item.category,
+      itemImage: item.itemImage || "",
+    }));
+
+    // Create event
+    const event = await eventModel.create({
+      name: name.trim(),
+      date: date.trim(),
+      time: time.trim(),
+      description: description.trim(),
+      djArtists: djArtists || "",
+      coverImage: coverImage || "",
+      clubId,
+    
+      tickets: processedTickets,
+      menuItems: processedMenuItems,
+      happyHourTimings,
+      galleryPhotos,
+      promoVideos,
+      guestExperience: {
+        dressCode: guestExperience.dressCode || "",
+        entryRules: guestExperience.entryRules || "",
+        tableLayoutMap: guestExperience.tableLayoutMap || "",
+        parkingInfo: guestExperience.parkingInfo || "",
+        accessibilityInfo: guestExperience.accessibilityInfo || "",
+      },
+      isActive: true,
     });
-  } catch (error) {
+    
+
+    // Push event into club
+    await Club.findByIdAndUpdate(clubId, { $push: { events: event._id } });
+
+    res.status(201).json({
+      success: true,
+      message: "Event created successfully",
+      data: {
+        id: event._id,
+        name: event.name,
+        date: event.date,
+        time: event.time,
+        ticketsCount: processedTickets.length,
+        menuItemsCount: processedMenuItems.length,
+      },
+    });
+  } catch (error: any) {
     console.error("Error creating event:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
 
 

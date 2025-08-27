@@ -6,6 +6,7 @@ import userRoute from "./routes/userRoute";
 import fileRoute from "./routes/fileRoute";
 import clubRoute from "./routes/clubRoute";
 import adminRoute from "./routes/adminRoute";
+import eventRoute from "./routes/eventRoute";
 
 dotenv.config();
 const app = express();
@@ -30,6 +31,7 @@ app.use("/api/user", userRoute);
 app.use("/api/file", fileRoute);
 app.use("/api/club", clubRoute);
 app.use("/api/v1/admin", adminRoute);
+app.use("/api/event", eventRoute);
 
 app.listen(process.env.PORT, () => {
   console.log(`Server is running on port ${process.env.PORT}`);

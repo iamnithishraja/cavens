@@ -6,14 +6,7 @@ import { store } from "@/utils";
 import Background from "@/components/common/Background";
 import { AppState } from "react-native";
 import Auth from "./auth/Auth";
-import ProfileScreen from "./profile";
-import OtpScreen from "@/components/OtpScreen";
-import QrScreen from "./(tabs)/adminTabs/qr";
-import CreateEventRoute from "./create-event";
-import CreateEventForm from "@/components/screens/CreateEventForm";
-import ClubDetailsScreen from "@/components/screens/ClubDetailsScreen";
-import HomeScreen from "./(tabs)/userTabs/home";
-import UserHomeScreen from "@/components/screens/userHomeScreen";
+import ClubDetailsRoute from "./club/details";
 
 // Global flag to force user role re-check
 let forceUserCheck = false;
@@ -89,7 +82,7 @@ export default function RootLayout() {
   }
 
   let initialRouteName = "auth";
-  
+  console.log("user", user);
   if (user?.role === "club" || user?.role === "admin") {
     initialRouteName = "(tabs)/adminTabs";
   } else if (user?.role === "user") {
@@ -99,7 +92,15 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <Background >
-        <Auth /> 
+      <Stack 
+        screenOptions={{ headerShown: false }}
+        initialRouteName={initialRouteName}
+      >
+        <Stack.Screen name="auth" />
+        <Stack.Screen name="(tabs)/adminTabs" />
+        <Stack.Screen name="(tabs)/userTabs" />
+      </Stack>
+      
       </Background>
     </SafeAreaProvider>
   );

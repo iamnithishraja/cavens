@@ -1,7 +1,8 @@
 import { store } from "@/utils/index";
 import axios from "axios";
 
-export const baseUrl = process.env.EXPO_PUBLIC_TEST_BE_URL || "https://bdf28a08ed87.ngrok-free.app";
+export const baseUrl =
+  process.env.EXPO_PUBLIC_TEST_BE_URL || "http://192.168.0.106:80";
 console.log("baseUrl", baseUrl);
 const apiClient = axios.create({
     baseURL: baseUrl,
