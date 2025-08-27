@@ -74,7 +74,7 @@ export default function EventDetailsScreen() {
     try {
       setLoading(true);
       const response = await apiClient.get(`/api/event/event/${eventId}`);
-      console.log(response.data);
+      
 
 
       if (response.data.success) {
