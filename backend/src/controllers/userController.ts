@@ -14,7 +14,7 @@ import { completeProfileSchema } from "../schemas/onboardingSchema";
 import type { CustomRequest } from "../types";
 import Club from "../models/clubModel";
 import eventModel from "../models/eventModel";
-import { haversineDistance, extractLatLonFromLongUrl, resolveShortUrl } from "../utils/geoLocation";
+import { calculateDistanceFromMapsLink } from "../utils/mapsDistanceCalculator";
 
 async function onboarding(req: Request, res: Response) {
   try {
@@ -292,64 +292,90 @@ const switchToClub = async (req: CustomRequest, res: Response): Promise<void> =>
 
 
 
-const getNearbyEvents = async (req:CustomRequest, res:Response) => {
+const getNearbyEvents = async (req: CustomRequest, res: Response) => {
   try {
-    const { latitude, longitude } = req.body;
-
+    const { latitude, longitude } = req.query;
     if (!latitude || !longitude) {
-       res.status(400).json({ message: "Latitude and longitude required" });
-       return;
+      res.status(400).json({ message: "Latitude and longitude required as query parameters" });
+      return;
     }
 
-    // get clubs with events
+    const userLat = parseFloat(latitude as string);
+    const userLng = parseFloat(longitude as string);
+
+    if (isNaN(userLat) || isNaN(userLng)) {
+      res.status(400).json({ message: "Invalid latitude or longitude values" });
+      return;
+    }
+
+    // Get clubs with events
     const clubs = await clubModel.find({ events: { $exists: true, $not: { $size: 0 } } })
       .populate("events");
 
-    const results = [];
+    // Calculate distances for all clubs in parallel using Promise.all
+    const distancePromises = clubs
+      .filter(club => club.mapLink) // Only process clubs with map links
+      .map(async (club) => {
+        try {
+          const distanceResult = await calculateDistanceFromMapsLink(
+            userLat,
+            userLng,
+            club.mapLink,
+            process.env.GOOGLE_MAPS_API_KEY || "",
+            "driving",
+            true // use fallback
+          );
 
-    for (const club of clubs) {
-      let mapUrl = club.mapLink;
-      let coords = null;
-
-      // check if it's a short url
-      if (mapUrl.includes("goo.gl") || mapUrl.includes("maps.app.goo.gl")) {
-        const resolved = await resolveShortUrl(mapUrl);
-        if (resolved) {
-          coords = extractLatLonFromLongUrl(resolved);
+          // Check if it's a Google Maps result or Haversine fallback
+          if ('duration' in distanceResult.distance) {
+            // Google Maps API result
+            return {
+              club,
+              distanceInMeters: distanceResult.distance.distance.value,
+              distanceText: distanceResult.distance.distance.text,
+              durationText: distanceResult.distance.duration.text,
+              durationInSeconds: distanceResult.distance.duration.value,
+              method: "Google Maps API"
+            };
+          } else {
+            // Haversine fallback result
+            return {
+              club,
+              distanceInMeters: distanceResult.distance.distance.value,
+              distanceText: distanceResult.distance.distance.text,
+              durationText: "N/A",
+              durationInSeconds: 0,
+              method: distanceResult.distance.method
+            };
+          }
+        } catch (error) {
+          console.warn(`Failed to calculate distance for club ${club.name}:`, error);
+          return null; // Return null for failed calculations
         }
-      } else {
-        coords = extractLatLonFromLongUrl(mapUrl);
-      }
-
-      if (!coords) continue;
-
-      const distance = haversineDistance(
-        latitude,
-        longitude,
-        coords.lat,
-        coords.lon
-      );
-
-      results.push({
-        club,
-        distanceInMeters: distance,
       });
-    }
 
-    // sort by distance
+    // Wait for all distance calculations to complete
+    const distanceResults = await Promise.all(distancePromises);
+    
+    // Filter out failed calculations and create final results
+    const results = distanceResults.filter(result => result !== null);
+
+    
     results.sort((a, b) => a.distanceInMeters - b.distanceInMeters);
 
-     res.json({
-      userLocation: { latitude, longitude },
+    res.json({
+      userLocation: { latitude: userLat, longitude: userLng },
       clubs: results,
     });
     return;
+
   } catch (err) {
-    console.error(err);
+    console.error('Error in getNearbyEvents:', err);
     res.status(500).json({ success: false, message: "Server error" });
     return;
   }
 };
+
 
 
 export { onboarding, verifyOtp, completeProfile, switchToClub, getNearbyEvents };
