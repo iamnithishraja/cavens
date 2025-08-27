@@ -88,7 +88,6 @@ export default function EventDetailsScreen() {
 
   const handleDeleteEvent = () => {
     if (!event) return;
-    
     Alert.alert(
       'Delete Event',
       `Are you sure you want to delete "${event.name}"? This action cannot be undone.`,
@@ -100,11 +99,7 @@ export default function EventDetailsScreen() {
           onPress: async () => {
             try {
               setDeleting(true);
-              const token = await store.get('token');
-              
-              const response = await apiClient.delete(`/api/event/event/${event._id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
+              const response = await apiClient.delete(`/api/event/event/${event._id}`);
 
               if (response.data.success) {
                 Alert.alert('Success', 'Event deleted successfully', [

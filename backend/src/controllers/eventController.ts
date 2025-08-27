@@ -82,16 +82,15 @@ export const deleteEvent = async (req: CustomRequest, res: Response) => {
 
     const eventId = req.params.eventId;
 
-    // Find the club associated with the user
+    
     const club = await Club.findOne(req.user.club);
     if (!club) {
       return res.status(404).json({ success: false, message: "Club not found" });
     }
 
-    // Find and delete the event (ensure it belongs to this club)
+    
     const event = await eventModel.findOneAndDelete({ 
-      _id: eventId, 
-      clubId: club._id 
+      _id: eventId,
     });
 
     if (!event) {
