@@ -29,6 +29,10 @@ const clubSchema = new mongoose.Schema({
   clubImages: {
     type: [String],
   },
+  city: {
+    type: String,
+    required: true,
+  },
   operatingDays: {
     type: [String],
     enum: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
