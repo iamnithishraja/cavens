@@ -573,7 +573,7 @@ const EditEventForm = () => {
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={[]}>
-        <Header title="Edit Event" />
+        <Header title="Edit Event" onBack={() => router.back()} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
           <Text style={styles.loadingText}>Loading event...</Text>
@@ -584,7 +584,7 @@ const EditEventForm = () => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={[]}>
-      <Header title="Edit Event" />
+      <Header title="Edit Event" onBack={() => router.back()} />
       
       <KeyboardAvoidingView
         style={styles.keyboardContainer}

@@ -9,11 +9,12 @@ export default function AdminTabs() {
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,
-        tabBarActiveTintColor: Colors.primary, // Gold for active
-        tabBarInactiveTintColor: Colors.textMuted, // Gray for inactive
+        tabBarActiveTintColor: Colors.tabActive,
+        tabBarInactiveTintColor: Colors.tabInactive,
         tabBarLabelStyle: styles.tabLabel,
         tabBarStyle: styles.tabBar,
         tabBarItemStyle: styles.tabItem,
+        sceneStyle: { backgroundColor: Colors.background },
       }}
     >
       <Tabs.Screen
@@ -69,7 +70,7 @@ export default function AdminTabs() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: "#0B1120",
+    backgroundColor: Colors.navigationBackground,
     borderTopWidth: 0,
     height: 85,
     paddingBottom: 25,

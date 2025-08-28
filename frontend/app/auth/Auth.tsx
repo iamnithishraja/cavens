@@ -29,18 +29,23 @@ const Auth = () => {
   const [countryQuery] = useState("");
   const [showCountryModal, setShowCountryModal] = useState(false);
   const [showOtpScreen, setShowOtpScreen] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
 
 
   const handleGetOtp = async () => {
+    if (isSendingOtp || phoneNumber.trim().length === 0) return;
     try {
+      setIsSendingOtp(true);
       const res = await apiClient.post("/api/user/onboarding", {
         phone: phoneNumber.trim()
       });
-      if (res.status === 200) {
+      if (res.status === 200 || res.status === 201) {
         setShowOtpScreen(true);
       } 
     } catch (error) {
       console.error("Error sending OTP:", error);
+    } finally {
+      setIsSendingOtp(false);
     }
   };
 
@@ -135,9 +140,9 @@ const Auth = () => {
 
               {/* Continue Button */}
               <TouchableOpacity 
-                style={styles.continueButton} 
+                style={[styles.continueButton, isSendingOtp && { opacity: 0.6 }]} 
                 onPress={handleGetOtp}
-                disabled={phoneNumber.length === 0}
+                disabled={isSendingOtp || phoneNumber.length === 0}
                 activeOpacity={0.8}
               >
                 <LinearGradient
@@ -147,7 +152,7 @@ const Auth = () => {
                   style={styles.buttonGradient}
                 >
                   <Text style={styles.continueButtonText}>
-                    Continue
+                    {isSendingOtp ? "Sending..." : "Continue"}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>

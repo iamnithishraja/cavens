@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, View } from "react-native";
+import { Colors } from "@/constants/Colors";
 
 export default function UserTabs() {
   return (
@@ -8,11 +9,12 @@ export default function UserTabs() {
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,
-        tabBarActiveTintColor: "#F9D65C", // Gold/yellow for active
-        tabBarInactiveTintColor: "#8E9BAE", // Gray for inactive
+        tabBarActiveTintColor: Colors.tabActive,
+        tabBarInactiveTintColor: Colors.tabInactive,
         tabBarLabelStyle: styles.tabLabel,
         tabBarStyle: styles.tabBar,
         tabBarItemStyle: styles.tabItem,
+        sceneStyle: { backgroundColor: Colors.background },
       }}
     >
       <Tabs.Screen
@@ -83,7 +85,7 @@ export default function UserTabs() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: "#0B1120",
+    backgroundColor: Colors.navigationBackground,
     borderTopWidth: 0,
     height: 85,
     paddingBottom: 25,
@@ -110,7 +112,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#F9D65C",
+    backgroundColor: Colors.primary,
     alignItems: "center",
     justifyContent: "center",
   },

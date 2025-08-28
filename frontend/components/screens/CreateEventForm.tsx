@@ -22,6 +22,7 @@ import Header from "@/components/ui/ClubDetailsHeader";
 import { ClubEvent, TicketType, MenuItemFull, MenuCategoryId } from "./ClubManager/types";
 import apiClient from "@/app/api/client";
 import { uploadImage, uploadVideo } from "@/utils/fileUpload";
+import { router } from "expo-router";
 
 // Basics removed per request; using shared types
 
@@ -489,7 +490,7 @@ const CreateEventForm = () => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={[]}>
-      <Header title="Add Event" />
+      <Header title="Add Event" onBack={() => router.back()} />
       
       <KeyboardAvoidingView
         style={styles.keyboardContainer}

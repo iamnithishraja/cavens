@@ -21,6 +21,7 @@ import PhoneInput from "../ui/PhoneInput";
 import ClubDetailsHeader from "../ui/ClubDetailsHeader";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 
 const VENUE_TYPES = [
   "Nightclub",
@@ -50,6 +51,7 @@ const ClubDetailsForm = () => {
   const [operatingDays, setOperatingDays] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const router = useRouter();
 
   const clearError = (key: string) => {
     setErrors((prev) => {
@@ -143,7 +145,7 @@ const ClubDetailsForm = () => {
 
   const handleBack = () => {
     // Handle back navigation
-    console.log("Back pressed");
+    router.back();
   };
 
   const handleMenu = () => {
