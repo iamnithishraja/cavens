@@ -44,6 +44,7 @@ const ClubDetailsForm = () => {
   const [otherVenue, setOtherVenue] = useState("");
   const [mapLink, setMapLink] = useState("");
   const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [operatingDays, setOperatingDays] = useState<string[]>([]);
@@ -68,6 +69,7 @@ const ClubDetailsForm = () => {
     if (typeOfVenue === "Other" && !otherVenue.trim()) nextErrors.otherVenue = "Please specify the venue type";
     if (operatingDays.length === 0) nextErrors.operatingDays = "Select at least one operating day";
     if (!address.trim()) nextErrors.address = "Address is required";
+    if (!city.trim()) nextErrors.city = "City is required";
     if (!mapLink.trim()) nextErrors.mapLink = "Maps link is required";
     if (!phone.trim()) nextErrors.phone = "Phone number is required";
 
@@ -91,6 +93,7 @@ const ClubDetailsForm = () => {
       operatingDays,
       phone,
       address,
+      city,
       mapLink,
       logoUrl,
       coverBannerUrl,
@@ -310,9 +313,22 @@ const ClubDetailsForm = () => {
                     setAddress(t);
                     if (t.trim()) clearError("address");
                   }}
-                  placeholder="Street, City, Country"
+                  placeholder="Street, Country"
                 />
                 {errors.address ? <Text style={styles.errorText}>{errors.address}</Text> : null}
+              </View>
+
+              <View style={styles.inputSpacing}>
+                <TextField
+                  label="City"
+                  value={city}
+                  onChangeText={(t) => {
+                    setCity(t);
+                    if (t.trim()) clearError("city");
+                  }}
+                  placeholder="Enter city name"
+                />
+                {errors.city ? <Text style={styles.errorText}>{errors.city}</Text> : null}
               </View>
 
               <View style={styles.inputSpacing}>

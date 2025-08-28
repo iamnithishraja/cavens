@@ -23,6 +23,7 @@ export const createClub = async (req: CustomRequest, res: Response): Promise<voi
       logoUrl,
       coverBannerUrl,
       photos,
+      city,
     } = req.body;
 
     if (!name || !email || !clubDescription || !typeOfVenue || !Array.isArray(operatingDays) || !phone || !address || !mapLink) {
