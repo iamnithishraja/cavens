@@ -48,7 +48,8 @@ const eventSchema = z.object({
 export const getClubEvents = async (req: CustomRequest, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ success: false, message: "User not authenticated" });
+       res.status(401).json({ success: false, message: "User not authenticated" });
+       return;
     }
 
     // Find the club associated with the user
@@ -59,14 +60,16 @@ export const getClubEvents = async (req: CustomRequest, res: Response) => {
       });
       
       if (!club) {
-        return res.status(404).json({ success: false, message: "Club not found" });
-      }
+         res.status(404).json({ success: false, message: "Club not found" });
+         return;
+        }
       
       res.json({
         success: true,
         data: club.events,
         total: club.events.length,
       });
+      return;
   } catch (error) {
     console.error("Error fetching club events:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
@@ -77,7 +80,8 @@ export const getClubEvents = async (req: CustomRequest, res: Response) => {
 export const deleteEvent = async (req: CustomRequest, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ success: false, message: "User not authenticated" });
+       res.status(401).json({ success: false, message: "User not authenticated" });
+       return;
     }
 
     const eventId = req.params.eventId;
@@ -85,7 +89,8 @@ export const deleteEvent = async (req: CustomRequest, res: Response) => {
     
     const club = await Club.findOne(req.user.club);
     if (!club) {
-      return res.status(404).json({ success: false, message: "Club not found" });
+       res.status(404).json({ success: false, message: "Club not found" });
+       return;
     }
 
     
@@ -94,13 +99,15 @@ export const deleteEvent = async (req: CustomRequest, res: Response) => {
     });
 
     if (!event) {
-      return res.status(404).json({ success: false, message: "Event not found" });
+       res.status(404).json({ success: false, message: "Event not found" });
+       return;
     }
 
     res.json({
       success: true,
       message: "Event deleted successfully"
     });
+    return;
   } catch (error) {
     console.error("Error deleting event:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
@@ -110,19 +117,22 @@ export const deleteEvent = async (req: CustomRequest, res: Response) => {
 export const getEvent = async (req: CustomRequest, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ success: false, message: "User not authenticated" });
+       res.status(401).json({ success: false, message: "User not authenticated" });
+       return;
     }
 
     const eventId  = req.params.eventId;
     console.log(eventId);
     if (!eventId) {
-      return res.status(400).json({ success: false, message: "Event ID is required" });
+       res.status(400).json({ success: false, message: "Event ID is required" });
+       return;
     }
     
     
     const club = await clubModel.findById(req.user.club );
     if (!club) {
-      return res.status(404).json({ success: false, message: "Club not found" });
+       res.status(404).json({ success: false, message: "Club not found" });
+       return;
     }
 
     // Ensure this event belongs to the club
@@ -130,22 +140,26 @@ export const getEvent = async (req: CustomRequest, res: Response) => {
       (ev) => ev.toString() === eventId
     );
     if (!isEventBelongs) {
-      return res.status(404).json({ success: false, message: "Event not found for this club" });
+       res.status(404).json({ success: false, message: "Event not found for this club" });
+       return;
     }
 
     // Fetch event details
     const event = await eventModel.findById(eventId);
     if (!event) {
-      return res.status(404).json({ success: false, message: "Event not found" });
+       res.status(404).json({ success: false, message: "Event not found" });
+       return;
     }
 
-    return res.json({
+     res.json({
       success: true,
       data: event,
     });
+    return;
   } catch (error) {
     console.error("Error fetching event:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+     res.status(500).json({ success: false, message: "Internal server error" });
+     return;
   }
 };
 
@@ -155,7 +169,8 @@ export const getEvent = async (req: CustomRequest, res: Response) => {
 export const updateEvent = async (req: CustomRequest, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ success: false, message: "User not authenticated" });
+       res.status(401).json({ success: false, message: "User not authenticated" });
+       return;
     }
 
     const eventId = req.params.eventId;
@@ -166,7 +181,8 @@ export const updateEvent = async (req: CustomRequest, res: Response) => {
     // Find the club associated with the user
     const club = await Club.findOne(req.user.club);
     if (!club) {
-      return res.status(404).json({ success: false, message: "Club not found" });
+       res.status(404).json({ success: false, message: "Club not found" });
+       return;
     }
 
     // Find and update the event (ensure it belongs to this club)
@@ -177,7 +193,8 @@ export const updateEvent = async (req: CustomRequest, res: Response) => {
     );
 
     if (!event) {
-      return res.status(404).json({ success: false, message: "Event not found" });
+       res.status(404).json({ success: false, message: "Event not found" });
+       return;
     }
 
     res.json({
@@ -185,14 +202,16 @@ export const updateEvent = async (req: CustomRequest, res: Response) => {
       message: "Event updated successfully",
       data: event
     });
+    return;
   } catch (error) {
     console.error("Error updating event:", error);
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
+       res.status(400).json({ 
         success: false, 
         message: "Validation error", 
         errors: error.issues 
       });
+      return;
     }
     res.status(500).json({ success: false, message: "Internal server error" });
   }

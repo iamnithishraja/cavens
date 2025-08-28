@@ -294,7 +294,7 @@ const switchToClub = async (req: CustomRequest, res: Response): Promise<void> =>
 
 const getNearbyEvents = async (req: CustomRequest, res: Response) => {
   try {
-    const { latitude, longitude } = req.query;
+    const { latitude, longitude,city } = req.query;
     if (!latitude || !longitude) {
       res.status(400).json({ message: "Latitude and longitude required as query parameters" });
       return;
@@ -308,9 +308,11 @@ const getNearbyEvents = async (req: CustomRequest, res: Response) => {
       return;
     }
 
-    // Get clubs with events
-    const clubs = await clubModel.find({ events: { $exists: true, $not: { $size: 0 } } })
-      .populate("events");
+    const query: any = { events: { $exists: true, $not: { $size: 0 } } };
+    if (city) {
+      query.city = { $regex: new RegExp(`^${city}$`, "i") }; 
+    }
+    const clubs = await clubModel.find(query).populate("events");
 
     // Calculate distances for all clubs in parallel using Promise.all
     const distancePromises = clubs
