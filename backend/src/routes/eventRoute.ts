@@ -15,7 +15,7 @@ eventRoute.get("/club-events", getClubEvents);
 eventRoute.get("/featured-events", getFeaturedEvents);
 
 
-// Get a specific event for editing
+// Get a specific event for editing only applicable for the club 
 eventRoute.get("/event/:eventId", getEvent);
 
 

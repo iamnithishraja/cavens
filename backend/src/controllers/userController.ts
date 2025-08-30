@@ -385,6 +385,39 @@ const getNearbyEvents = async (req: CustomRequest, res: Response) => {
   }
 };
 
+// Get public event details - for users to view any event details
+const getPublicEventDetails = async (req: CustomRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "User not authenticated" });
+      return;
+    }
 
+    const eventId = req.params.eventId;
+    console.log("Fetching public event details for ID:", eventId);
+    
+    if (!eventId) {
+      res.status(400).json({ success: false, message: "Event ID is required" });
+      return;
+    }
 
-export { onboarding, verifyOtp, completeProfile, switchToClub, getNearbyEvents };
+    // Fetch event details directly without club ownership check
+    const event = await eventModel.findById(eventId);
+    if (!event) {
+      res.status(404).json({ success: false, message: "Event not found" });
+      return;
+    }
+
+    res.json({
+      success: true,
+      data: event,
+    });
+    return;
+  } catch (error) {
+    console.error("Error fetching public event details:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+    return;
+  }
+};
+
+export { onboarding, verifyOtp, completeProfile, switchToClub, getNearbyEvents, getPublicEventDetails };
