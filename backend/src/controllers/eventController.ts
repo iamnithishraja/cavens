@@ -216,3 +216,19 @@ export const updateEvent = async (req: CustomRequest, res: Response) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+export const getFeaturedEvents = async (req: CustomRequest, res: Response) => {
+  try {
+    const events = await eventModel
+      .find({ isFeatured: true })
+      .sort({ featuredOrder: 1 }) 
+      .limit(3); 
+
+    res.json({ success: true, data: events });
+    return;
+  } catch (error) {
+    console.error("Error fetching featured events:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+    return;
+  }
+};

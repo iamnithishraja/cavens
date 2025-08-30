@@ -22,6 +22,14 @@ const eventSchema = new mongoose.Schema({
     galleryPhotos: [String],
     promoVideos: [String],
     happyHourTimings: String,
+    isFeatured: {
+      type: Boolean,
+      default: false,
+    },
+    featuredNumber:{
+      type: Number,
+      default: 0,
+    }
   });
 
 const eventModel = mongoose.model("Event", eventSchema);

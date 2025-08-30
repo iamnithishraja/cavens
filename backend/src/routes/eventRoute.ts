@@ -1,6 +1,7 @@
 import express from "express";
 import { getClubEvents, deleteEvent, getEvent, updateEvent } from "../controllers/eventController";
 import { isAuthenticated } from "../middleware/auth";
+import { getFeaturedEvents } from "../controllers/eventController";
 
 const eventRoute = express.Router();
 
@@ -9,6 +10,10 @@ eventRoute.use(isAuthenticated);
 
 // Get all events for the authenticated club
 eventRoute.get("/club-events", getClubEvents);
+
+// Get all featured events
+eventRoute.get("/featured-events", getFeaturedEvents);
+
 
 // Get a specific event for editing
 eventRoute.get("/event/:eventId", getEvent);
