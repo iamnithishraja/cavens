@@ -15,6 +15,7 @@ import type { CustomRequest } from "../types";
 import Club from "../models/clubModel";
 import eventModel from "../models/eventModel";
 import { calculateDistanceFromMapsLink } from "../utils/mapsDistanceCalculator";
+import updateExpiredEvents from "../utils/updateEvent.js";
 
 async function onboarding(req: Request, res: Response) {
   try {
@@ -293,13 +294,15 @@ const switchToClub = async (req: CustomRequest, res: Response): Promise<void> =>
 
 
 const getNearbyEvents = async (req: CustomRequest, res: Response) => {
+
   try {
+    await updateExpiredEvents();
     const { latitude, longitude,city } = req.query;
     if (!latitude || !longitude) {
       res.status(400).json({ message: "Latitude and longitude required as query parameters" });
       return;
     }
-
+    console.log("latitude", latitude);
     const userLat = parseFloat(latitude as string);
     const userLng = parseFloat(longitude as string);
 
@@ -311,8 +314,12 @@ const getNearbyEvents = async (req: CustomRequest, res: Response) => {
     const query: any = { events: { $exists: true, $not: { $size: 0 } } };
     if (city) {
       query.city = { $regex: new RegExp(`^${city}$`, "i") }; 
+
     }
-    const clubs = await clubModel.find(query).populate("events");
+    const clubs = await clubModel.find(query).populate({
+      path: "events",
+      match: { status: "active" },
+    });
 
     // Calculate distances for all clubs in parallel using Promise.all
     const distancePromises = clubs
