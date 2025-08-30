@@ -22,6 +22,7 @@ import type { EventItem } from '@/components/event/types';
 import { Colors } from '@/constants/Colors';
 import SearchBar from '@/components/event/SearchBar';
 import apiClient from '@/app/api/client';
+import CityPickerModal, { CITIES, type City } from '@/components/ui/CityPickerModal';
 
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -66,8 +67,8 @@ type GetFeaturedEventsResponse = {
 const UserHomeScreen = () => {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'tonight' | 'this_week' | 'next_week' | 'upcoming'>('tonight');
-  const [city] = useState('Dubai');
-  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
+  const [selectedCity, setSelectedCity] = useState<City>(CITIES[0]); // Default to Dubai
+  const [cityPickerVisible, setCityPickerVisible] = useState(false);
   const [search, setSearch] = useState('');
   const [activeCarouselIndex, setActiveCarouselIndex] = useState(0);
   const carouselRef = useRef<FlatList>(null);
@@ -155,14 +156,14 @@ const UserHomeScreen = () => {
             params: {
               latitude: userLocation.latitude,
               longitude: userLocation.longitude,
-              city: city
+              city: selectedCity.name
             }
           }),
           apiClient.get<GetFeaturedEventsResponse>('/api/event/featured-events', {
             params: {
               latitude: userLocation.latitude,
               longitude: userLocation.longitude,
-              city: city
+              city: selectedCity.name
             }
           })
         ]);
@@ -218,7 +219,7 @@ const UserHomeScreen = () => {
     };
 
     fetchData();
-  }, [userLocation, city]); // Re-fetch when location or city changes
+  }, [userLocation, selectedCity]); // Re-fetch when location or city changes
 
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -299,6 +300,13 @@ const UserHomeScreen = () => {
     
     return events;
   }, [allEvents, search, activeTab]);
+
+  // Handle city selection
+  const handleCitySelect = (city: City) => {
+    console.log("City selected:", city.name);
+    setSelectedCity(city);
+    setCityPickerVisible(false);
+  };
 
   // Get event counts for each tab (for displaying counts in tabs)
   const getEventCountForTab = (timeline: 'tonight' | 'this_week' | 'next_week' | 'upcoming') => {
@@ -381,13 +389,16 @@ const UserHomeScreen = () => {
           <View style={styles.locationHeader}>
             <TouchableOpacity 
               style={styles.locationSelector}
-              onPress={() => setCityDropdownOpen(!cityDropdownOpen)}
+              onPress={() => setCityPickerVisible(true)}
+              activeOpacity={0.8}
             >
-              <Image 
-                source={{ uri: "https://img.icons8.com/ios/50/4EA2FF/marker.png" }}
-                style={styles.locationIcon}
-              />
-              <Text style={styles.locationText}>{city}</Text>
+              <View style={styles.locationInfo}>
+                <Text style={styles.cityEmoji}>{selectedCity.emoji}</Text>
+                <View style={styles.locationTexts}>
+                  <Text style={styles.locationText}>{selectedCity.name}</Text>
+                  <Text style={styles.locationSubtext}>Tap to change city</Text>
+                </View>
+              </View>
               <Image 
                 source={{ uri: "https://img.icons8.com/ios/50/FFFFFF/chevron-down.png" }}
                 style={styles.chevronIcon}
@@ -447,7 +458,7 @@ const UserHomeScreen = () => {
                       <View style={styles.featuredContent}>
                         <Text style={styles.eventDate}>{formatDate(item.date)}</Text>
                         <Text style={styles.venueName} numberOfLines={2}>{item.name}</Text>
-                        <Text style={styles.clubLocation}>{getClubName(item)}, {city}</Text>
+                        <Text style={styles.clubLocation}>{getClubName(item)}, {selectedCity.name}</Text>
                         <Text style={styles.distanceText}>{item.distance || `${Math.floor(Math.random() * 20) + 1} km`} away</Text>
                         <TouchableOpacity style={styles.bookButton}>
                           <Text style={styles.bookButtonText}>BOOK NOW</Text>
@@ -530,7 +541,7 @@ const UserHomeScreen = () => {
                     <View style={styles.clubInfo}>
                       <View>
                         <Text style={styles.clubName} numberOfLines={2}>{event.name}</Text>
-                        <Text style={styles.clubGenre} numberOfLines={1}>{getClubName(event)}, {city}</Text>
+                        <Text style={styles.clubGenre} numberOfLines={1}>{getClubName(event)}, {selectedCity.name}</Text>
                       </View>
                     <View style={styles.ratingDistanceContainer}>
                       <View style={styles.ratingContainer}>
@@ -578,6 +589,14 @@ const UserHomeScreen = () => {
             )}
           </View>
         </ScrollView>
+
+        {/* City Picker Modal */}
+        <CityPickerModal
+          visible={cityPickerVisible}
+          onClose={() => setCityPickerVisible(false)}
+          onSelect={handleCitySelect}
+          selectedCityId={selectedCity.id}
+        />
       </View>
     </SafeAreaView>
   );
@@ -623,18 +642,30 @@ const styles = StyleSheet.create({
   locationSelector: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
-  locationIcon: {
-    width: 24,
-    height: 24,
-    tintColor: Colors.blueAccent,
-    marginRight: 8,
+  locationInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  cityEmoji: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  locationTexts: {
+    flex: 1,
   },
   locationText: {
     color: Colors.textPrimary,
     fontSize: 20,
     fontWeight: '700',
-    marginRight: 4,
+    marginBottom: 2,
+  },
+  locationSubtext: {
+    color: Colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '500',
   },
   chevronIcon: {
     width: 16,
