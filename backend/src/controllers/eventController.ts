@@ -219,11 +219,13 @@ export const updateEvent = async (req: CustomRequest, res: Response) => {
 
 export const getFeaturedEvents = async (req: CustomRequest, res: Response) => {
   try {
+    console.log("Fetching featured events");
     const events = await eventModel
       .find({ isFeatured: true })
-      .sort({ featuredOrder: 1 }) 
+      .sort({ featuredNumber: 1 }) 
       .limit(3); 
 
+    console.log("Featured events:", events.length);
     res.json({ success: true, data: events });
     return;
   } catch (error) {
