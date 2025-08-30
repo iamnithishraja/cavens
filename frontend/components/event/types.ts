@@ -45,6 +45,9 @@ export interface EventItem {
   galleryPhotos: string[];
   promoVideos: string[];
   happyHourTimings: string;
+  // Distance properties added from API response
+  distance?: string;
+  distanceInMeters?: number;
 }
 
 
