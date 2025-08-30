@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { menuItemSchema } from "./menuItemSchema";
 import { ticketSchema } from "./ticketModel";
+import { start } from "repl";
 
 const eventSchema = new mongoose.Schema({
     name: String,
@@ -29,7 +30,12 @@ const eventSchema = new mongoose.Schema({
     featuredNumber:{
       type: Number,
       default: 0,
-    }
+    },
+    status: {
+      type: String,
+      enum: ["active", "done"],
+      default: "active",
+    },
   });
 
 const eventModel = mongoose.model("Event", eventSchema);
