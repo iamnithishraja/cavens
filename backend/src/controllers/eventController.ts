@@ -4,6 +4,7 @@ import Club from "../models/clubModel";
 import type { CustomRequest } from "../types";
 import z from "zod";
 import clubModel from "../models/clubModel";
+import { calculateDistanceFromMapsLink } from "../utils/mapsDistanceCalculator";
 
 // Validation schemas
 const eventSchema = z.object({
@@ -219,14 +220,113 @@ export const updateEvent = async (req: CustomRequest, res: Response) => {
 
 export const getFeaturedEvents = async (req: CustomRequest, res: Response) => {
   try {
-    console.log("Fetching featured events");
+    const { latitude, longitude, city } = req.query;
+    console.log("Fetching featured events with location:", { latitude, longitude, city });
+    
+    // Get featured events
     const events = await eventModel
       .find({ isFeatured: true })
       .sort({ featuredNumber: 1 }) 
       .limit(3); 
 
-    console.log("Featured events:", events.length);
-    res.json({ success: true, data: events });
+    console.log("Featured events found:", events.length);
+
+    // If no location provided, return events without distance calculation
+    if (!latitude || !longitude) {
+      console.log("No location provided for featured events, returning without distances");
+      res.json({ success: true, data: events });
+      return;
+    }
+
+    const userLat = parseFloat(latitude as string);
+    const userLng = parseFloat(longitude as string);
+
+    if (isNaN(userLat) || isNaN(userLng)) {
+      console.log("Invalid coordinates for featured events, returning without distances");
+      res.json({ success: true, data: events });
+      return;
+    }
+
+    // For featured events, we need to find their associated clubs
+    // Since events might not have direct club references, we'll find clubs that have these events
+    const clubsWithEvents = await clubModel.find({
+      events: { $in: events.map(event => event._id) }
+    });
+
+    console.log("Clubs with featured events found:", clubsWithEvents.length);
+
+    // Calculate distances for featured events
+    const distancePromises = events.map(async (event) => {
+      try {
+        // Find the club that contains this event
+        const associatedClub = clubsWithEvents.find(club => 
+          club.events.some(eventId => eventId.toString() === event._id.toString())
+        );
+
+        if (!associatedClub || !associatedClub.mapLink) {
+          console.log(`No club or mapLink found for event ${event.name}`);
+          return {
+            ...event.toObject(),
+            distanceText: "N/A",
+            distanceInMeters: Number.MAX_VALUE
+          };
+        }
+
+        const distanceResult = await calculateDistanceFromMapsLink(
+          userLat,
+          userLng,
+          associatedClub.mapLink,
+          process.env.GOOGLE_MAPS_API_KEY || "",
+          "driving",
+          true // use fallback
+        );
+
+        // Check if it's a Google Maps result or Haversine fallback
+        if ('duration' in distanceResult.distance) {
+          // Google Maps API result
+          return {
+            ...event.toObject(),
+            distanceInMeters: distanceResult.distance.distance.value,
+            distanceText: distanceResult.distance.distance.text,
+            durationText: distanceResult.distance.duration.text,
+            durationInSeconds: distanceResult.distance.duration.value,
+            method: "Google Maps API",
+            venue: associatedClub.name
+          };
+        } else {
+          // Haversine fallback result
+          return {
+            ...event.toObject(),
+            distanceInMeters: distanceResult.distance.distance.value,
+            distanceText: distanceResult.distance.distance.text,
+            durationText: "N/A",
+            durationInSeconds: 0,
+            method: distanceResult.distance.method,
+            venue: associatedClub.name
+          };
+        }
+      } catch (error) {
+        console.warn(`Failed to calculate distance for featured event ${event.name}:`, error);
+        return {
+          ...event.toObject(),
+          distanceText: "N/A",
+          distanceInMeters: Number.MAX_VALUE
+        };
+      }
+    });
+
+    // Wait for all distance calculations to complete
+    const eventsWithDistances = await Promise.all(distancePromises);
+    
+    // Sort by distance (closest first)
+    eventsWithDistances.sort((a, b) => {
+      const aDistance = a.distanceInMeters || Number.MAX_VALUE;
+      const bDistance = b.distanceInMeters || Number.MAX_VALUE;
+      return aDistance - bDistance;
+    });
+
+    console.log(`Calculated distances for ${eventsWithDistances.length} featured events`);
+    res.json({ success: true, data: eventsWithDistances });
     return;
   } catch (error) {
     console.error("Error fetching featured events:", error);
