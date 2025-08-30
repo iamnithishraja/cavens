@@ -54,7 +54,7 @@ type GetFeaturedEventsResponse = {
 };
 
 const UserHomeScreen = () => {
-  const [selected, setSelected] = useState<EventItem | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'tonight' | 'this_week' | 'next_week' | 'upcoming'>('tonight');
   const [city] = useState('Dubai');
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
@@ -225,12 +225,15 @@ const UserHomeScreen = () => {
     }).length;
   };
 
-  if (selected) {
+  if (selectedEventId) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
         <View style={styles.fullBackground}>
-          <EventDetailsScreen event={selected} />
+          <EventDetailsScreen 
+            eventId={selectedEventId} 
+            onGoBack={() => setSelectedEventId(null)}
+          />
         </View>
       </SafeAreaView>
     );
@@ -339,7 +342,10 @@ const UserHomeScreen = () => {
                 <View style={styles.carouselItem}>
                   <TouchableOpacity 
                     style={styles.featuredCard}
-                    onPress={() => setSelected(item)}
+                    onPress={() => {
+                      console.log("Featured event clicked:", item._id, item.name);
+                      setSelectedEventId(item._id || '');
+                    }}
                     activeOpacity={0.9}
                   >
                     <Image 
@@ -424,7 +430,10 @@ const UserHomeScreen = () => {
                 <TouchableOpacity 
                   key={`${event._id}-${index}`}
                   style={styles.clubCard}
-                  onPress={() => setSelected(event)}
+                  onPress={() => {
+                    console.log("Event clicked:", event._id, event.name);
+                    setSelectedEventId(event._id || '');
+                  }}
                   activeOpacity={0.9}
                 >
                   <Image 
