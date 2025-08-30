@@ -14,7 +14,8 @@
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to let you select club photos, logos and banners.",
         "NSPhotoLibraryAddUsageDescription": "This app needs permission to save images to your library.",
-        "NSCameraUsageDescription": "This app needs access to your camera to capture photos for your club."
+        "NSCameraUsageDescription": "This app needs access to your camera to capture photos for your club.",
+        "NSLocationWhenInUseUsageDescription": "This app needs access to your location to show nearby events and calculate distances."
       },
       "appleTeamId": "65JXC7579A"
     },
@@ -24,7 +25,11 @@
         "backgroundColor": "#0B1120"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.nithishraja.cavens"
+      "package": "com.nithishraja.cavens",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -49,7 +54,13 @@
           "supportsPictureInPicture": true
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location to show nearby events and calculate distances."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

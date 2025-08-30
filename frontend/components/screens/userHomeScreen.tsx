@@ -10,10 +10,12 @@ import {
   Dimensions, 
   FlatList,
   Animated,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location';
 import EventDetailsScreen from './EventDetailsScreen';
 import { SAMPLE_EVENTS } from '@/components/event/data';
 import type { EventItem } from '@/components/event/types';
@@ -48,9 +50,17 @@ type GetAllEventsResponse = {
   clubs: ClubWithEvents[];
 };
 
+type FeaturedEventWithDistance = EventItem & {
+  distanceInMeters?: number;
+  distanceText?: string;
+  durationText?: string;
+  durationInSeconds?: number;
+  method?: string;
+};
+
 type GetFeaturedEventsResponse = {
   success: boolean;
-  data: EventItem[];
+  data: FeaturedEventWithDistance[];
 };
 
 const UserHomeScreen = () => {
@@ -64,33 +74,97 @@ const UserHomeScreen = () => {
   const scrollX = useRef(new Animated.Value(0)).current;
   
   // API data states
-  const [featuredEvents, setFeaturedEvents] = useState<EventItem[]>([]);
+  const [featuredEvents, setFeaturedEvents] = useState<FeaturedEventWithDistance[]>([]);
   const [allEvents, setAllEvents] = useState<EventItem[]>([]);
   const [clubs, setClubs] = useState<ClubWithEvents[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Location coordinates for Dubai (you provided these)
-  const LATITUDE = 13.027882248674114;
-  const LONGITUDE = 77.60789691577324;
+  // Location state
+  const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
+  const [locationLoading, setLocationLoading] = useState(true);
+  
+  // Fallback coordinates for Dubai (if location access fails)
+  const FALLBACK_LATITUDE = 13.027882248674114;
+  const FALLBACK_LONGITUDE = 77.60789691577324;
 
-  // Fetch data from APIs
+  // Get user's current location
   useEffect(() => {
+    const getCurrentLocation = async () => {
+      try {
+        setLocationLoading(true);
+        console.log("Requesting location permissions...");
+        
+        // Request permissions
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          console.log("Location permission denied, using fallback coordinates");
+          Alert.alert(
+            'Location Access',
+            'Location permission was denied. Using default location (Dubai).',
+            [{ text: 'OK' }]
+          );
+          setUserLocation({ latitude: FALLBACK_LATITUDE, longitude: FALLBACK_LONGITUDE });
+          setLocationLoading(false);
+          return;
+        }
+
+        console.log("Getting current position...");
+        // Get current position
+        let location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        const currentLocation = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        };
+
+        console.log("Current location obtained:", currentLocation);
+        setUserLocation(currentLocation);
+        setLocationLoading(false);
+
+      } catch (error) {
+        console.error('Error getting location:', error);
+        Alert.alert(
+          'Location Error',
+          'Failed to get your location. Using default location (Dubai).',
+          [{ text: 'OK' }]
+        );
+        setUserLocation({ latitude: FALLBACK_LATITUDE, longitude: FALLBACK_LONGITUDE });
+        setLocationLoading(false);
+      }
+    };
+
+    getCurrentLocation();
+  }, []);
+
+  // Fetch data from APIs when location is available
+  useEffect(() => {
+    if (!userLocation) return; // Wait for location
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Call both APIs in parallel using Promise.all
+        console.log("Fetching events with user location:", userLocation);
+
+        // Call both APIs in parallel using Promise.all with user's location
         const [allEventsResponse, featuredEventsResponse] = await Promise.all([
           apiClient.get<GetAllEventsResponse>('/api/user/getAllEvents', {
             params: {
-              latitude: LATITUDE,
-              longitude: LONGITUDE,
+              latitude: userLocation.latitude,
+              longitude: userLocation.longitude,
               city: city
             }
           }),
-          apiClient.get<GetFeaturedEventsResponse>('/api/event/featured-events')
+          apiClient.get<GetFeaturedEventsResponse>('/api/event/featured-events', {
+            params: {
+              latitude: userLocation.latitude,
+              longitude: userLocation.longitude,
+              city: city
+            }
+          })
         ]);
 
         // Process getAllEvents response
@@ -119,7 +193,17 @@ const UserHomeScreen = () => {
 
         // Process getFeaturedEvents response
         if (featuredEventsResponse.data.success && featuredEventsResponse.data.data) {
-          setFeaturedEvents(featuredEventsResponse.data.data.slice(0, 3)); // Limit to 3 for carousel
+          const featuredWithDistances = featuredEventsResponse.data.data.map(event => ({
+            ...event,
+            distance: event.distanceText,
+            venue: event.venue || 'Unknown Venue'
+          }));
+          setFeaturedEvents(featuredWithDistances.slice(0, 3)); // Limit to 3 for carousel
+          console.log("Featured events with distances:", featuredWithDistances.map(e => ({ 
+            name: e.name, 
+            distance: e.distanceText,
+            venue: e.venue 
+          })));
         }
 
       } catch (err) {
@@ -134,7 +218,7 @@ const UserHomeScreen = () => {
     };
 
     fetchData();
-  }, [city]); // Re-fetch when city changes
+  }, [userLocation, city]); // Re-fetch when location or city changes
 
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -239,14 +323,16 @@ const UserHomeScreen = () => {
     );
   }
 
-  // Show loading state
-  if (loading) {
+  // Show loading state (location + events)
+  if (locationLoading || loading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
         <View style={[styles.fullBackground, styles.centerContent]}>
           <ActivityIndicator size="large" color={Colors.blueAccent} />
-          <Text style={styles.loadingText}>Loading events...</Text>
+          <Text style={styles.loadingText}>
+            {locationLoading ? "Getting your location..." : "Loading events..."}
+          </Text>
         </View>
       </SafeAreaView>
     );
