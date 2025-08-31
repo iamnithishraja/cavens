@@ -45,7 +45,7 @@ const TimelineFilterTabs: React.FC<TimelineFilterTabsProps> = ({
           onPress={() => onTabChange(tab.key)}
         >
           <Text style={[styles.tabText, activeTab === tab.key && styles.activeTabText]}>
-            {tab.label} {!loading && `(${getEventCountForTab(tab.key)})`}
+            {tab.label}
           </Text>
         </TouchableOpacity>
       ))}
