@@ -53,7 +53,17 @@ export async function approveClub(req: Request, res: Response) {
       res.status(404).json({ success: false, message: "Club not found" });
       return;
     }
-    res.status(200).json({ success: true, club: updated });
+
+    // Also update the associated user's role to 'club'. Prefer explicit owner on club
+    const owner = updated.owner
+      ? await User.findById(updated.owner)
+      : await User.findOne({ club: updated._id });
+    if (owner && owner.role !== 'club') {
+      owner.role = 'club';
+      owner.club = updated._id;
+      await owner.save();
+    }
+    res.status(200).json({ success: true, club: updated, userUpdated: owner ? owner._id : null });
   } catch (error) {
     console.error("Error approving club:", error);
     res.status(500).json({ success: false, message: "Internal server error" });

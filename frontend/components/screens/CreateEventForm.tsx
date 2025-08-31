@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  StatusBar,
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 

@@ -208,11 +208,40 @@ const UserHomeScreen = () => {
         }
 
       } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Failed to load events. Please try again.');
-        // Fallback to sample data on error
-        setFeaturedEvents(SAMPLE_EVENTS.filter(event => event.promoVideos?.length > 0 || event.coverImage).slice(0, 3));
-        setAllEvents(SAMPLE_EVENTS.slice(0, 5));
+        console.error('Error fetching data (auth endpoints):', err);
+        // Fallback to public clubs endpoint
+        try {
+          const publicClubsRes = await apiClient.get('/api/club/public/approved', {
+            params: { city: selectedCity.name, includeEvents: 'true' }
+          });
+          const clubsWithEvents = (publicClubsRes.data?.items || []) as any[];
+          // Build events list
+          const aggregatedEvents: EventItem[] = [];
+          clubsWithEvents.forEach((club: any) => {
+            if (Array.isArray(club.events)) {
+              club.events.forEach((evt: any) => {
+                aggregatedEvents.push({
+                  ...evt,
+                  venue: club.name,
+                } as EventItem);
+              });
+            }
+          });
+          setAllEvents(aggregatedEvents);
+          // Derive featured from aggregated events if available
+          const derivedFeatured = aggregatedEvents
+            .filter((e: any) => e.isFeatured)
+            .sort((a: any, b: any) => (a.featuredNumber || 0) - (b.featuredNumber || 0))
+            .slice(0, 3) as any[];
+          setFeaturedEvents(derivedFeatured);
+          setError(null);
+        } catch (fallbackErr) {
+          console.error('Fallback public clubs fetch failed:', fallbackErr);
+          setError('Failed to load events. Please try again.');
+          // Final fallback to sample data
+          setFeaturedEvents(SAMPLE_EVENTS.filter(event => event.promoVideos?.length > 0 || event.coverImage).slice(0, 3));
+          setAllEvents(SAMPLE_EVENTS.slice(0, 5));
+        }
       } finally {
         setLoading(false);
       }

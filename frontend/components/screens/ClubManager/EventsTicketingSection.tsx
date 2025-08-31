@@ -255,21 +255,42 @@ const EventsTicketingSection: React.FC<Props> = ({
                   Platform.OS === "ios" ? Colors.textPrimary : undefined
                 }
                 onChange={(event: any, date?: Date) => {
-                  if (date) setTempDate(date);
+                  if (Platform.OS !== "ios") {
+                    // On Android, commit immediately and close on set/dismiss
+                    if (event?.type === "set" && date) {
+                      onUpdateEvent(datePickerFor as string, "date", formatDate(date));
+                    }
+                    setDatePickerFor(null);
+                    setTempDate(null);
+                  } else {
+                    if (date) setTempDate(date);
+                  }
                 }}
               />
             </View>
-            <TouchableOpacity
-              onPress={() => {
-                const commit = tempDate || new Date();
-                onUpdateEvent(datePickerFor, "date", formatDate(commit));
-                setDatePickerFor(null);
-                setTempDate(null);
-              }}
-              style={styles.pickerSaveBtn}
-            >
-              <Text style={styles.pickerSaveText}>Save</Text>
-            </TouchableOpacity>
+            {Platform.OS === "ios" ? (
+              <TouchableOpacity
+                onPress={() => {
+                  const commit = tempDate || new Date();
+                  onUpdateEvent(datePickerFor as string, "date", formatDate(commit));
+                  setDatePickerFor(null);
+                  setTempDate(null);
+                }}
+                style={styles.pickerSaveBtn}
+              >
+                <Text style={styles.pickerSaveText}>Save</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={() => {
+                  setDatePickerFor(null);
+                  setTempDate(null);
+                }}
+                style={styles.pickerSaveBtn}
+              >
+                <Text style={styles.pickerSaveText}>Cancel</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       )}
@@ -295,21 +316,41 @@ const EventsTicketingSection: React.FC<Props> = ({
                   Platform.OS === "ios" ? Colors.textPrimary : undefined
                 }
                 onChange={(event: any, date?: Date) => {
-                  if (date) setTempTime(date);
+                  if (Platform.OS !== "ios") {
+                    if (event?.type === "set" && date) {
+                      onUpdateEvent(timePickerFor.id, "time", formatTime(date));
+                    }
+                    setTimePickerFor(null);
+                    setTempTime(null);
+                  } else {
+                    if (date) setTempTime(date);
+                  }
                 }}
               />
             </View>
-            <TouchableOpacity
-              onPress={() => {
-                const commit = tempTime || new Date();
-                onUpdateEvent(timePickerFor.id, "time", formatTime(commit));
-                setTimePickerFor(null);
-                setTempTime(null);
-              }}
-              style={styles.pickerSaveBtn}
-            >
-              <Text style={styles.pickerSaveText}>Save</Text>
-            </TouchableOpacity>
+            {Platform.OS === "ios" ? (
+              <TouchableOpacity
+                onPress={() => {
+                  const commit = tempTime || new Date();
+                  onUpdateEvent(timePickerFor.id, "time", formatTime(commit));
+                  setTimePickerFor(null);
+                  setTempTime(null);
+                }}
+                style={styles.pickerSaveBtn}
+              >
+                <Text style={styles.pickerSaveText}>Save</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={() => {
+                  setTimePickerFor(null);
+                  setTempTime(null);
+                }}
+                style={styles.pickerSaveBtn}
+              >
+                <Text style={styles.pickerSaveText}>Cancel</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       )}

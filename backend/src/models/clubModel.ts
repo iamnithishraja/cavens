@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
 
 const clubSchema = new mongoose.Schema({
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
   name: {
     type: String,
     required: true,

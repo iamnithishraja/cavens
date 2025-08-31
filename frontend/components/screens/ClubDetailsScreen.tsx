@@ -15,6 +15,7 @@ import apiClient, { baseUrl } from "@/app/api/client";
 import TextField from "../ui/TextField";
 import TextArea from "../ui/TextArea";
 import ChipSelector from "../ui/ChipSelector";
+import ClubCityPickerModal from "../ui/ClubCityPickerModal";
 import DaysSelector from "../ui/DaysSelector";
 import ImageUploader from "../ui/ImageUploader";
 import PhoneInput from "../ui/PhoneInput";
@@ -32,6 +33,8 @@ const VENUE_TYPES = [
   "Other",
 ] as const;
 
+const CITY_OPTIONS = ["Dubai", "Abu Dhabi"] as const;
+
 const ClubDetailsForm = () => {
   
   const [name, setName] = useState("");
@@ -46,6 +49,7 @@ const ClubDetailsForm = () => {
   const [mapLink, setMapLink] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
+  const [cityPickerVisible, setCityPickerVisible] = useState(false);
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [operatingDays, setOperatingDays] = useState<string[]>([]);
@@ -71,7 +75,11 @@ const ClubDetailsForm = () => {
     if (typeOfVenue === "Other" && !otherVenue.trim()) nextErrors.otherVenue = "Please specify the venue type";
     if (operatingDays.length === 0) nextErrors.operatingDays = "Select at least one operating day";
     if (!address.trim()) nextErrors.address = "Address is required";
-    if (!city.trim()) nextErrors.city = "City is required";
+    if (!city.trim()) {
+      nextErrors.city = "City is required";
+    } else if (!CITY_OPTIONS.includes(city as any)) {
+      nextErrors.city = "City must be Dubai or Abu Dhabi";
+    }
     if (!mapLink.trim()) nextErrors.mapLink = "Maps link is required";
     if (!phone.trim()) nextErrors.phone = "Phone number is required";
 
@@ -321,16 +329,41 @@ const ClubDetailsForm = () => {
               </View>
 
               <View style={styles.inputSpacing}>
-                <TextField
-                  label="City"
-                  value={city}
-                  onChangeText={(t) => {
-                    setCity(t);
-                    if (t.trim()) clearError("city");
+                <Text style={{ color: Colors.textSecondary, fontSize: 12, marginBottom: 4, fontWeight: "500" }}>City</Text>
+                <TouchableOpacity
+                  onPress={() => setCityPickerVisible(true)}
+                  activeOpacity={0.8}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    paddingHorizontal: 16,
+                    paddingVertical: 14,
+                    borderRadius: 12,
+                    backgroundColor: Colors.backgroundSecondary,
+                    borderWidth: 1,
+                    borderColor: Colors.border,
                   }}
-                  placeholder="Enter city name"
-                />
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    {/* <Text style={{ fontSize: 18, marginRight: 8 }}>🏙️</Text> */}
+                    <Text style={{ color: Colors.textPrimary, fontWeight: "700" }}>
+                      {city || "Select a city"}
+                    </Text>
+                  </View>
+                  <Text style={{ color: Colors.textSecondary }}>▼</Text>
+                </TouchableOpacity>
                 {errors.city ? <Text style={styles.errorText}>{errors.city}</Text> : null}
+                <ClubCityPickerModal
+                  visible={cityPickerVisible}
+                  onClose={() => setCityPickerVisible(false)}
+                  onSelect={(name) => {
+                    setCity(name);
+                    clearError("city");
+                  }}
+                  selectedCityId={city}
+                  cities={["Dubai", "Abu Dhabi"]}
+                />
               </View>
 
               <View style={styles.inputSpacing}>

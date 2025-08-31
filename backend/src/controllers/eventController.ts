@@ -224,8 +224,19 @@ export const getFeaturedEvents = async (req: CustomRequest, res: Response) => {
     console.log("Fetching featured events with location:", { latitude, longitude, city });
     
     // Get featured events
+    const baseQuery: any = { isFeatured: true };
+    if (city) {
+      // Filter only events whose clubs are in this city
+      const clubsInCity = await clubModel.find({ city: { $regex: new RegExp(`^${city}$`, 'i') } }, { _id: 1 });
+      const clubIds = clubsInCity.map(c => c._id.toString());
+      if (clubIds.length) {
+        const clubEvents = await clubModel.find({ _id: { $in: clubIds } }, { events: 1 });
+        const allowedEventIds = clubEvents.flatMap(c => c.events);
+        baseQuery._id = { $in: allowedEventIds };
+      }
+    }
     const events = await eventModel
-      .find({ isFeatured: true })
+      .find(baseQuery)
       .sort({ featuredNumber: 1 }) 
       .limit(3); 
 

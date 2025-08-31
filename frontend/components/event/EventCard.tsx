@@ -11,7 +11,8 @@ type Props = {
 };
 
 const EventCard: React.FC<Props> = ({ event, onPress }) => {
-  const lowestPrice = Math.min(...event.tickets.map((t) => t.price));
+  const hasTickets = Array.isArray(event.tickets) && event.tickets.length > 0;
+  const lowestPrice = hasTickets ? Math.min(...event.tickets.map((t) => t.price)) : 0;
 
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -32,7 +33,7 @@ const EventCard: React.FC<Props> = ({ event, onPress }) => {
         end={{ x: 1, y: 1 }}
       >
         <LinearGradient
-          colors={Colors.gradients.blueGlow as [string, string]}
+          colors={Colors.gradients.blue as [string, string]}
           style={styles.glowOverlay}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0.3 }}
@@ -51,7 +52,7 @@ const EventCard: React.FC<Props> = ({ event, onPress }) => {
           {/* Date Badge */}
           <View style={styles.dateBadge}>
             <LinearGradient
-              colors={[Colors.accentBlue, Colors.accentBlue]}
+              colors={[Colors.blueAccent, Colors.blueAccent]}
               style={styles.dateBadgeGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -61,21 +62,23 @@ const EventCard: React.FC<Props> = ({ event, onPress }) => {
           </View>
 
           {/* Price Badge */}
-          <View style={styles.priceBadge}>
-            <LinearGradient
-              colors={[Colors.accentYellow, Colors.accentYellow]}
-              style={styles.priceBadgeGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <Text style={styles.priceText}>From</Text>
-              <CurrencyAED 
-                amount={lowestPrice} 
-                textStyle={styles.priceAmount}
-                tint={Colors.button.text}
-              />
-            </LinearGradient>
-          </View>
+          {hasTickets && (
+            <View style={styles.priceBadge}>
+              <LinearGradient
+                colors={[Colors.primary, Colors.primary]}
+                style={styles.priceBadgeGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Text style={styles.priceText}>From</Text>
+                <CurrencyAED 
+                  amount={lowestPrice} 
+                  textStyle={styles.priceAmount}
+                  tint={Colors.button.text}
+                />
+              </LinearGradient>
+            </View>
+          )}
         </View>
 
         {/* Content Section */}
@@ -105,7 +108,7 @@ const EventCard: React.FC<Props> = ({ event, onPress }) => {
           {event.happyHourTimings && (
             <View style={styles.happyHourContainer}>
               <LinearGradient
-                colors={[Colors.surfaceElevated, Colors.surface]}
+                colors={Colors.gradients.button as [string, string]}
                 style={styles.happyHourBadge}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -124,8 +127,8 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.borderBlue,
-    shadowColor: Colors.accentBlue,
+    borderColor: Colors.border,
+    shadowColor: Colors.blueAccent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
@@ -144,7 +147,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     height: 200,
     position: 'relative',
-    backgroundColor: Colors.surfaceElevated,
+    backgroundColor: Colors.backgroundSecondary,
   },
   coverImage: {
     width: '100%',
@@ -164,7 +167,7 @@ const styles = StyleSheet.create({
     left: 12,
     borderRadius: 12,
     overflow: 'hidden',
-    shadowColor: Colors.accentBlue,
+    shadowColor: Colors.blueAccent,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
@@ -186,7 +189,7 @@ const styles = StyleSheet.create({
     right: 12,
     borderRadius: 12,
     overflow: 'hidden',
-    shadowColor: Colors.accentYellow,
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
@@ -232,7 +235,7 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     marginRight: 8,
-    tintColor: Colors.accentBlue,
+    tintColor: Colors.blueAccent,
   },
   metaText: {
     color: Colors.textSecondary,
@@ -248,11 +251,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.borderBlue,
+    borderColor: Colors.border,
     alignSelf: 'flex-start',
   },
   happyHourText: {
-    color: Colors.accentYellow,
+    color: Colors.button.text,
     fontSize: 12,
     fontWeight: '600',
   },

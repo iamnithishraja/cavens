@@ -26,12 +26,13 @@ export const createClub = async (req: CustomRequest, res: Response): Promise<voi
       city,
     } = req.body;
 
-    if (!name || !email || !clubDescription || !typeOfVenue || !Array.isArray(operatingDays) || !phone || !address || !mapLink) {
+    if (!name || !email || !clubDescription || !typeOfVenue || !Array.isArray(operatingDays) || !phone || !address || !mapLink || !city) {
       res.status(400).json({ message: "Missing required fields" });
       return;
     }
      
     const club = await Club.create({
+      owner: req.user._id,
       name,
       email,
       clubDescription,
@@ -40,15 +41,13 @@ export const createClub = async (req: CustomRequest, res: Response): Promise<voi
       phone,
       address,
       mapLink,
+      city,
       logoUrl,
       coverBannerUrl,
       photos,
     });
-    await User.findByIdAndUpdate(
-      req.user._id, 
-      { club: club._id }, 
-      { new: true }
-    );
+    // Set user.club to this club id
+    await User.findByIdAndUpdate(req.user._id, { club: club._id }, { new: true });
     
     console.log(club);
     res.status(201).json({ success: true, club });
@@ -159,6 +158,68 @@ const processedTickets = tickets.map((ticket: any) => ({
   } catch (error: any) {
     console.error("Error creating event:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+
+// Get approved clubs with optional filters, and optionally include active events
+export const listApprovedClubs = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { city, type, includeEvents } = req.query as { city?: string; type?: string; includeEvents?: string };
+    const filter: any = { isApproved: true };
+    if (city) filter.city = { $regex: new RegExp(`^${city}$`, 'i') };
+    if (type) {
+      // Accept both "Pool Club" and "pool_club" style inputs
+      const flexible = type.replace(/_/g, '[ _]+');
+      filter.typeOfVenue = { $regex: new RegExp(`(^|,)\\s*${flexible}\\s*(,|$)`, 'i') };
+    }
+
+    const query = Club.find(filter).sort({ createdAt: -1 });
+    if (includeEvents === 'true') {
+      query.populate({ path: 'events', match: { status: { $in: ['active'] } } });
+    }
+    const clubs = await query.exec();
+    res.status(200).json({ success: true, items: clubs });
+  } catch (error) {
+    console.error('Error listing approved clubs:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// Get single club details with events
+export const getClubDetails = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const club = await Club.findById(id).populate({ path: 'events' });
+    if (!club) {
+      res.status(404).json({ success: false, message: 'Club not found' });
+      return;
+    }
+    res.status(200).json({ success: true, club });
+  } catch (error) {
+    console.error('Error getting club details:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// List distinct cities from existing clubs (for dynamic pickers)
+export const listCities = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const cities: string[] = await Club.distinct('city');
+    // Normalize: trim, remove empties, unique case-insensitive
+    const normalized = Array.from(
+      new Map(
+        cities
+          .filter((c) => typeof c === 'string')
+          .map((c) => (c as string).trim())
+          .filter((c) => c.length > 0)
+          .map((c) => [c.toLowerCase(), c])
+      ).values()
+    ).sort((a, b) => a.localeCompare(b));
+    res.status(200).json({ success: true, items: normalized });
+  } catch (error) {
+    console.error('Error listing cities:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 

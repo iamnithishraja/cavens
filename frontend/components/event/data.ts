@@ -53,6 +53,9 @@ export const SAMPLE_EVENTS: EventItem[] = [
       "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
     ],
     happyHourTimings: "7:00 PM - 9:00 PM",
+    isFeatured: true,
+    featuredNumber: 1,
+    status: "active",
   },
   {
     _id: "evt-dxb-003",
@@ -105,6 +108,9 @@ export const SAMPLE_EVENTS: EventItem[] = [
       "https://samplelib.com/lib/preview/mp4/sample-15s.mp4",
     ],
     happyHourTimings: "8:00 PM - 10:00 PM",
+    isFeatured: false,
+    featuredNumber: 0,
+    status: "active",
   },
   {
     _id: "evt-dxb-004",
@@ -149,6 +155,9 @@ export const SAMPLE_EVENTS: EventItem[] = [
       "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
     ],
     happyHourTimings: "6:30 PM - 8:30 PM",
+    isFeatured: false,
+    featuredNumber: 0,
+    status: "active",
   },
   {
     _id: "evt-dxb-005",
@@ -179,6 +188,9 @@ export const SAMPLE_EVENTS: EventItem[] = [
     galleryPhotos: [],
     promoVideos: ["https://www.w3schools.com/html/mov_bbb.mp4"],
     happyHourTimings: "9:00 PM - 11:00 PM",
+    isFeatured: false,
+    featuredNumber: 0,
+    status: "done",
   },
   {
     _id: "evt-ad-006",
@@ -209,6 +221,9 @@ export const SAMPLE_EVENTS: EventItem[] = [
     galleryPhotos: [],
     promoVideos: ["https://www.w3schools.com/html/mov_bbb.mp4"],
     happyHourTimings: "8:30 PM - 10:30 PM",
+    isFeatured: false,
+    featuredNumber: 0,
+    status: "active",
   },
   {
     _id: "evt-dxb-007",
@@ -239,6 +254,9 @@ export const SAMPLE_EVENTS: EventItem[] = [
     galleryPhotos: [],
     promoVideos: ["https://www.w3schools.com/html/mov_bbb.mp4"],
     happyHourTimings: "9:30 PM - 11:30 PM",
+    isFeatured: false,
+    featuredNumber: 0,
+    status: "active",
   },
 ];
 

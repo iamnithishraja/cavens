@@ -313,8 +313,7 @@ const getNearbyEvents = async (req: CustomRequest, res: Response) => {
 
     const query: any = { events: { $exists: true, $not: { $size: 0 } } };
     if (city) {
-      query.city = { $regex: new RegExp(`^${city}$`, "i") }; 
-
+      query.city = { $regex: new RegExp(`^${city}$`, "i") };
     }
     const clubs = await clubModel.find(query).populate({
       path: "events",

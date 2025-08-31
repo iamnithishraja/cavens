@@ -1,10 +1,6 @@
 import React from 'react';
-import { Text, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Colors } from '@/constants/Colors';
+import UserClubScreen from '../../../components/screens/userClubScreen';
 
-export default function ScanScreen() {
-  return (
-    <Text>Map Screen</Text>
-  );
+export default function MapScreen() {
+  return <UserClubScreen />;
 }
