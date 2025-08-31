@@ -1,0 +1,57 @@
+import mongoose from "mongoose";
+
+// Simplified Order Schema
+const orderSchema = new mongoose.Schema({
+  // Event for which tickets are being purchased
+  event: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Event",
+    required: true,
+  },
+  
+  // Club hosting the event
+  club: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Club",
+    required: true,
+  },
+  
+  // Selected ticket type name
+  ticketType: {
+    type: String,
+    required: true,
+  },
+  
+  // Price of the ticket
+  price: {
+    type: Number,
+    required: true,
+  },
+  
+  // Payment status
+  isPaid: {
+    type: Boolean,
+    default: false,
+  },
+  transactionId:{
+    type: String,
+    required: true,
+  },
+  
+  // Timestamps
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  }
+});
+
+
+
+const orderModel = mongoose.model("Order", orderSchema);
+
+export default orderModel;
