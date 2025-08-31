@@ -7,6 +7,7 @@ import BookingActions from "@/components/event/BookingActions";
 import CurrencyAED from "@/components/event/CurrencyAED";
 import type { EventItem } from "@/components/event/types";
 import apiClient from "@/app/api/client";
+import { router } from "expo-router";
 
 type Props = {
   event?: EventItem; // Make event optional for backward compatibility
@@ -32,22 +33,15 @@ const EventDetailsScreen: React.FC<Props> = ({ event: initialEvent, eventId, onG
       try {
         setLoading(true);
         setError(null);
-        console.log("Fetching event details for ID:", eventId, "using public user route");
         
         const response = await apiClient.get<EventDetailsResponse>(`/api/user/event/${eventId}`);
         
         if (response.data.success && response.data.data) {
           setEvent(response.data.data);
-          console.log("Event details fetched:", response.data.data);
-          console.log("Menu Items:", response.data.data.menuItems?.length || 0);
-          console.log("Gallery Photos:", response.data.data.galleryPhotos?.length || 0);
-          console.log("Promo Videos:", response.data.data.promoVideos?.length || 0);
-          console.log("Tickets:", response.data.data.tickets?.length || 0);
         } else {
           setError("Failed to load event details");
         }
       } catch (err) {
-        console.error("Error fetching event details:", err);
         setError("Failed to load event details. Please try again.");
       } finally {
         setLoading(false);
@@ -275,7 +269,25 @@ const EventDetailsScreen: React.FC<Props> = ({ event: initialEvent, eventId, onG
             </View>
           )}
 
-          <BookingActions onBookTickets={() => {}} onBookTable={() => {}} />
+          {/* Booking Actions */}
+          <View style={styles.bookingSection}>
+            <BookingActions 
+              onBookTickets={() => {
+                if (event?._id) {
+                  router.push({
+                    pathname: '/payment',
+                    params: {
+                      eventId: event._id,
+                      eventName: event.name,
+                      eventDate: event.date,
+                      eventTime: event.time,
+                      tickets: JSON.stringify(event.tickets || [])
+                    }
+                  });
+                }
+              }} 
+            />
+          </View>
         </View>
       </ScrollView>
     </Background>
@@ -498,6 +510,12 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: 18,
     fontWeight: '700',
+  },
+  // Booking Section
+  bookingSection: {
+    marginTop: 24,
+    marginBottom: 20,
+    paddingHorizontal: 16,
   },
 });
 

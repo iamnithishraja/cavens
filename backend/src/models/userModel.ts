@@ -33,6 +33,10 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Club",
   },
+  orders: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Order",
+  }],
   createdAt: {
     type: Date,
     default: Date.now,

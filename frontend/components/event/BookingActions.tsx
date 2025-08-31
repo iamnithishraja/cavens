@@ -4,29 +4,42 @@ import { Colors } from "@/constants/Colors";
 
 type Props = {
   onBookTickets?: () => void;
-  onBookTable?: () => void;
 };
 
-const BookingActions: React.FC<Props> = ({ onBookTickets, onBookTable }) => {
+const BookingActions: React.FC<Props> = ({ onBookTickets }) => {
   return (
-    <View style={styles.row}>
-      <TouchableOpacity style={[styles.btn, styles.primary]} onPress={onBookTickets}>
-        <Text style={styles.btnTextPrimary}>Book Tickets</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={[styles.btn, styles.secondary]} onPress={onBookTable}>
-        <Text style={styles.btnTextSecondary}>Reserve Table</Text>
-      </TouchableOpacity>
-    </View>
+    <TouchableOpacity 
+      style={styles.btn} 
+      onPress={onBookTickets}
+      activeOpacity={0.8}
+    >
+      <Text style={styles.btnText}>🎫 BOOK TICKETS</Text>
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", gap: 12 },
-  btn: { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: "center", justifyContent: "center" },
-  primary: { backgroundColor: Colors.accentYellow },
-  secondary: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.borderBlue },
-  btnTextPrimary: { color: Colors.button.text, fontWeight: "800" },
-  btnTextSecondary: { color: Colors.textPrimary, fontWeight: "800" },
+  btn: { 
+    backgroundColor: Colors.primary,
+    borderRadius: 12, 
+    paddingVertical: 18, 
+    paddingHorizontal: 24,
+    alignItems: "center", 
+    justifyContent: "center",
+    marginVertical: 16,
+    minHeight: 56,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  btnText: { 
+    color: Colors.background, 
+    fontWeight: "800",
+    fontSize: 18,
+    textAlign: 'center',
+  },
 });
 
 export default BookingActions;

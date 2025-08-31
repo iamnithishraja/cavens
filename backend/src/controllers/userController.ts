@@ -15,6 +15,7 @@ import type { CustomRequest } from "../types";
 import Club from "../models/clubModel";
 import eventModel from "../models/eventModel";
 import { calculateDistanceFromMapsLink } from "../utils/mapsDistanceCalculator";
+import orderModel from "../models/orderModel";
 import updateExpiredEvents from "../utils/updateEvent.js";
 
 async function onboarding(req: Request, res: Response) {
@@ -419,4 +420,152 @@ const getPublicEventDetails = async (req: CustomRequest, res: Response) => {
   }
 };
 
-export { onboarding, verifyOtp, completeProfile, switchToClub, getNearbyEvents, getPublicEventDetails };
+// Purchase tickets for an event
+const purchaseTicket = async (req: CustomRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "User not authenticated" });
+      return;
+    }
+
+    const { eventId, ticketType, quantity } = req.body;
+    console.log("Purchase request:", { eventId, ticketType, quantity, userId: req.user._id });
+
+    // Validate input
+    if (!eventId || !ticketType || !quantity) {
+      res.status(400).json({ 
+        success: false, 
+        message: "eventId, ticketType, and quantity are required" 
+      });
+      return;
+    }
+
+    if (quantity < 1 || quantity > 10) {
+      res.status(400).json({ 
+        success: false, 
+        message: "Quantity must be between 1 and 10" 
+      });
+      return;
+    }
+
+    // Find the event and validate it exists
+    const event = await eventModel.findOne({ _id: eventId, status: "active" });
+    if (!event) {
+      res.status(404).json({ success: false, message: "Event not found or not active" });
+      return;
+    }
+
+    // Find the club hosting the event
+    const club = await Club.findOne({ events: eventId });
+    if (!club) {
+      res.status(404).json({ success: false, message: "Club not found for this event" });
+      return;
+    }
+
+    // Validate that the ticket type exists in the event
+    const validTicket = event.tickets.find(ticket => ticket.name === ticketType);
+    if (!validTicket) {
+      res.status(400).json({ 
+        success: false, 
+        message: `Ticket type "${ticketType}" not found for this event`,
+        availableTickets: event.tickets.map(t => ({ name: t.name, price: t.price }))
+      });
+      return;
+    }
+
+    // Check if enough tickets are available
+    const availableTickets = validTicket.quantityAvailable - validTicket.quantitySold;
+    if (availableTickets < quantity) {
+      res.status(400).json({ 
+        success: false, 
+        message: `Only ${availableTickets} tickets available for ${ticketType}`,
+        available: availableTickets
+      });
+      return;
+    }
+
+    // Generate dummy transaction ID
+    const generateTransactionId = () => {
+      return `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    };
+
+    // Create orders based on quantity
+    const orders = [];
+    const orderPromises = [];
+
+    for (let i = 0; i < quantity; i++) {
+      const transactionId = generateTransactionId();
+      
+      const orderData = {
+        event: eventId,
+        club: club._id,
+        ticketType: ticketType,
+        price: validTicket.price,
+        isPaid: true, // Simulating successful payment
+        transactionId: transactionId
+      };
+
+      const order = new orderModel(orderData);
+      orderPromises.push(order.save());
+      orders.push(order);
+    }
+
+    // Save all orders
+    await Promise.all(orderPromises);
+
+    // Add all orders to user's orders array
+    const orderIds = orders.map(order => order._id);
+    await User.findByIdAndUpdate(
+      req.user._id,
+      { $push: { orders: { $each: orderIds } } }
+    );
+
+    // Update ticket sold quantity
+    const ticketIndex = event.tickets.findIndex(ticket => ticket.name === ticketType);
+    if (ticketIndex !== -1 && event.tickets[ticketIndex]) {
+      event.tickets[ticketIndex].quantitySold += quantity;
+      await event.save();
+    }
+
+    // Calculate totals
+    const totalAmount = validTicket.price * quantity;
+
+    console.log(`Successfully created ${quantity} orders for user ${req.user._id}`);
+
+    res.json({
+      success: true,
+      message: `Successfully purchased ${quantity} ticket(s)`,
+      data: {
+        ordersCreated: quantity,
+        ticketType: ticketType,
+        pricePerTicket: validTicket.price,
+        totalAmount: totalAmount,
+        event: {
+          id: event._id,
+          name: event.name,
+          date: event.date,
+          time: event.time
+        },
+        club: {
+          id: club._id,
+          name: club.name,
+          city: club.city
+        },
+        orders: orders.map(order => ({
+          id: order._id,
+          transactionId: order.transactionId,
+          isPaid: order.isPaid,
+          createdAt: order.createdAt
+        }))
+      }
+    });
+    return;
+
+  } catch (error) {
+    console.error("Error purchasing tickets:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+    return;
+  }
+};
+
+export { onboarding, verifyOtp, completeProfile, switchToClub, getNearbyEvents, getPublicEventDetails, purchaseTicket };
