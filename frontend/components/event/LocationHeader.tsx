@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Colors } from '@/constants/Colors';
 import type { City } from '@/components/ui/CityPickerModal';
 
@@ -20,58 +20,69 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
   locationLoading
 }) => {
   return (
-    <TouchableOpacity style={styles.locationContainer} onPress={onLocationPress}>
-      <View style={styles.locationInfo}>
-        <Text style={styles.cityEmoji}>{selectedCity.emoji}</Text>
-        <View style={styles.locationTexts}>
-          <Text style={styles.locationText}>
-            {selectedCity.name}
-          </Text>
-          <Text style={styles.locationSubtext}>
-            {locationLoading ? 'Getting location...' : 'Tap to change city'}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+    <View style={styles.locationHeader}>
+      <TouchableOpacity 
+        style={styles.locationSelector}
+        onPress={onLocationPress}
+      >
+        <Image 
+          source={{ uri: "https://img.icons8.com/ios/50/4EA2FF/marker.png" }}
+          style={styles.locationIcon}
+        />
+        <Text style={styles.locationText}>{selectedCity.name}</Text>
+        <Image 
+          source={{ uri: "https://img.icons8.com/ios/50/FFFFFF/chevron-down.png" }}
+          style={styles.chevronIcon}
+        />
+      </TouchableOpacity>
+      
+      <TouchableOpacity style={styles.filterButton}>
+        <Image 
+          source={{ uri: "https://img.icons8.com/ios/50/FFFFFF/menu--v1.png" }}
+          style={styles.filterIcon}
+        />
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  locationContainer: {
+  locationHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: Colors.backgroundSecondary,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: Colors.withOpacity.white10,
   },
-  locationInfo: {
+  locationSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
   },
-  cityEmoji: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  locationTexts: {
-    flex: 1,
+  locationIcon: {
+    width: 24,
+    height: 24,
+    tintColor: Colors.blueAccent,
+    marginRight: 8,
   },
   locationText: {
     color: Colors.textPrimary,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    marginBottom: 2,
+    marginRight: 4,
   },
-  locationSubtext: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    fontWeight: '500',
+  chevronIcon: {
+    width: 16,
+    height: 16,
+    tintColor: Colors.textSecondary,
+    marginLeft: 4,
+  },
+  filterButton: {
+    padding: 8,
+  },
+  filterIcon: {
+    width: 24,
+    height: 24,
+    tintColor: Colors.textPrimary,
   },
 });
 
