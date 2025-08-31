@@ -1,5 +1,7 @@
 import type { Request, Response } from "express";
 import eventModel from "../models/eventModel";
+import ticketModel from "../models/ticketModel";
+import MenuItem from "../models/menuItemSchema";
 import Club from "../models/clubModel";
 import type { CustomRequest } from "../types";
 import z from "zod";
@@ -65,10 +67,17 @@ export const getClubEvents = async (req: CustomRequest, res: Response) => {
          return;
         }
       
+      // Populate tickets and menuItems for events
+      const eventIds = club.events.map((ev: any) => ev._id);
+      const populatedEvents = await eventModel.find({ _id: { $in: eventIds } })
+        .sort({ date: 1 })
+        .populate("tickets")
+        .populate("menuItems");
+
       res.json({
         success: true,
-        data: club.events,
-        total: club.events.length,
+        data: populatedEvents,
+        total: populatedEvents.length,
       });
       return;
   } catch (error) {
@@ -146,7 +155,7 @@ export const getEvent = async (req: CustomRequest, res: Response) => {
     }
 
     // Fetch event details
-    const event = await eventModel.findById(eventId);
+    const event = await eventModel.findById(eventId).populate("tickets").populate("menuItems");
     if (!event) {
        res.status(404).json({ success: false, message: "Event not found" });
        return;
@@ -175,9 +184,21 @@ export const updateEvent = async (req: CustomRequest, res: Response) => {
     }
 
     const eventId = req.params.eventId;
-    const eventData = req.body.eventData;
-    // Validate request body
-    const validatedData = eventSchema.parse(eventData);
+    const eventData = req.body.eventData || {};
+
+    // Normalize potentially stringified arrays coming from clients
+    let rawTickets: any = (eventData as any).tickets;
+    let rawMenuItems: any = (eventData as any).menuItems;
+    if (typeof rawTickets === "string") {
+      try { rawTickets = JSON.parse(rawTickets); } catch { rawTickets = undefined; }
+    }
+    if (typeof rawMenuItems === "string") {
+      try { rawMenuItems = JSON.parse(rawMenuItems); } catch { rawMenuItems = undefined; }
+    }
+
+    // Validate only the non-nested fields; we'll handle tickets/menuItems separately
+    const { tickets: _t, menuItems: _m, ...restEventData } = eventData as any;
+    const validatedData = (eventSchema as any).omit({ tickets: true, menuItems: true }).partial().parse(restEventData);
 
     // Find the club associated with the user
     const club = await Club.findOne(req.user.club);
@@ -186,12 +207,60 @@ export const updateEvent = async (req: CustomRequest, res: Response) => {
        return;
     }
 
+    // Prepare update fields excluding tickets/menuItems to handle refs separately
+    const { ...rest } = validatedData as any;
+
+    const updateFields: any = { ...rest };
+
+    // Handle tickets: create docs if objects provided; accept ids if provided
+    if (Array.isArray(rawTickets)) {
+      if (rawTickets.length > 0 && typeof rawTickets[0] === "object" && rawTickets[0] !== null && ("name" in rawTickets[0])) {
+        const createdTickets = await Promise.all(
+          rawTickets.map(async (t: any) => {
+            const doc = await ticketModel.create({
+              name: t.name,
+              price: Number(t.price),
+              description: t.description || "",
+              quantityAvailable: Number(t.quantityAvailable) || 0,
+            });
+            return doc._id;
+          })
+        );
+        updateFields.tickets = createdTickets;
+      } else {
+        // Assume tickets are ids/strings
+        updateFields.tickets = rawTickets as any[];
+      }
+    }
+
+    // Handle menuItems similarly
+    if (Array.isArray(rawMenuItems)) {
+      if (rawMenuItems.length > 0 && typeof rawMenuItems[0] === "object" && rawMenuItems[0] !== null && ("name" in rawMenuItems[0])) {
+        const createdMenuItems = await Promise.all(
+          rawMenuItems.map(async (m: any) => {
+            const doc = await MenuItem.create({
+              name: m.name,
+              price: m.price?.toString?.() ?? String(m.price ?? ''),
+              description: m.description || "",
+              category: m.category,
+              itemImage: m.itemImage || "",
+              customCategory: m.customCategory || "",
+            });
+            return doc._id;
+          })
+        );
+        updateFields.menuItems = createdMenuItems;
+      } else {
+        updateFields.menuItems = rawMenuItems as any[];
+      }
+    }
+
     // Find and update the event (ensure it belongs to this club)
     const event = await eventModel.findOneAndUpdate(
       { _id: eventId },
-      { ...validatedData },
+      { $set: updateFields },
       { new: true }
-    );
+    ).populate("tickets").populate("menuItems");
 
     if (!event) {
        res.status(404).json({ success: false, message: "Event not found" });
@@ -238,7 +307,9 @@ export const getFeaturedEvents = async (req: CustomRequest, res: Response) => {
     const events = await eventModel
       .find(baseQuery)
       .sort({ featuredNumber: 1 }) 
-      .limit(3); 
+      .limit(3)
+      .populate("tickets")
+      .populate("menuItems"); 
 
     console.log("Featured events found:", events.length);
 

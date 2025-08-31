@@ -4,6 +4,8 @@ import eventModel from "../models/eventModel";
 import { createEventSchema } from "../schemas/eventSchema";
 import type { CustomRequest } from "../types";
 import User from "../models/userModel";
+import ticketModel from "../models/ticketModel";
+import MenuItem from "../models/menuItemSchema";
 
 export const createClub = async (req: CustomRequest, res: Response): Promise<void> => {
   try {
@@ -93,26 +95,33 @@ export const saveEventData = async (req: CustomRequest, res: Response): Promise<
       return;
     }
 
-    // Normalize tickets
-    // Normalize tickets
-const processedTickets = tickets.map((ticket: any) => ({
-  name: ticket.name || ticket.type,  // <-- FIX: use name if available, fallback to type
-  type: ticket.type,                 // keep type if schema has it
-  price: Number(ticket.price),
-  quantityAvailable: Number(ticket.quantityAvailable),
-  description: ticket.description || "",
-  soldCount: 0,
-}));
+    // Create Ticket documents and collect their ObjectIds
+    const ticketDocs = await Promise.all(
+      (tickets || []).map(async (ticket: any) => {
+        const doc = await ticketModel.create({
+          name: ticket.name || ticket.type,
+          price: Number(ticket.price),
+          description: ticket.description || "",
+          quantityAvailable: Number(ticket.quantityAvailable),
+        });
+        return doc._id;
+      })
+    );
 
-
-    // Normalize menu items
-    const processedMenuItems = menuItems.map((item: any) => ({
-      name: item.name,
-      price: item.price.toString(),
-      description: item.description || "",
-      category: item.category,
-      itemImage: item.itemImage || "",
-    }));
+    // Create MenuItem documents and collect their ObjectIds
+    const menuItemDocs = await Promise.all(
+      (menuItems || []).map(async (item: any) => {
+        const doc = await MenuItem.create({
+          name: item.name,
+          price: item.price?.toString?.() ?? String(item.price ?? ''),
+          description: item.description || "",
+          category: item.category,
+          itemImage: item.itemImage || "",
+          customCategory: item.customCategory || "",
+        });
+        return doc._id;
+      })
+    );
 
     // Create event
     const event = await eventModel.create({
@@ -123,9 +132,8 @@ const processedTickets = tickets.map((ticket: any) => ({
       djArtists: djArtists || "",
       coverImage: coverImage || "",
       clubId,
-    
-      tickets: processedTickets,
-      menuItems: processedMenuItems,
+      tickets: ticketDocs,
+      menuItems: menuItemDocs,
       happyHourTimings,
       galleryPhotos,
       promoVideos,
@@ -151,8 +159,8 @@ const processedTickets = tickets.map((ticket: any) => ({
         name: event.name,
         date: event.date,
         time: event.time,
-        ticketsCount: processedTickets.length,
-        menuItemsCount: processedMenuItems.length,
+        ticketsCount: ticketDocs.length,
+        menuItemsCount: menuItemDocs.length,
       },
     });
   } catch (error: any) {
@@ -176,7 +184,14 @@ export const listApprovedClubs = async (req: Request, res: Response): Promise<vo
 
     const query = Club.find(filter).sort({ createdAt: -1 });
     if (includeEvents === 'true') {
-      query.populate({ path: 'events', match: { status: { $in: ['active'] } } });
+      query.populate({ 
+        path: 'events', 
+        match: { status: { $in: ['active'] } },
+        populate: [
+          { path: 'tickets' },
+          { path: 'menuItems' }
+        ]
+      });
     }
     const clubs = await query.exec();
     res.status(200).json({ success: true, items: clubs });
@@ -190,7 +205,13 @@ export const listApprovedClubs = async (req: Request, res: Response): Promise<vo
 export const getClubDetails = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const club = await Club.findById(id).populate({ path: 'events' });
+    const club = await Club.findById(id).populate({ 
+      path: 'events',
+      populate: [
+        { path: 'tickets' },
+        { path: 'menuItems' }
+      ]
+    });
     if (!club) {
       res.status(404).json({ success: false, message: 'Club not found' });
       return;

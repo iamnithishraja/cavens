@@ -1,7 +1,7 @@
 import { store } from "@/utils/index";
 import axios from "axios";
 
-export const baseUrl = "https://wombat-more-inherently.ngrok-free.app"
+export const baseUrl = "https://square-goat-barely.ngrok-free.app"
 console.log("baseUrl", baseUrl);
 const apiClient = axios.create({
     baseURL: baseUrl,

@@ -10,8 +10,16 @@ const eventSchema = new mongoose.Schema({
     djArtists: String,
     description: String,
     coverImage: String,
-    tickets: [ticketSchema],
-    menuItems: [menuItemSchema],
+    tickets: [{
+      ref: "Ticket",
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+    }],
+    menuItems: [{
+      ref: "MenuItem",
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+    }],
     
     guestExperience: {
       dressCode: String,

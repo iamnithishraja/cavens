@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "start": "bun run src/index.ts",
-    "dev": "bun run --watch src/index.ts"
+    "dev": "bun run --watch src/index.ts",
+    "migrate:events": "bun run src/scripts/migrate-events.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

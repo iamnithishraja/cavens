@@ -15,15 +15,15 @@ const orderSchema = new mongoose.Schema({
     ref: "Club",
     required: true,
   },
-  
-  // Selected ticket type name
-  ticketType: {
-    type: String,
+
+  // Selected ticket
+  ticket: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Ticket",
     required: true,
   },
   
-  // Price of the ticket
-  price: {
+  quantity: {
     type: Number,
     required: true,
   },

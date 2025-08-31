@@ -16,6 +16,7 @@ import Club from "../models/clubModel";
 import eventModel from "../models/eventModel";
 import { calculateDistanceFromMapsLink } from "../utils/mapsDistanceCalculator";
 import orderModel from "../models/orderModel";
+import ticketModel from "../models/ticketModel";
 import updateExpiredEvents from "../utils/updateEvent.js";
 
 async function onboarding(req: Request, res: Response) {
@@ -319,6 +320,10 @@ const getNearbyEvents = async (req: CustomRequest, res: Response) => {
     const clubs = await clubModel.find(query).populate({
       path: "events",
       match: { status: "active" },
+      populate: [
+        { path: "tickets" },
+        { path: "menuItems" }
+      ]
     });
 
     // Calculate distances for all clubs in parallel using Promise.all
@@ -402,7 +407,7 @@ const getPublicEventDetails = async (req: CustomRequest, res: Response) => {
     }
 
     // Fetch event details directly without club ownership check
-    const event = await eventModel.findById(eventId);
+    const event = await eventModel.findById(eventId).populate("tickets").populate("menuItems");
     if (!event) {
       res.status(404).json({ success: false, message: "Event not found" });
       return;
@@ -449,7 +454,7 @@ const purchaseTicket = async (req: CustomRequest, res: Response) => {
     }
 
     // Find the event and validate it exists
-    const event = await eventModel.findOne({ _id: eventId, status: "active" });
+    const event = await eventModel.findOne({ _id: eventId, status: "active" }).populate("tickets");
     if (!event) {
       res.status(404).json({ success: false, message: "Event not found or not active" });
       return;
@@ -463,12 +468,12 @@ const purchaseTicket = async (req: CustomRequest, res: Response) => {
     }
 
     // Validate that the ticket type exists in the event
-    const validTicket = event.tickets.find(ticket => ticket.name === ticketType);
+    const validTicket: any = (event.tickets as any[]).find((ticket: any) => ticket.name === ticketType);
     if (!validTicket) {
       res.status(400).json({ 
         success: false, 
         message: `Ticket type "${ticketType}" not found for this event`,
-        availableTickets: event.tickets.map(t => ({ name: t.name, price: t.price }))
+        availableTickets: (event.tickets as any[]).map((t: any) => ({ name: t.name, price: t.price }))
       });
       return;
     }
@@ -489,43 +494,25 @@ const purchaseTicket = async (req: CustomRequest, res: Response) => {
       return `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     };
 
-    // Create orders based on quantity
-    const orders = [];
-    const orderPromises = [];
-
-    for (let i = 0; i < quantity; i++) {
-      const transactionId = generateTransactionId();
-      
-      const orderData = {
-        event: eventId,
-        club: club._id,
-        ticketType: ticketType,
-        price: validTicket.price,
-        isPaid: true, // Simulating successful payment
-        transactionId: transactionId
-      };
-
-      const order = new orderModel(orderData);
-      orderPromises.push(order.save());
-      orders.push(order);
-    }
-
-    // Save all orders
-    await Promise.all(orderPromises);
+    // Create a single order with quantity
+    const transactionId = generateTransactionId();
+    const order = await new orderModel({
+      event: eventId,
+      club: club._id,
+      ticket: validTicket._id,
+      quantity: quantity,
+      isPaid: true,
+      transactionId: transactionId
+    }).save();
 
     // Add all orders to user's orders array
-    const orderIds = orders.map(order => order._id);
     await User.findByIdAndUpdate(
       req.user._id,
-      { $push: { orders: { $each: orderIds } } }
+      { $push: { orders: order._id } }
     );
 
     // Update ticket sold quantity
-    const ticketIndex = event.tickets.findIndex(ticket => ticket.name === ticketType);
-    if (ticketIndex !== -1 && event.tickets[ticketIndex]) {
-      event.tickets[ticketIndex].quantitySold += quantity;
-      await event.save();
-    }
+    await ticketModel.findByIdAndUpdate(validTicket._id, { $inc: { quantitySold: quantity } });
 
     // Calculate totals
     const totalAmount = validTicket.price * quantity;
@@ -551,12 +538,12 @@ const purchaseTicket = async (req: CustomRequest, res: Response) => {
           name: club.name,
           city: club.city
         },
-        orders: orders.map(order => ({
+        orders: [{
           id: order._id,
           transactionId: order.transactionId,
           isPaid: order.isPaid,
           createdAt: order.createdAt
-        }))
+        }]
       }
     });
     return;

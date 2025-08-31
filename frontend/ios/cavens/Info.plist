@@ -47,8 +47,14 @@
     </dict>
     <key>NSCameraUsageDescription</key>
     <string>This app needs access to your camera to capture photos for your club.</string>
-    <key>NSMicrophoneUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your microphone</string>
+    <key>NSFaceIDUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your Face ID biometric data.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to use your location to show nearby events and calculate distances.</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>This app needs access to your location to show nearby events and calculate distances.</string>
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>This app needs permission to save images to your library.</string>
     <key>NSPhotoLibraryUsageDescription</key>
@@ -56,6 +62,10 @@
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
+    </array>
+    <key>UIBackgroundModes</key>
+    <array>
+      <string>audio</string>
     </array>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>

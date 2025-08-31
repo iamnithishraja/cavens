@@ -167,7 +167,7 @@ const MenuSection: React.FC<Props> = ({
                 label="Price"
                 value={item.price}
                 onChangeText={(value) => onUpdateItem(item.id, "price", value)}
-                placeholder="₹0"
+                placeholder="AED 10"
                 keyboardType="numeric"
               />
             </View>
