@@ -127,6 +127,7 @@ const styles = StyleSheet.create({
   cardSurface: {
     flex: 1,
     flexDirection: 'row',
+    // Removed backgroundColor to match original styling
   },
   clubImage: {
     width: 100,
@@ -175,13 +176,15 @@ const styles = StyleSheet.create({
   },
   ticketButton: {
     backgroundColor: Colors.button.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    borderRadius: 8,
   },
   ticketButtonText: {
     color: Colors.button.text,
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
   },
   // No Events state

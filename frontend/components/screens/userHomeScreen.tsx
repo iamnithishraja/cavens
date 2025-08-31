@@ -5,7 +5,7 @@ import {
   View, 
   ScrollView
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import EventDetailsScreen from './EventDetailsScreen';
 import { SAMPLE_EVENTS } from '@/components/event/data';
@@ -59,6 +59,7 @@ type GetFeaturedEventsResponse = {
 };
 
 const UserHomeScreen = () => {
+  const insets = useSafeAreaInsets();
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TimelineTab>('tonight');
   const [selectedCity, setSelectedCity] = useState<City>(CITIES[0]); // Default to Dubai
@@ -68,7 +69,6 @@ const UserHomeScreen = () => {
   // API data states
   const [featuredEvents, setFeaturedEvents] = useState<FeaturedEventWithDistance[]>([]);
   const [allEvents, setAllEvents] = useState<EventItem[]>([]);
-  const [clubs, setClubs] = useState<ClubWithEvents[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -153,8 +153,6 @@ const UserHomeScreen = () => {
         // Process getAllEvents response
         console.log("allEventsResponse", allEventsResponse.data);
         if (allEventsResponse.data.clubs) {
-          setClubs(allEventsResponse.data.clubs);
-          
           // Extract all events from clubs and enrich with distance data
           const extractedEvents: EventItem[] = [];
           allEventsResponse.data.clubs.forEach((clubData) => {
@@ -316,7 +314,12 @@ const UserHomeScreen = () => {
         
         <ScrollView 
           style={styles.container} 
-          contentContainerStyle={[styles.scrollContent, { paddingTop: 110 }]}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: 110, paddingBottom: insets.bottom + 120 }
+          ]}
+          stickyHeaderIndices={[1]}
+          scrollIndicatorInsets={{ top: 110, bottom: insets.bottom + 80 }}
         >
           {/* Featured Event Carousel */}
           <FeaturedEventsCarousel

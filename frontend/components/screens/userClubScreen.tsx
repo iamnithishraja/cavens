@@ -3,21 +3,19 @@ import {
   StyleSheet, 
   StatusBar, 
   View, 
-  Text, 
-  TouchableOpacity, 
-  Image,
   FlatList,
   ListRenderItem
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/Colors';
-import SearchBar from '@/components/event/SearchBar';
 import CityPickerModal, { CITIES, type City } from '@/components/ui/CityPickerModal';
-import ClubTypeSelector from '@/components/Map/ClubTypeSelector';
-import ClubCard, { type Club } from '@/components/Map/ClubCard';
+import type { Club } from '@/components/Map/ClubCard';
 import EmptyClubsView from '@/components/Map/EmptyClubsView';
 import apiClient from '@/app/api/client';
 import { useRouter } from 'expo-router';
+import UserClubHeader from '@/components/screens/UserClub/UserClubHeader';
+import UserClubListHeader from '@/components/screens/UserClub/UserClubListHeader';
+import UserClubListItem from '@/components/screens/UserClub/UserClubListItem';
 
 // Placeholder: screen only shows header and search now
 
@@ -88,12 +86,11 @@ const UserClubScreen = () => {
   }, [clubs, selectedCity, search, clubMatchesSelectedTypes]);
 
   const renderClubItem: ListRenderItem<Club> = ({ item }) => (
-    <View style={styles.clubCardWrapper}>
-      <ClubCard 
-        club={item}
-        onPress={handleViewEvents}
-      />
-    </View>
+    <UserClubListItem
+      club={item}
+      cityName={selectedCity.name}
+      onPress={handleViewEvents}
+    />
   );
 
   return (
@@ -101,44 +98,12 @@ const UserClubScreen = () => {
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
       <View style={styles.fullBackground}>
         {/* Fixed Header */}
-        <View style={styles.fixedHeader}>
-          {/* Location Header */}
-          <View style={styles.locationHeader}>
-            <TouchableOpacity 
-              style={styles.locationSelector}
-              onPress={() => setCityPickerVisible(true)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.locationInfo}>
-                <Text style={styles.cityEmoji}>{selectedCity.emoji}</Text>
-                <View style={styles.locationTexts}>
-                  <Text style={styles.locationText}>{selectedCity.name}</Text>
-                  <Text style={styles.locationSubtext}>Tap to change city</Text>
-                </View>
-              </View>
-              <Image 
-                source={{ uri: "https://img.icons8.com/ios/50/FFFFFF/chevron-down.png" }}
-                style={styles.chevronIcon}
-              />
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.filterButton}>
-              <Image 
-                source={{ uri: "https://img.icons8.com/ios/50/FFFFFF/menu--v1.png" }}
-                style={styles.filterIcon}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Search Bar */}
-          <View style={styles.searchContainer}>
-            <SearchBar 
-              value={search} 
-              onChangeText={setSearch}
-              placeholder="Search clubs, venues..."
-            />
-          </View>
-        </View>
+        <UserClubHeader
+          selectedCity={selectedCity}
+          onLocationPress={() => setCityPickerVisible(true)}
+          search={search}
+          onSearchChange={setSearch}
+        />
 
         {/* Content */}
         <FlatList
@@ -154,18 +119,13 @@ const UserClubScreen = () => {
             />
           }
           ListHeaderComponent={
-            <View>
-              {/* Spacer to offset fixed header */}
-              <View style={{ height: HEADER_SPACING }} />
-              <Text style={styles.sectionTitle}>Location Maps comming (Soon)</Text>
-              <ClubTypeSelector 
-                selectedTypes={selectedTypes}
-                onTypeSelect={handleToggleType}
-              />
-            </View>
-          }
+            <UserClubListHeader
+              headerSpacing={HEADER_SPACING}
+              selectedTypes={selectedTypes}
+              onTypeSelect={handleToggleType}
             />
-        
+          }
+        />
 
         {/* City Picker Modal */}
         <CityPickerModal
@@ -212,7 +172,132 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 5,
   },
-  // Location Header
+  // Search Bar
+  searchContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  listContent: {
+    paddingBottom: 32,
+  },
+  // Content Sections
+  sectionTitle: {
+    color: Colors.textSecondary,
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 20, 
+    paddingHorizontal: 16,
+    textAlign: 'center',
+    opacity: 0.8,
+  },
+  // Enhanced Category Selector Container
+  categoryContainer: {
+    marginBottom: 24,
+    paddingHorizontal: 16,
+  },
+  // Clubs Header Section
+  clubsHeaderContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    paddingVertical: 16,
+    backgroundColor: Colors.backgroundSecondary,
+    marginHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.withOpacity.white10,
+  },
+  clubsHeaderTitle: {
+    color: Colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  clubsHeaderSubtitle: {
+    color: Colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  // Club Cards - Matching EventsList styling
+  clubCard: {
+    flexDirection: 'row',
+    borderRadius: 16,
+    overflow: 'hidden',
+    height: 100,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: Colors.withOpacity.white10,
+  },
+  cardSurface: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  clubImage: {
+    width: 100,
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  clubInfo: {
+    flex: 1,
+    padding: 12,
+    justifyContent: 'space-between',
+  },
+  clubName: {
+    color: Colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 4,
+    lineHeight: 22,
+  },
+  clubGenre: {
+    color: Colors.genre,
+    fontSize: 14,
+  },
+  ratingDistanceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  starIcon: {
+    width: 14,
+    height: 14,
+    marginRight: 2,
+    tintColor: Colors.rating,
+  },
+  clubDistanceText: {
+    color: Colors.distance,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  ticketButtonContainer: {
+    justifyContent: 'center',
+    paddingRight: 12,
+  },
+  ticketButton: {
+    backgroundColor: Colors.button.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  ticketButtonText: {
+    color: Colors.button.text,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  // Original styles (keeping these for compatibility)
   locationHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -261,24 +346,6 @@ const styles = StyleSheet.create({
     height: 24,
     tintColor: Colors.textPrimary,
   },
-  // Search Bar
-  searchContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  listContent: {
-    paddingBottom: 32,
-  },
-  // Content Sections
-  sectionTitle: {
-    color: Colors.textPrimary,
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 4, 
-    paddingHorizontal: 16,
-    textAlign: 'center',
-    paddingBottom: 6,
-  },
   sectionContainer: {
     marginVertical: 8,
   },
@@ -291,7 +358,7 @@ const styles = StyleSheet.create({
   clubCardWrapper: {
     marginBottom: 8,
   },
-  // Test styles
+  // Test styles (keeping for compatibility)
   testContainer: {
     backgroundColor: Colors.backgroundSecondary,
     margin: 16,
