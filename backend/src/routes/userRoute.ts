@@ -1,5 +1,5 @@
 import express from 'express';
-import { onboarding, verifyOtp, completeProfile, getUserProfile, switchToClub, getNearbyEvents, getPublicEventDetails } from '../controllers/userController';
+import { onboarding, verifyOtp, completeProfile, getUserProfile, switchToClub, getNearbyEvents, getPublicEventDetails, purchaseTicket } from '../controllers/userController';
 import { isAuthenticated, isProfileCompleted } from '../middleware/auth';
 
 const userRoute = express.Router();
@@ -13,5 +13,8 @@ userRoute.get('/getAllEvents', isAuthenticated, isProfileCompleted, getNearbyEve
 
 // Public route for users to get event details by eventId
 userRoute.get('/event/:eventId', isAuthenticated, isProfileCompleted, getPublicEventDetails);
+
+// Route for users to purchase tickets
+userRoute.post('/purchase-ticket', isAuthenticated, isProfileCompleted, purchaseTicket);
 
 export default userRoute;
