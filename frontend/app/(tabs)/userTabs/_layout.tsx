@@ -53,13 +53,11 @@ export default function UserTabs() {
           title: "Bookings",
           tabBarIcon: ({ color, focused }) => (
             <View style={styles.iconContainer}>
-              {focused ? (
-                <View style={styles.centerIconFocused}>
-                  <Ionicons name="calendar" size={24} color="#0B1120" />
-                </View>
-              ) : (
-                <Ionicons name="calendar-outline" size={24} color={color} />
-              )}
+              <Ionicons
+                name={focused ? "calendar" : "calendar-outline"}
+                size={24}
+                color={color}
+              />
             </View>
           ),
         }}
@@ -107,13 +105,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 32,
     height: 32,
-  },
-  centerIconFocused: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });
