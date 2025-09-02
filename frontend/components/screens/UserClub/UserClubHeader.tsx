@@ -10,6 +10,7 @@ type UserClubHeaderProps = {
   onLocationPress: () => void;
   search: string;
   onSearchChange: (text: string) => void;
+  onFilterPress?: () => void;
 };
 
 const UserClubHeader: React.FC<UserClubHeaderProps> = ({
@@ -17,6 +18,7 @@ const UserClubHeader: React.FC<UserClubHeaderProps> = ({
   onLocationPress,
   search,
   onSearchChange,
+  onFilterPress,
 }) => {
   return (
     <View style={styles.fixedHeader}>
@@ -25,6 +27,7 @@ const UserClubHeader: React.FC<UserClubHeaderProps> = ({
         onLocationPress={onLocationPress}
         userLocation={null}
         locationLoading={false}
+        onFilterPress={onFilterPress}
       />
       <View style={styles.searchContainer}>
         <SearchBar

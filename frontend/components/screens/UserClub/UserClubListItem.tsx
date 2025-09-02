@@ -33,7 +33,7 @@ const UserClubListItem: React.FC<UserClubListItemProps> = ({ club, cityName, onP
                 />
               ))}
             </View>
-            <Text style={styles.clubDistanceText}>{Math.floor(Math.random() * 15) + 1} km</Text>
+            <Text style={styles.clubDistanceText}>{club.distance ? club.distance : ''}</Text>
           </View>
         </View>
         <View style={styles.ticketButtonContainer}>
