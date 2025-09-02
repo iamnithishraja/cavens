@@ -36,9 +36,11 @@ type PurchaseTicketResponse = {
   message: string;
   data: {
     ordersCreated: number;
+    ordersUpdated: number;
     ticketType: string;
     pricePerTicket: number;
     totalAmount: number;
+    finalQuantity: number;
     event: {
       id: string;
       name: string;
@@ -50,12 +52,14 @@ type PurchaseTicketResponse = {
       name: string;
       city: string;
     };
-    orders: Array<{
+    order: {
       id: string;
       transactionId: string;
       isPaid: boolean;
+      quantity: number;
       createdAt: string;
-    }>;
+      updatedAt: string;
+    } | null;
   };
 };
 
@@ -115,9 +119,14 @@ const PaymentScreen = () => {
       const response = await apiClient.post<PurchaseTicketResponse>('/api/user/purchase-ticket', purchaseData);
       
       if (response.data.success) {
+        const { ordersCreated, ordersUpdated, finalQuantity, totalAmount } = response.data.data;
+        const message = ordersCreated > 0 
+          ? `You have successfully purchased ${quantity} ${selectedTicketType} ticket(s) for AED ${totalAmount}`
+          : `You have successfully added ${quantity} more ${selectedTicketType} ticket(s) to your existing order. Total quantity: ${finalQuantity}`;
+        
         Alert.alert(
           'Purchase Successful! 🎉',
-          `You have successfully purchased ${response.data.data.ordersCreated} ${selectedTicketType} ticket(s) for AED ${response.data.data.totalAmount}`,
+          message,
           [
             {
               text: 'OK',
