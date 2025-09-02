@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 import type { Order } from '@/types/order';
 
@@ -25,6 +26,19 @@ const BookingCard: React.FC<BookingCardProps> = ({ booking, onPress }) => {
 
   const formatPrice = (price: number) => {
     return `AED ${price.toFixed(2)}`;
+  };
+
+  const handleShowQR = () => {
+    router.push({
+      pathname: '/showQr',
+      params: {
+        orderId: booking._id,
+        eventName: booking.event.name,
+        ticketType: booking.ticket.name,
+        quantity: booking.quantity.toString(),
+        transactionId: booking.transactionId
+      }
+    });
   };
 
   return (
@@ -78,12 +92,21 @@ const BookingCard: React.FC<BookingCardProps> = ({ booking, onPress }) => {
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.transactionId}>
-          TXN: {booking.transactionId.slice(-8).toUpperCase()}
-        </Text>
-        <Text style={styles.orderDate}>
-          {formatDate(booking.createdAt)}
-        </Text>
+        <View style={styles.footerLeft}>
+          <Text style={styles.transactionId}>
+            TXN: {booking.transactionId.slice(-8).toUpperCase()}
+          </Text>
+          <Text style={styles.orderDate}>
+            {formatDate(booking.createdAt)}
+          </Text>
+        </View>
+        <TouchableOpacity 
+          style={styles.qrButton}
+          onPress={handleShowQR}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.qrButtonText}>Show QR</Text>
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -185,6 +208,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.withOpacity.white10,
   },
+  footerLeft: {
+    flex: 1,
+  },
   transactionId: {
     fontSize: 12,
     color: Colors.textSecondary,
@@ -194,6 +220,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textSecondary,
     fontWeight: '500',
+  },
+  qrButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginLeft: 12,
+  },
+  qrButtonText: {
+    color: Colors.background,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 
