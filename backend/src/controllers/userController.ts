@@ -478,55 +478,103 @@ const purchaseTicket = async (req: CustomRequest, res: Response) => {
       return;
     }
 
-    // Check if enough tickets are available
-    const availableTickets = validTicket.quantityAvailable - validTicket.quantitySold;
-    if (availableTickets < quantity) {
-      res.status(400).json({ 
-        success: false, 
-        message: `Only ${availableTickets} tickets available for ${ticketType}`,
-        available: availableTickets
-      });
-      return;
-    }
-
-    // Generate dummy transaction ID
-    const generateTransactionId = () => {
-      return `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    };
-
-    // Create a single order with quantity
-    const transactionId = generateTransactionId();
-    const order = await new orderModel({
+    // Check if user already has an order for this event and ticket type
+    const existingOrder = await orderModel.findOne({
       event: eventId,
-      club: club._id,
       ticket: validTicket._id,
-      quantity: quantity,
-      isPaid: true,
-      transactionId: transactionId
-    }).save();
+      _id: { $in: req.user.orders }
+    });
 
-    // Add all orders to user's orders array
-    await User.findByIdAndUpdate(
-      req.user._id,
-      { $push: { orders: order._id } }
-    );
+    let order;
+    let isNewOrder = false;
+
+    if (existingOrder) {
+      // Update existing order quantity
+      const newQuantity = existingOrder.quantity + quantity;
+      
+      // Check if enough tickets are available for the additional quantity
+      const availableTickets = validTicket.quantityAvailable - validTicket.quantitySold;
+      if (availableTickets < quantity) {
+        res.status(400).json({ 
+          success: false, 
+          message: `Only ${availableTickets} tickets available for ${ticketType}`,
+          available: availableTickets
+        });
+        return;
+      }
+
+      // Update the existing order
+      order = await orderModel.findByIdAndUpdate(
+        existingOrder._id,
+        { 
+          quantity: newQuantity,
+          updatedAt: new Date()
+        },
+        { new: true }
+      );
+
+      console.log(`Updated existing order ${existingOrder._id} with additional ${quantity} tickets`);
+    } else {
+      // Check if enough tickets are available for new order
+      const availableTickets = validTicket.quantityAvailable - validTicket.quantitySold;
+      if (availableTickets < quantity) {
+        res.status(400).json({ 
+          success: false, 
+          message: `Only ${availableTickets} tickets available for ${ticketType}`,
+          available: availableTickets
+        });
+        return;
+      }
+
+      // Generate dummy transaction ID
+      const generateTransactionId = () => {
+        return `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      };
+
+      // Create a new order
+      const transactionId = generateTransactionId();
+      order = await new orderModel({
+        event: eventId,
+        club: club._id,
+        ticket: validTicket._id,
+        quantity: quantity,
+        isPaid: true,
+        transactionId: transactionId
+      }).save();
+
+      // Add new order to user's orders array
+      await User.findByIdAndUpdate(
+        req.user._id,
+        { $push: { orders: order._id } }
+      );
+
+      isNewOrder = true;
+      console.log(`Created new order ${order._id} with ${quantity} tickets`);
+    }
 
     // Update ticket sold quantity
     await ticketModel.findByIdAndUpdate(validTicket._id, { $inc: { quantitySold: quantity } });
 
     // Calculate totals
     const totalAmount = validTicket.price * quantity;
+    const finalQuantity = order ? order.quantity : quantity;
 
-    console.log(`Successfully created ${quantity} orders for user ${req.user._id}`);
+    const message = isNewOrder 
+      ? `Successfully purchased ${quantity} ticket(s)`
+      : `Successfully added ${quantity} more ticket(s) to your existing order`;
+
+    console.log(`Successfully ${isNewOrder ? 'created' : 'updated'} order for user ${req.user._id}`);
 
     res.json({
       success: true,
-      message: `Successfully purchased ${quantity} ticket(s)`,
+      message: message,
       data: {
-        ordersCreated: quantity,
+        ordersCreated: isNewOrder ? 1 : 0,
+        ordersUpdated: isNewOrder ? 0 : 1,
         ticketType: ticketType,
         pricePerTicket: validTicket.price,
         totalAmount: totalAmount,
+        finalQuantity: finalQuantity,
         event: {
           id: event._id,
           name: event.name,
@@ -538,12 +586,14 @@ const purchaseTicket = async (req: CustomRequest, res: Response) => {
           name: club.name,
           city: club.city
         },
-        orders: [{
+        order: order ? {
           id: order._id,
           transactionId: order.transactionId,
           isPaid: order.isPaid,
-          createdAt: order.createdAt
-        }]
+          quantity: order.quantity,
+          createdAt: order.createdAt,
+          updatedAt: order.updatedAt
+        } : null
       }
     });
     return;
@@ -555,4 +605,29 @@ const purchaseTicket = async (req: CustomRequest, res: Response) => {
   }
 };
 
-export { onboarding, verifyOtp, completeProfile, switchToClub, getNearbyEvents, getPublicEventDetails, purchaseTicket };
+const getBookings = async (req: CustomRequest, res: Response) => {
+  try{
+    if(!req.user){
+      res.status(401).json({ success: false, message: "User not authenticated" });
+      return;
+    }
+    const bookings = await User.findById(req.user._id)
+  .populate({
+    path: "orders",
+    populate: [
+      { path: "event", model: "Event" },
+      { path: "ticket", model: "Ticket" },
+      { path: "club", model: "Club" },
+    ],
+  });
+
+res.status(200).json({ success: true, data: bookings });
+ return;
+  }catch(err){
+    console.error("Error fetching bookings:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+    return;
+  }
+}
+
+export { onboarding, verifyOtp, completeProfile, switchToClub, getNearbyEvents, getPublicEventDetails, purchaseTicket, getBookings };

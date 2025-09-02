@@ -11,6 +11,7 @@ export interface IUser {
     otp?: string;
     otpExpiry?: Date;
     club?: mongoose.Schema.Types.ObjectId;
+    orders?: mongoose.Types.ObjectId[];
     createdAt: Date;
     updatedAt: Date;
   }
