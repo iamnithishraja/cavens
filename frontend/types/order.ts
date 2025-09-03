@@ -63,3 +63,69 @@ export interface PurchaseTicketResponse {
     };
   };
 }
+
+// New types for completeOrder API
+export interface CompleteOrderRequest {
+  orderId: string;
+}
+
+export interface CompleteOrderResponse {
+  success: boolean;
+  message: string;
+  data: {
+    order: {
+      _id: string;
+      event: EventDetails;
+      club: ClubDetails;
+      ticket: TicketDetails;
+      quantity: number;
+      status: string;
+      isPaid: boolean;
+      transactionId: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+    eventDetails: EventDetails;
+    ticketDetails: TicketDetails;
+    clubDetails: ClubDetails;
+    scanTime: string;
+    orderStatus: string;
+  };
+}
+
+export interface EventDetails {
+  _id: string;
+  name: string;
+  date: string;
+  time: string;
+  djArtists?: string;
+  description?: string;
+  coverImage?: string;
+  guestExperience?: {
+    dressCode?: string;
+    entryRules?: string;
+    tableLayoutMap?: string;
+    parkingInfo?: string;
+    accessibilityInfo?: string;
+  };
+  galleryPhotos?: string[];
+  promoVideos?: string[];
+  happyHourTimings?: string;
+  status: string;
+}
+
+export interface TicketDetails {
+  _id: string;
+  name: string;
+  price: number;
+  description: string;
+}
+
+export interface ClubDetails {
+  _id: string;
+  name: string;
+  city: string;
+  typeOfVenue?: string;
+  address?: string;
+  phone?: string;
+}
