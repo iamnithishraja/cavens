@@ -60,6 +60,6 @@ export interface PurchaseTicketResponse {
       quantity: number;
       createdAt: string;
       updatedAt: string;
-    } | null;
+    };
   };
 }

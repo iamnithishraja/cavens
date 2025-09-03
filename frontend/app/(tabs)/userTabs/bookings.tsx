@@ -117,6 +117,12 @@ export default function BookingsScreen() {
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
+          bounces={true}
+          alwaysBounceVertical={false}
+          style={styles.flatList}
+          removeClippedSubviews={false}
+          maxToRenderPerBatch={10}
+          windowSize={10}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -136,12 +142,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+    paddingBottom: 0, // Ensure no extra padding at bottom
+    minHeight: '100%', // Ensure container takes full height
   },
   header: {
     paddingHorizontal: 20,
     paddingVertical: 16,
+    paddingBottom: 20, // Add extra bottom padding to header
     borderBottomWidth: 1,
     borderBottomColor: Colors.withOpacity.white10,
+    backgroundColor: Colors.background, // Ensure header has background
+    zIndex: 1, // Ensure header stays above list
   },
   headerTitle: {
     fontSize: 28,
@@ -156,7 +167,13 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingVertical: 8,
+    paddingBottom: 120, // Increased bottom padding to ensure last card is fully visible
     flexGrow: 1,
+    minHeight: '100%', // Ensure container takes full height
+  },
+  flatList: {
+    flex: 1,
+    marginBottom: 0, // Ensure no extra margin
   },
   loadingContainer: {
     flex: 1,
