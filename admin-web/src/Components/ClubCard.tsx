@@ -37,12 +37,14 @@ export default function ClubCard({ club, onView, onApprove }: Props) {
           >
             View
           </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onApprove(club._id); }}
-            className="px-3 py-2 rounded-lg btn-primary font-semibold hover:opacity-90 transition-colors cursor-pointer"
-          >
-            Approve
-          </button>
+          {!club.isApproved && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onApprove(club._id); }}
+              className="px-3 py-2 rounded-lg btn-primary font-semibold hover:opacity-90 transition-colors cursor-pointer"
+            >
+              Approve
+            </button>
+          )}
         </div>
       </div>
     </div>
