@@ -478,103 +478,61 @@ const purchaseTicket = async (req: CustomRequest, res: Response) => {
       return;
     }
 
-    // Check if user already has an order for this event and ticket type
-    const existingOrder = await orderModel.findOne({
-      event: eventId,
-      ticket: validTicket._id,
-      _id: { $in: req.user.orders }
-    });
-
-    let order;
-    let isNewOrder = false;
-
-    if (existingOrder) {
-      // Update existing order quantity
-      const newQuantity = existingOrder.quantity + quantity;
-      
-      // Check if enough tickets are available for the additional quantity
-      const availableTickets = validTicket.quantityAvailable - validTicket.quantitySold;
-      if (availableTickets < quantity) {
-        res.status(400).json({ 
-          success: false, 
-          message: `Only ${availableTickets} tickets available for ${ticketType}`,
-          available: availableTickets
-        });
-        return;
-      }
-
-      // Update the existing order
-      order = await orderModel.findByIdAndUpdate(
-        existingOrder._id,
-        { 
-          quantity: newQuantity,
-          updatedAt: new Date()
-        },
-        { new: true }
-      );
-
-      console.log(`Updated existing order ${existingOrder._id} with additional ${quantity} tickets`);
-    } else {
-      // Check if enough tickets are available for new order
-      const availableTickets = validTicket.quantityAvailable - validTicket.quantitySold;
-      if (availableTickets < quantity) {
-        res.status(400).json({ 
-          success: false, 
-          message: `Only ${availableTickets} tickets available for ${ticketType}`,
-          available: availableTickets
-        });
-        return;
-      }
-
-      // Generate dummy transaction ID
-      const generateTransactionId = () => {
-        return `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-      };
-
-      // Create a new order
-      const transactionId = generateTransactionId();
-      order = await new orderModel({
-        event: eventId,
-        club: club._id,
-        ticket: validTicket._id,
-        quantity: quantity,
-        isPaid: true,
-        transactionId: transactionId
-      }).save();
-
-      // Add new order to user's orders array
-      await User.findByIdAndUpdate(
-        req.user._id,
-        { $push: { orders: order._id } }
-      );
-
-      isNewOrder = true;
-      console.log(`Created new order ${order._id} with ${quantity} tickets`);
+    // Check if enough tickets are available for the order
+    const availableTickets = validTicket.quantityAvailable - validTicket.quantitySold;
+    if (availableTickets < quantity) {
+      res.status(400).json({ 
+        success: false, 
+        message: `Only ${availableTickets} tickets available for ${ticketType}`,
+        available: availableTickets
+      });
+      return;
     }
+
+    // Generate dummy transaction ID
+    const generateTransactionId = () => {
+      return `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    };
+
+    // Always create a new order
+    const transactionId = generateTransactionId();
+    const order = await new orderModel({
+      event: eventId,
+      club: club._id,
+      ticket: validTicket._id,
+      quantity: quantity,
+      isPaid: true,
+      transactionId: transactionId
+    }).save();
+
+    // Add new order to user's orders array
+    await User.findByIdAndUpdate(
+      req.user._id,
+      { $push: { orders: order._id } }
+    );
+
+    console.log(`Created new order ${order._id} with ${quantity} tickets`);
 
     // Update ticket sold quantity
     await ticketModel.findByIdAndUpdate(validTicket._id, { $inc: { quantitySold: quantity } });
 
     // Calculate totals
     const totalAmount = validTicket.price * quantity;
-    const finalQuantity = order ? order.quantity : quantity;
 
-    const message = isNewOrder 
-      ? `Successfully purchased ${quantity} ticket(s)`
-      : `Successfully added ${quantity} more ticket(s) to your existing order`;
+    const message = `Successfully purchased ${quantity} ticket(s)`;
 
-    console.log(`Successfully ${isNewOrder ? 'created' : 'updated'} order for user ${req.user._id}`);
+    console.log(`Successfully created new order for user ${req.user._id}`);
 
     res.json({
       success: true,
       message: message,
       data: {
-        ordersCreated: isNewOrder ? 1 : 0,
-        ordersUpdated: isNewOrder ? 0 : 1,
+        ordersCreated: 1,
+        ordersUpdated: 0,
         ticketType: ticketType,
         pricePerTicket: validTicket.price,
         totalAmount: totalAmount,
-        finalQuantity: finalQuantity,
+        finalQuantity: quantity,
         event: {
           id: event._id,
           name: event.name,
@@ -586,14 +544,14 @@ const purchaseTicket = async (req: CustomRequest, res: Response) => {
           name: club.name,
           city: club.city
         },
-        order: order ? {
+        order: {
           id: order._id,
           transactionId: order.transactionId,
           isPaid: order.isPaid,
           quantity: order.quantity,
           createdAt: order.createdAt,
           updatedAt: order.updatedAt
-        } : null
+        }
       }
     });
     return;
