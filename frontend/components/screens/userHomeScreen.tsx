@@ -232,18 +232,25 @@ const UserHomeScreen = () => {
     fetchData();
   }, [userLocation, selectedCity]); // Re-fetch when location or city changes
 
-  // Filter events based on the active tab, search and filters
+  // Filter events based on the active tab, search (regex) and filters
   const filteredEvents = useMemo(() => {
     let events = allEvents;
     
-    // Apply search filter first
-    if (search) {
-      const searchLower = search.toLowerCase();
-      events = events.filter(event => 
-        event.name.toLowerCase().includes(searchLower) ||
-        event.djArtists?.toLowerCase().includes(searchLower) ||
-        event.venue?.toLowerCase().includes(searchLower)
-      );
+    // Apply regex-based search filter first
+    if (search.trim().length > 0) {
+      // Escape regex special characters in input to avoid invalid patterns but allow simple regex-like usage
+      const escaped = search
+        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+        .replace(/\s+/g, ".*?"); // treat spaces as fuzzy gaps
+      const pattern = new RegExp(escaped, 'i');
+      events = events.filter((event) => {
+        const fields = [
+          event.name || '',
+          event.djArtists || '',
+          event.venue || '',
+        ];
+        return fields.some((f) => pattern.test(f));
+      });
     }
     
     // Apply timeline filter
@@ -283,7 +290,7 @@ const UserHomeScreen = () => {
     events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
     return events;
-  }, [allEvents, activeTab, search]);
+  }, [allEvents, activeTab, search, eventFilters]);
 
   // Handle city selection
   const handleCitySelect = (city: City) => {

@@ -53,14 +53,28 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, title = 'Menu',
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  const buildRegex = (input: string) => {
+    const trimmed = input.trim();
+    if (trimmed.length === 0) return null;
+    const escaped = trimmed
+      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+      .replace(/\s+/g, ".*?");
+    return new RegExp(escaped, 'i');
+  };
+
   const visibleItems = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
+    const pattern = buildRegex(searchQuery);
     const selectedLower = selectedCategory.toLowerCase();
     return allItems.filter(i => {
       const inCategory = selectedCategory === 'All' ? true : (i.categoryLower === selectedLower ||
         (selectedLower === 'appetisers & snacks' && ((i.categoryLower || '').includes('appet') || (i.categoryLower || '').includes('snack'))));
-      if (!query) return inCategory;
-      return inCategory && ((i.nameLower || '').includes(query) || (i.descriptionLower || '').includes(query));
+      if (!pattern) return inCategory;
+      return inCategory && ([
+        i.name,
+        i.description,
+        i.category,
+        i.customCategory,
+      ].some((f) => pattern.test(f || '')));
     });
   }, [allItems, selectedCategory, searchQuery]);
 

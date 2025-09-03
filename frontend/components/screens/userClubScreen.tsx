@@ -101,8 +101,14 @@ const UserClubScreen = () => {
     router.push(`/userClubDetailsScreen?clubId=${club._id}`);
   };
 
-  const normalizedIncludes = (haystack: string, needle: string) =>
-    haystack.toLowerCase().includes(needle.trim().toLowerCase());
+  const buildRegex = (input: string) => {
+    const trimmed = input.trim();
+    if (trimmed.length === 0) return null;
+    const escaped = trimmed
+      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+      .replace(/\s+/g, ".*?");
+    return new RegExp(escaped, 'i');
+  };
 
   const clubMatchesSelectedTypes = useCallback((club: Club) => {
     if (selectedTypes.length === 0) return true;
@@ -165,9 +171,15 @@ const UserClubScreen = () => {
   }, [selectedCity, selectedTypes, userLocation]);
 
   const filteredClubs = useMemo(() => {
+    const pattern = buildRegex(search);
     return clubs.filter((club) => {
       const cityOk = !selectedCity?.name || club.city.toLowerCase() === selectedCity.name.toLowerCase();
-      const searchOk = !search || normalizedIncludes(club.name, search) || normalizedIncludes(club.clubDescription, search);
+      const searchOk = !pattern || [
+        club.name || '',
+        club.clubDescription || '',
+        club.address || '',
+        club.typeOfVenue || '',
+      ].some((f) => pattern.test(f));
       const typeOk = clubMatchesSelectedTypes(club);
 
       // Apply filter modal selections
