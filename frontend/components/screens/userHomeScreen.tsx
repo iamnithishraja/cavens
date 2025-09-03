@@ -346,6 +346,7 @@ const UserHomeScreen = () => {
           <SearchSection
             value={search}
             onChangeText={setSearch}
+            cityName={selectedCity.name}
           />
         </View>
         
