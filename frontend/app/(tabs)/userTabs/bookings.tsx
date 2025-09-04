@@ -27,7 +27,7 @@ export default function BookingsScreen() {
         setLoading(true);
       }
 
-      const response = await apiClient.get<BookingResponse>("/api/user/bookings");
+      const response = await apiClient.get<BookingResponse>("/api/user/bookings/paid");
       
       if (response.data.success && response.data.data.orders) {
         setBookings(response.data.data.orders);
