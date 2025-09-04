@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import apiClient from "@/app/api/client";
 import { Colors } from "@/constants/Colors";
-import BookingCard from "@/components/ui/BookingCard";
+import EventHistoryCard from "./EventHistoryCard";
 import type { Order, BookingResponse } from "@/types/order";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -54,6 +54,7 @@ export default function BookingHistory({ onBookingPress, showHeader = true }: Bo
   }, []);
 
   const onRefresh = () => {
+    console.log('🔄 Refresh triggered!');
     setRefreshing(true);
     fetchScannedBookings(true);
   };
@@ -68,8 +69,8 @@ export default function BookingHistory({ onBookingPress, showHeader = true }: Bo
   };
 
   const renderBookingCard = ({ item }: { item: Order }) => (
-    <BookingCard 
-      booking={item} 
+    <EventHistoryCard 
+      order={item} 
       onPress={() => handleBookingPress(item)}
     />
   );
@@ -125,17 +126,14 @@ export default function BookingHistory({ onBookingPress, showHeader = true }: Bo
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
           bounces={true}
-          alwaysBounceVertical={false}
           style={styles.flatList}
-          removeClippedSubviews={false}
-          maxToRenderPerBatch={10}
-          windowSize={10}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
               tintColor={Colors.primary}
               colors={[Colors.primary]}
+              progressBackgroundColor={Colors.backgroundSecondary}
             />
           }
           ListEmptyComponent={renderEmptyState}
@@ -241,7 +239,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryButtonText: {
-    color: Colors.white,
+    color: Colors.background,
     fontSize: 16,
     fontWeight: '600',
   },
