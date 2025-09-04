@@ -569,18 +569,40 @@ const getBookings = async (req: CustomRequest, res: Response) => {
       res.status(401).json({ success: false, message: "User not authenticated" });
       return;
     }
-    const bookings = await User.findById(req.user._id)
-  .populate({
-    path: "orders",
-    populate: [
-      { path: "event", model: "Event" },
-      { path: "ticket", model: "Ticket" },
-      { path: "club", model: "Club" },
-    ],
-  });
+    
+    const status = req.params.status; // Get status from URL parameter
+    console.log("status", status);
+    
+    // Build the query to filter orders by status if provided
+    let userQuery = User.findById(req.user._id);
+    
+    if (status) {
+      // If status is provided, populate orders and filter by status
+      userQuery = userQuery.populate({
+        path: "orders",
+        match: { status: status }, // Filter orders by status
+        populate: [
+          { path: "event", model: "Event" },
+          { path: "ticket", model: "Ticket" },
+          { path: "club", model: "Club" },
+        ],
+      });
+    } else {
+      // If no status provided, get all orders
+      userQuery = userQuery.populate({
+        path: "orders",
+        populate: [
+          { path: "event", model: "Event" },
+          { path: "ticket", model: "Ticket" },
+          { path: "club", model: "Club" },
+        ],
+      });
+    }
 
-res.status(200).json({ success: true, data: bookings });
- return;
+    const bookings = await userQuery;
+    console.log("bookings", bookings);
+    res.status(200).json({ success: true, data: bookings });
+    return;
   }catch(err){
     console.error("Error fetching bookings:", err);
     res.status(500).json({ success: false, message: "Internal server error" });
