@@ -22,6 +22,10 @@ import type { CompleteOrderResponse } from '@/types/order';
 
 const { width, height } = Dimensions.get('window');
 
+// Design constants
+const SPACING = 20;
+const RADIUS = 16;
+
 export default function QRScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [showCamera, setShowCamera] = useState(false);
@@ -353,6 +357,9 @@ export default function QRScreen() {
           {/* Scanning Area */}
           <View style={styles.scanningArea}>
             <View style={styles.scanFrameContainer}>
+              {/* Background Grid Pattern */}
+              <View style={styles.scanGrid} />
+              
               {/* Corner Brackets */}
               <View style={styles.cornerTopLeft} />
               <View style={styles.cornerTopRight} />
@@ -367,12 +374,17 @@ export default function QRScreen() {
                     transform: [{
                       translateY: scanAnimation.interpolate({
                         inputRange: [0, 1],
-                        outputRange: [0, width - 160], // Scan frame height
+                        outputRange: [0, width - 100], // Scan frame height
                       }),
                     }],
                   },
                 ]}
               />
+              
+              {/* Center Target */}
+              <View style={styles.centerTarget}>
+                <View style={styles.targetCircle} />
+              </View>
             </View>
             
             <Text style={styles.scanInstructions}>
@@ -481,8 +493,7 @@ export default function QRScreen() {
 }
 
 
-const SPACING = 16;
-const RADIUS = 16;
+
 
 const styles = StyleSheet.create({
   /* Layout */
@@ -640,9 +651,9 @@ const styles = StyleSheet.create({
 
   /* Bottom CTA */
   controlsContainer: {
-    paddingHorizontal: SPACING,
-    paddingTop: SPACING,
-    paddingBottom: SPACING * 2, // safe area cushion
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 40, // safe area cushion
     backgroundColor: Colors.background,
     borderTopWidth: 1,
     borderTopColor: Colors.withOpacity.white10,
@@ -662,7 +673,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 18,
-    paddingHorizontal: SPACING * 2,
+    paddingHorizontal: 40,
     gap: 10,
   },
   scanButtonIconContainer: {
@@ -684,116 +695,173 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: 50,
-    paddingHorizontal: SPACING,
+    paddingHorizontal: 20,
     paddingBottom: 12,
   },
   cameraBackButton: { padding: 4 },
   cameraBackButtonInner: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0,0,0,0.8)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
-  cameraTitle: { color: '#fff', fontSize: 18, fontWeight: '700', flex: 1, textAlign: 'center' },
+  cameraTitle: { 
+    color: '#fff', 
+    fontSize: 20, 
+    fontWeight: '800', 
+    flex: 1, 
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
   cameraTopSpacer: { width: 44 },
 
-  scanningArea: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: SPACING * 2 },
+  scanningArea: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 },
+  scanGrid: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.05,
+    backgroundColor: 'transparent',
+  },
   scanFrameContainer: {
-    width: width - SPACING * 5,
-    height: width - SPACING * 5,
+    width: width - 100,
+    height: width - 100,
     position: 'relative',
-    marginBottom: SPACING * 1.5,
+    marginBottom: 30,
   },
   cornerTopLeft: {
     position: 'absolute',
     top: 0,
     left: 0,
-    width: 40,
-    height: 40,
-    borderTopWidth: 4,
-    borderLeftWidth: 4,
+    width: 50,
+    height: 50,
+    borderTopWidth: 5,
+    borderLeftWidth: 5,
     borderColor: Colors.primary,
-    borderTopLeftRadius: 8,
+    borderTopLeftRadius: 12,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
   },
   cornerTopRight: {
     position: 'absolute',
     top: 0,
     right: 0,
-    width: 40,
-    height: 40,
-    borderTopWidth: 4,
-    borderRightWidth: 4,
+    width: 50,
+    height: 50,
+    borderTopWidth: 5,
+    borderRightWidth: 5,
     borderColor: Colors.primary,
-    borderTopRightRadius: 8,
+    borderTopRightRadius: 12,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
   },
   cornerBottomLeft: {
     position: 'absolute',
     bottom: 0,
     left: 0,
-    width: 40,
-    height: 40,
-    borderBottomWidth: 4,
-    borderLeftWidth: 4,
+    width: 50,
+    height: 50,
+    borderBottomWidth: 5,
+    borderLeftWidth: 5,
     borderColor: Colors.primary,
-    borderBottomLeftRadius: 8,
+    borderBottomLeftRadius: 12,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
   },
   cornerBottomRight: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 40,
-    height: 40,
-    borderBottomWidth: 4,
-    borderRightWidth: 4,
+    width: 50,
+    height: 50,
+    borderBottomWidth: 5,
+    borderRightWidth: 5,
     borderColor: Colors.primary,
-    borderBottomRightRadius: 8,
+    borderBottomRightRadius: 12,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
   },
   scanLine: {
     position: 'absolute',
     left: 0,
     right: 0,
-    height: 2,
+    height: 3,
     backgroundColor: Colors.primary,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.9,
     shadowRadius: 8,
   },
+  centerTarget: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -15 }, { translateY: -15 }],
+  },
+  targetCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    shadowColor: '#fff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
   scanInstructions: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 16,
     overflow: 'hidden',
+    marginTop: 20,
   },
   scanningIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginTop: 12,
-    gap: 8,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    marginTop: 16,
+    gap: 10,
   },
-  scanningText: { color: Colors.primary, fontSize: 13, fontWeight: '600' },
-  cameraBottomArea: { paddingBottom: 50, paddingHorizontal: SPACING, justifyContent: 'center', alignItems: 'center' },
+  scanningText: { color: Colors.primary, fontSize: 14, fontWeight: '600' },
+  cameraBottomArea: { paddingBottom: 50, paddingHorizontal: 20, justifyContent: 'center', alignItems: 'center' },
   loadingOverlay: {
-    backgroundColor: 'rgba(0,0,0,0.92)',
-    padding: 20,
-    borderRadius: RADIUS,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    padding: 24,
+    borderRadius: 16,
     alignItems: 'center',
     minWidth: 200,
   },
-  processingText: { color: '#fff', fontSize: 14, fontWeight: '600', marginTop: 8 },
+  processingText: { color: '#fff', fontSize: 16, fontWeight: '600', marginTop: 12 },
 
   /* Success / Order details */
   successBadge: {

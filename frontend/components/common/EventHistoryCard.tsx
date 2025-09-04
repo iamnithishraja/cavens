@@ -36,14 +36,7 @@ export default function EventHistoryCard({ order, onPress }: EventHistoryCardPro
       onPress={handlePress}
       activeOpacity={0.8}
     >
-      {/* Event Image */}
-      {order.event?.coverImage && (
-        <Image 
-          source={{ uri: order.event.coverImage }} 
-          style={styles.eventImage}
-          resizeMode="cover"
-        />
-      )}
+      
       
       {/* Content Container */}
       <View style={styles.content}>
@@ -85,14 +78,7 @@ export default function EventHistoryCard({ order, onPress }: EventHistoryCardPro
             </Text>
           </View>
           
-          {order.event?.city && (
-            <View style={styles.detailRow}>
-              <Ionicons name="map-outline" size={16} color={Colors.textSecondary} />
-              <Text style={styles.detailText} numberOfLines={1}>
-                {order.event.city}
-              </Text>
-            </View>
-          )}
+          
         </View>
 
         {/* Ticket Summary */}
