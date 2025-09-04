@@ -342,7 +342,7 @@ export default function ProfileScreen() {
           />
         </View>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
           <View style={styles.content}>
             {/* Profile Header Section */}
             <View style={styles.profileHeader}>
@@ -423,7 +423,16 @@ export default function ProfileScreen() {
               <BookingHistory showHeader={false} />
             </View>
           </View>
-        </ScrollView>
+        </View>
+
+        {/* Booking History Section - Separate from ScrollView */}
+        <View style={styles.bookingHistoryContainer}>
+          <View style={styles.bookingHistorySection}>
+            <Text style={styles.sectionTitle}>Event History</Text>
+            <Text style={styles.sectionSubtitle}>Your attended events and scanned tickets</Text>
+          </View>
+          <BookingHistory showHeader={false} />
+        </View>
       </View>
     );
   }
@@ -822,6 +831,10 @@ const styles = StyleSheet.create({
   },
 
   // Booking History Section
+  bookingHistoryContainer: {
+    flex: 1,
+    paddingHorizontal: 24,
+  },
   bookingHistorySection: {
     marginTop: 40,
     marginBottom: 40,
