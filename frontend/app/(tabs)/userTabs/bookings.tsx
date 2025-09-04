@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { 
   View, 
   Text, 
@@ -9,47 +9,26 @@ import {
   SafeAreaView,
   StatusBar 
 } from "react-native";
-import apiClient from "@/app/api/client";
 import { Colors } from "@/constants/Colors";
 import BookingCard from "@/components/ui/BookingCard";
-import type { Order, BookingResponse } from "@/types/order";
+import type { Order } from "@/types/order";
+import { useBookingsPolling } from "@/hooks/useBookingsPolling";
 
 export default function BookingsScreen() {
-  const [bookings, setBookings] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchBookings = async (isRefreshing = false) => {
-    try {
-      setError(null);
-      if (!isRefreshing) {
-        setLoading(true);
-      }
-
-      const response = await apiClient.get<BookingResponse>("/api/user/bookings/paid");
-      
-      if (response.data.success && response.data.data.orders) {
-        setBookings(response.data.data.orders);
-      } else {
-        setError("Failed to fetch bookings");
-      }
-    } catch (err: any) {
-      console.error("Error fetching bookings:", err);
-      setError(err.response?.data?.message || "Something went wrong");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchBookings();
-  }, []);
+  const { 
+    bookings, 
+    loading, 
+    error, 
+    refresh, 
+    refreshing
+  } = useBookingsPolling({
+    status: 'paid',
+    enabled: true,
+    interval: 3000, // Poll every 3 seconds
+  });
 
   const onRefresh = () => {
-    setRefreshing(true);
-    fetchBookings(true);
+    refresh();
   };
 
   const handleBookingPress = (booking: Order) => {
@@ -151,7 +130,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20, // Add extra bottom padding to header
     borderBottomWidth: 1,
     borderBottomColor: Colors.withOpacity.white10,
-    backgroundColor: Colors.background, // Ensure header has background
+    backgroundColor: Colors.background, // Ensure header stays above list
     zIndex: 1, // Ensure header stays above list
   },
   headerTitle: {
@@ -165,6 +144,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: '500',
   },
+
   listContainer: {
     paddingVertical: 8,
     paddingBottom: 120, // Increased bottom padding to ensure last card is fully visible

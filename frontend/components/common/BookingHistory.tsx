@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { 
   View, 
   Text, 
@@ -8,11 +8,11 @@ import {
   RefreshControl,
   TouchableOpacity
 } from "react-native";
-import apiClient from "@/app/api/client";
 import { Colors } from "@/constants/Colors";
 import EventHistoryCard from "./EventHistoryCard";
-import type { Order, BookingResponse } from "@/types/order";
+import type { Order } from "@/types/order";
 import { Ionicons } from "@expo/vector-icons";
+import { useBookingsPolling } from "@/hooks/useBookingsPolling";
 
 interface BookingHistoryProps {
   onBookingPress?: (booking: Order) => void;
@@ -20,43 +20,21 @@ interface BookingHistoryProps {
 }
 
 export default function BookingHistory({ onBookingPress, showHeader = true }: BookingHistoryProps) {
-  const [bookings, setBookings] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchScannedBookings = async (isRefreshing = false) => {
-    try {
-      setError(null);
-      if (!isRefreshing) {
-        setLoading(true);
-      }
-
-      // Fetch bookings with status "scanned" (history)
-      const response = await apiClient.get<BookingResponse>("/api/user/bookings/scanned");
-      
-      if (response.data.success && response.data.data.orders) {
-        setBookings(response.data.data.orders);
-      } else {
-        setError("Failed to fetch booking history");
-      }
-    } catch (err: any) {
-      console.error("Error fetching booking history:", err);
-      setError(err.response?.data?.message || "Something went wrong");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchScannedBookings();
-  }, []);
+  const { 
+    bookings, 
+    loading, 
+    error, 
+    refresh, 
+    refreshing 
+  } = useBookingsPolling({
+    status: 'scanned',
+    enabled: true,
+    interval: 3000, // Poll every 3 seconds
+  });
 
   const onRefresh = () => {
     console.log('🔄 Refresh triggered!');
-    setRefreshing(true);
-    fetchScannedBookings(true);
+    refresh();
   };
 
   const handleBookingPress = (booking: Order) => {
@@ -90,7 +68,7 @@ export default function BookingHistory({ onBookingPress, showHeader = true }: Bo
       <Ionicons name="warning-outline" size={48} color={Colors.error} />
       <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
       <Text style={styles.errorMessage}>{error}</Text>
-      <TouchableOpacity style={styles.retryButton} onPress={() => fetchScannedBookings()}>
+      <TouchableOpacity style={styles.retryButton} onPress={() => refresh()}>
         <Text style={styles.retryButtonText}>Retry</Text>
       </TouchableOpacity>
     </View>
@@ -168,6 +146,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: '500',
   },
+
   listContainer: {
     paddingVertical: 8,
     paddingBottom: 120,
