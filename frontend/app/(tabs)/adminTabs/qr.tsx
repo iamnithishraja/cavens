@@ -10,10 +10,11 @@ import {
   SafeAreaView,
   StatusBar,
   Dimensions,
-  Image
+  Image,
+  Animated
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera, useCameraDevices, useCodeScanner ,useCameraDevice} from 'react-native-vision-camera';
+import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import apiClient from '@/app/api/client';
@@ -22,39 +23,34 @@ import type { CompleteOrderResponse } from '@/types/order';
 const { width, height } = Dimensions.get('window');
 
 export default function QRScreen() {
-  const [hasPermission, setHasPermission] = useState<boolean>(false);
+  const [permission, requestPermission] = useCameraPermissions();
   const [showCamera, setShowCamera] = useState(false);
   const [orderData, setOrderData] = useState<CompleteOrderResponse['data'] | null>(null);
   const [loading, setLoading] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  
-  const devices = useCameraDevices();
-  // const abc = devices.back;
-  // const device = devices.find(d => d.position === 'back');
-  const device= useCameraDevice('back');
-
-  // Code scanner hook
-  const codeScanner = useCodeScanner({
-    codeTypes: ['qr', 'ean-13'], // Add other code types if needed
-    onCodeScanned: (codes) => {
-      if (!isScanning && codes.length > 0) {
-        const qrData = codes[0].value;
-        if (qrData) {
-          setIsScanning(true); // Prevent multiple scans
-          handleQRScanned(qrData);
-        }
-      }
-    },
-  });
+  const scanAnimation = new Animated.Value(0);
 
   useEffect(() => {
-    const getCameraPermission = async () => {
-      const cameraPermission = await Camera.requestCameraPermission();
-      setHasPermission(cameraPermission === 'granted');
-    };
+    if (showCamera) {
+      // Start scan line animation
+      const animateScanner = () => {
+        scanAnimation.setValue(0);
+        Animated.timing(scanAnimation, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }).start(() => animateScanner());
+      };
+      animateScanner();
+    }
+  }, [showCamera]);
 
-    getCameraPermission();
-  }, []);
+  const handleBarcodeScanned = ({ type, data }: { type: string; data: string }) => {
+    if (!isScanning) {
+      setIsScanning(true); // Prevent multiple scans
+      handleQRScanned(data);
+    }
+  };
 
   const handleQRScanned = async (qrData: string) => {
     try {
@@ -126,41 +122,51 @@ export default function QRScreen() {
     setIsScanning(false);
   };
 
-  if (hasPermission === false) {
+  if (!permission) {
+    // Camera permissions are still loading
     return (
       <SafeAreaView style={styles.container}>
-        
         <StatusBar barStyle="light-content" backgroundColor={Colors.background} />
         <LinearGradient colors={Colors.gradients.background as [string, string]} style={styles.container}>
           <View style={styles.centerContainer}>
-            <Ionicons name="camera" size={64} color={Colors.error} />
-            <Text style={styles.errorTitle}>Camera Permission Required</Text>
-            <Text style={styles.errorMessage}>
-              This app needs camera access to scan QR codes. Please enable camera permissions in your device settings.
-            </Text>
-            <TouchableOpacity 
-              style={styles.retryButton} 
-              onPress={async () => {
-                const permission = await Camera.requestCameraPermission();
-                setHasPermission(permission === 'granted');
-              }}
-            >
-              <Text style={styles.retryButtonText}>Grant Permission</Text>
-            </TouchableOpacity>
+            <View style={styles.loadingCircle}>
+              <ActivityIndicator size="large" color={Colors.primary} />
+            </View>
+            <Text style={styles.loadingText}>Initializing camera...</Text>
           </View>
         </LinearGradient>
       </SafeAreaView>
     );
   }
 
-  if (!device) {
+  if (!permission.granted) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor={Colors.background} />
         <LinearGradient colors={Colors.gradients.background as [string, string]} style={styles.container}>
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={Colors.primary} />
-            <Text style={styles.loadingText}>Loading camera...</Text>
+            <View style={styles.permissionIconContainer}>
+              <Ionicons name="camera" size={64} color={Colors.primary} />
+              <View style={styles.permissionBadge}>
+                <Ionicons name="lock-closed" size={20} color={Colors.error} />
+              </View>
+            </View>
+            <Text style={styles.errorTitle}>Camera Access Required</Text>
+            <Text style={styles.errorMessage}>
+              We need camera permissions to scan QR codes and complete ticket orders
+            </Text>
+            <TouchableOpacity 
+              style={styles.permissionButton} 
+              onPress={requestPermission}
+            >
+              <LinearGradient
+                colors={[Colors.primary, '#4A9EFF']}
+                style={styles.permissionButtonGradient}
+              >
+                <Ionicons name="shield-checkmark" size={20} color="#000" />
+                <Text style={styles.permissionButtonText}>Grant Camera Access</Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
         </LinearGradient>
       </SafeAreaView>
@@ -174,7 +180,7 @@ export default function QRScreen() {
         <LinearGradient colors={Colors.gradients.background as [string, string]} style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton} onPress={resetScanner}>
+            <TouchableOpacity style={styles.headerBackButton} onPress={resetScanner}>
               <Ionicons name="arrow-back" size={24} color={Colors.primary} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Order Details</Text>
@@ -184,8 +190,13 @@ export default function QRScreen() {
           <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
             {/* Success Badge */}
             <View style={styles.successBadge}>
-              <Ionicons name="checkmark-circle" size={32} color={Colors.success} />
-              <Text style={styles.successText}>Order Completed Successfully!</Text>
+              <LinearGradient
+                colors={['#00FF87', '#60EFFF']}
+                style={styles.successBadgeGradient}
+              >
+                <Ionicons name="checkmark-circle" size={32} color="#000" />
+                <Text style={styles.successText}>Order Completed Successfully!</Text>
+              </LinearGradient>
             </View>
 
             {/* Event Info */}
@@ -268,7 +279,7 @@ export default function QRScreen() {
               </View>
             )}
 
-            {/* Order Details */}
+            {/* Order Details */}x
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Order Information</Text>
               <View style={styles.orderCard}>
@@ -299,8 +310,13 @@ export default function QRScreen() {
           {/* Action Buttons */}
           <View style={styles.bottomContainer}>
             <TouchableOpacity style={styles.scanAgainButton} onPress={startScanning}>
-              <Ionicons name="qr-code" size={20} color={Colors.primary} />
-              <Text style={styles.scanAgainText}>Scan Another Ticket</Text>
+              <LinearGradient
+                colors={[Colors.primary, '#4A9EFF']}
+                style={styles.scanAgainButtonGradient}
+              >
+                <Ionicons name="qr-code" size={20} color="#000" />
+                <Text style={styles.scanAgainText}>Scan Another Ticket</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         </LinearGradient>
@@ -310,421 +326,541 @@ export default function QRScreen() {
 
   if (showCamera) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor={Colors.background} />
-        <LinearGradient colors={Colors.gradients.background as [string, string]} style={styles.container}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton} onPress={resetScanner}>
-              <Ionicons name="arrow-back" size={24} color={Colors.primary} />
+      <View style={styles.cameraFullContainer}>
+        <StatusBar barStyle="light-content" backgroundColor="#000" />
+        <CameraView
+          style={styles.camera}
+          facing="back"
+          onBarcodeScanned={isScanning ? undefined : handleBarcodeScanned}
+          barcodeScannerSettings={{
+            barcodeTypes: ["qr"],
+          }}
+        />
+        
+        {/* Camera Overlay */}
+        <View style={styles.cameraOverlay}>
+          {/* Top Bar */}
+          <View style={styles.cameraTopBar}>
+            <TouchableOpacity style={styles.cameraBackButton} onPress={resetScanner}>
+              <View style={styles.cameraBackButtonInner}>
+                <Ionicons name="close" size={24} color="#fff" />
+              </View>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Scan QR Code</Text>
-            <View style={styles.spacer} />
+            <Text style={styles.cameraTitle}>Scan QR Code</Text>
+            <View style={styles.cameraTopSpacer} />
           </View>
 
-          {/* Camera View */}
-          <View style={styles.cameraContainer}>
-            <Camera
-              style={styles.camera}
-              device={device}
-              isActive={true}
-              codeScanner={codeScanner}
-            />
-            <View style={styles.cameraOverlay}>
-              {/* Back Button Overlay */}
-              <TouchableOpacity style={styles.cameraBackButton} onPress={resetScanner}>
-                <View style={styles.cameraBackButtonInner}>
-                  <Ionicons name="arrow-back" size={20} color="#000000" />
-                </View>
-              </TouchableOpacity>
+          {/* Scanning Area */}
+          <View style={styles.scanningArea}>
+            <View style={styles.scanFrameContainer}>
+              {/* Corner Brackets */}
+              <View style={styles.cornerTopLeft} />
+              <View style={styles.cornerTopRight} />
+              <View style={styles.cornerBottomLeft} />
+              <View style={styles.cornerBottomRight} />
               
-              <View style={styles.scanFrame} />
-              <Text style={styles.scanInstructions}>
-                Position the QR code within the frame
-              </Text>
-              {loading && (
-                <View style={styles.loadingOverlay}>
-                  <ActivityIndicator size="large" color={Colors.primary} />
-                  <Text style={styles.processingText}>Processing QR Code...</Text>
-                </View>
-              )}
-              {isScanning && !loading && (
-                <View style={styles.scanningIndicator}>
-                  <Text style={styles.scanningText}>Scanning...</Text>
-                </View>
-              )}
+              {/* Animated Scan Line */}
+              <Animated.View
+                style={[
+                  styles.scanLine,
+                  {
+                    transform: [{
+                      translateY: scanAnimation.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, width - 160], // Scan frame height
+                      }),
+                    }],
+                  },
+                ]}
+              />
             </View>
+            
+            <Text style={styles.scanInstructions}>
+              Position the QR code within the frame to scan
+            </Text>
+            
+            {isScanning && (
+              <View style={styles.scanningIndicator}>
+                <ActivityIndicator size="small" color={Colors.primary} />
+                <Text style={styles.scanningText}>Reading QR Code...</Text>
+              </View>
+            )}
           </View>
-        </LinearGradient>
-      </SafeAreaView>
+
+          {/* Bottom Instructions */}
+          <View style={styles.cameraBottomArea}>
+            {loading && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="large" color={Colors.primary} />
+                <Text style={styles.processingText}>Processing Order...</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-
       <StatusBar barStyle="light-content" backgroundColor={Colors.background} />
       
       <LinearGradient colors={Colors.gradients.background as [string, string]} style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Scan QR Code</Text>
+          <Text style={styles.headerTitle}>QR Scanner</Text>
           <TouchableOpacity style={styles.helpButton}>
-            <Ionicons name="help-circle" size={24} color={Colors.primary} />
+            <Ionicons name="help-circle-outline" size={24} color={Colors.primary} />
           </TouchableOpacity>
         </View>
 
-        {/* Main Content */}
-        <View style={styles.mainContainer}>
+        {/* Main Content with ScrollView */}
+        <ScrollView 
+          style={styles.scrollContainer} 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.scannerPlaceholder}>
-            <Ionicons name="qr-code" size={120} color={Colors.primary} />
-            <Text style={styles.placeholderTitle}>Ready to Scan</Text>
+            {/* QR Icon with Glow Effect */}
+            <View style={styles.qrIconContainer}>
+              <View style={styles.qrIconGlow} />
+              <Ionicons name="qr-code" size={100} color={Colors.primary} />
+            </View>
+            
+            <Text style={styles.placeholderTitle}>Ready to Scan Tickets</Text>
             <Text style={styles.placeholderSubtitle}>
-              Tap the button below to start scanning QR codes from user tickets
+              Quickly verify and complete customer orders by scanning their QR codes
             </Text>
 
+            {/* Feature Pills */}
+            <View style={styles.featurePills}>
+              <View style={styles.featurePill}>
+                <Ionicons name="flash" size={16} color={Colors.primary} />
+                <Text style={styles.featurePillText}>Instant Verification</Text>
+              </View>
+              <View style={styles.featurePill}>
+                <Ionicons name="shield-checkmark" size={16} color={Colors.success} />
+                <Text style={styles.featurePillText}>Secure Processing</Text>
+              </View>
+            </View>
           </View>
-        </View>
+        
 
-        {/* Scan Button */}
-        <ScrollView style={styles.controlsContainer}>
+        {/* Scan Button - Fixed at bottom */}
+        <View style={styles.controlsContainer}>
           <TouchableOpacity 
             style={styles.startScanButton} 
             onPress={startScanning}
             disabled={loading}
+            activeOpacity={0.8}
           >
-            {loading ? (
-              <ActivityIndicator size="small" color={Colors.background} />
-            ) : (
-              <>
-                <Ionicons name="camera" size={24} color={Colors.background} />
-                <Text style={styles.startScanText}>Start Scanning</Text>
-              </>
-            )}
+            <LinearGradient
+              colors={[Colors.primary, '#4A9EFF']}
+              style={styles.startScanButtonGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#000" />
+              ) : (
+                <>
+                  <View style={styles.scanButtonIconContainer}>
+                    <Ionicons name="scan" size={28} color="#000" />
+                  </View>
+                  <Text style={styles.startScanText}>Start Scanning</Text>
+                  <Ionicons name="arrow-forward" size={20} color="#000" />
+                </>
+              )}
+            </LinearGradient>
           </TouchableOpacity>
-          
-
+        </View>
         </ScrollView>
       </LinearGradient>
     </SafeAreaView>
   );
 }
 
+
+const SPACING = 16;
+const RADIUS = 16;
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  /* Layout */
+  container: { flex: 1, backgroundColor: Colors.background },
+
+  /* Generic centers/loaders */
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: SPACING * 2,
   },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: Colors.textSecondary,
-    textAlign: 'center',
+  loadingCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.backgroundSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING,
+  },
+  loadingText: { fontSize: 16, color: Colors.textSecondary, textAlign: 'center' },
+
+  /* Permission */
+  permissionIconContainer: { position: 'relative', marginBottom: SPACING * 1.5 },
+  permissionBadge: {
+    position: 'absolute',
+    bottom: -8,
+    right: -8,
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.background,
   },
   errorTitle: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.textPrimary,
-    marginBottom: 16,
+    marginBottom: 8,
     textAlign: 'center',
   },
   errorMessage: {
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 24,
+    lineHeight: 22,
+    marginBottom: SPACING * 2,
   },
-  retryButton: {
-    backgroundColor: Colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 25,
+  permissionButton: {
+    borderRadius: 28,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
   },
-  retryButtonText: {
-    color: Colors.background,
-    fontSize: 16,
-    fontWeight: '600',
+  permissionButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: SPACING * 2,
+    gap: 10,
   },
+  permissionButtonText: { color: '#000', fontSize: 16, fontWeight: '700' },
+
+  /* Header */
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: SPACING,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: Colors.withOpacity.white10,
+    backgroundColor: Colors.background,
   },
-  headerTitle: {
-    color: Colors.textPrimary,
-    fontSize: 20,
-    fontWeight: '700',
-    flex: 1,
-    textAlign: 'center',
-  },
-  backButton: {
+  headerTitle: { color: Colors.textPrimary, fontSize: 18, fontWeight: '700', flex: 1, textAlign: 'center' },
+  headerBackButton: {
     padding: 8,
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: Colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: Colors.withOpacity.white10,
   },
   helpButton: {
     padding: 8,
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: Colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: Colors.withOpacity.white10,
   },
-  spacer: {
-    width: 40,
-  },
-  mainContainer: {
-    flex: 1,
+  spacer: { width: 40 },
+
+  /* Scroll */
+  scrollContainer: { flex: 1 },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 20, // Add bottom padding to ensure space for button
+    paddingHorizontal: SPACING,
+    paddingVertical: SPACING * 2,
   },
+
+  /* Placeholder / Landing */
   scannerPlaceholder: {
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: SPACING,
+    minHeight: 360,
+    justifyContent: 'center',
+  },
+  qrIconContainer: { position: 'relative', marginBottom: SPACING },
+  qrIconGlow: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: Colors.primary,
+    opacity: 0.08,
+    top: -20,
+    left: -20,
   },
   placeholderTitle: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.textPrimary,
-    marginTop: 24,
-    marginBottom: 12,
+    marginBottom: 8,
     textAlign: 'center',
   },
   placeholderSubtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 22,
+    marginBottom: SPACING,
   },
+  featurePills: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 4 },
+  featurePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.backgroundSecondary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: Colors.withOpacity.white10,
+  },
+  featurePillText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '600' },
 
+  /* Bottom CTA */
   controlsContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    backgroundColor: Colors.background, // Add background to ensure visibility
+    paddingHorizontal: SPACING,
+    paddingTop: SPACING,
+    paddingBottom: SPACING * 2, // safe area cushion
+    backgroundColor: Colors.background,
     borderTopWidth: 1,
     borderTopColor: Colors.withOpacity.white10,
+    width: '100%',
   },
   startScanButton: {
-    backgroundColor: Colors.primary,
+    borderRadius: 28,
+    overflow: 'hidden',
+    elevation: 10,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+  },
+  startScanButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 25,
-    gap: 12,
-    borderWidth: 2,
-    borderColor: '#000000',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    paddingVertical: 18,
+    paddingHorizontal: SPACING * 2,
+    gap: 10,
   },
-  startScanText: {
-    color: '#000000',
-    fontSize: 18,
-    fontWeight: '700',
+  scanButtonIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+  startScanText: { color: '#000', fontSize: 16, fontWeight: '700', flex: 1, textAlign: 'center' },
 
-  cameraContainer: {
-    flex: 1,
+  /* Camera */
+  cameraFullContainer: { flex: 1, backgroundColor: '#000' },
+  camera: { flex: 1 },
+  cameraOverlay: { position: 'absolute', inset: 0 },
+  cameraTopBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 50,
+    paddingHorizontal: SPACING,
+    paddingBottom: 12,
+  },
+  cameraBackButton: { padding: 4 },
+  cameraBackButtonInner: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  cameraTitle: { color: '#fff', fontSize: 18, fontWeight: '700', flex: 1, textAlign: 'center' },
+  cameraTopSpacer: { width: 44 },
+
+  scanningArea: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: SPACING * 2 },
+  scanFrameContainer: {
+    width: width - SPACING * 5,
+    height: width - SPACING * 5,
     position: 'relative',
+    marginBottom: SPACING * 1.5,
   },
-  camera: {
-    flex: 1,
-  },
-  cameraOverlay: {
+  cornerTopLeft: {
     position: 'absolute',
     top: 0,
     left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scanFrame: {
-    width: width - 120,
-    height: width - 120,
-    borderWidth: 3,
+    width: 40,
+    height: 40,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
     borderColor: Colors.primary,
-    borderRadius: 20,
-    backgroundColor: 'transparent',
+    borderTopLeftRadius: 8,
+  },
+  cornerTopRight: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 40,
+    height: 40,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+    borderColor: Colors.primary,
+    borderTopRightRadius: 8,
+  },
+  cornerBottomLeft: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: 40,
+    height: 40,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+    borderColor: Colors.primary,
+    borderBottomLeftRadius: 8,
+  },
+  cornerBottomRight: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 40,
+    height: 40,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderColor: Colors.primary,
+    borderBottomRightRadius: 8,
+  },
+  scanLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 8,
   },
   scanInstructions: {
-    color: Colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginTop: 20,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  loadingOverlay: {
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    padding: 20,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  processingText: {
-    color: Colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 12,
-  },
-  scanningIndicator: {
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  scanningText: {
-    color: Colors.primary,
+    color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+    textAlign: 'center',
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
-  scrollContainer: {
-    flex: 1,
+  scanningIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginTop: 12,
+    gap: 8,
   },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 100,
+  scanningText: { color: Colors.primary, fontSize: 13, fontWeight: '600' },
+  cameraBottomArea: { paddingBottom: 50, paddingHorizontal: SPACING, justifyContent: 'center', alignItems: 'center' },
+  loadingOverlay: {
+    backgroundColor: 'rgba(0,0,0,0.92)',
+    padding: 20,
+    borderRadius: RADIUS,
+    alignItems: 'center',
+    minWidth: 200,
   },
+  processingText: { color: '#fff', fontSize: 14, fontWeight: '600', marginTop: 8 },
+
+  /* Success / Order details */
   successBadge: {
+    borderRadius: RADIUS,
+    overflow: 'hidden',
+    marginBottom: SPACING,
+    elevation: 6,
+    shadowColor: '#00FF87',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+  },
+  successBadgeGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.success + '20',
     paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 16,
-    marginBottom: 24,
-    gap: 12,
+    paddingHorizontal: 18,
+    gap: 10,
   },
-  successText: {
-    color: Colors.success,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    color: Colors.textPrimary,
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 16,
-  },
+  successText: { color: '#000', fontSize: 16, fontWeight: '800' },
+
+  section: { marginBottom: SPACING },
+  sectionTitle: { color: Colors.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 10 },
+
   eventCard: {
     backgroundColor: Colors.backgroundSecondary,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: RADIUS,
+    padding: SPACING,
     borderWidth: 1,
     borderColor: Colors.withOpacity.white10,
   },
-  eventImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  eventInfo: {
-    gap: 8,
-  },
-  eventName: {
-    color: Colors.textPrimary,
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  eventDateTime: {
-    color: Colors.textSecondary,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  eventDetail: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-  },
-  label: {
-    color: Colors.textPrimary,
-    fontWeight: '600',
-  },
-  eventDescription: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 8,
-  },
+  eventImage: { width: '100%', height: 200, borderRadius: 12, marginBottom: 12 },
+  eventInfo: { gap: 6 },
+  eventName: { color: Colors.textPrimary, fontSize: 18, fontWeight: '700' },
+  eventDateTime: { color: Colors.textSecondary, fontSize: 14, fontWeight: '500' },
+  eventDetail: { color: Colors.textSecondary, fontSize: 13 },
+  label: { color: Colors.textPrimary, fontWeight: '600' },
+  eventDescription: { color: Colors.textSecondary, fontSize: 13, lineHeight: 20, marginTop: 6 },
+
   ticketCard: {
     backgroundColor: Colors.backgroundSecondary,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: RADIUS,
+    padding: SPACING,
     borderWidth: 1,
     borderColor: Colors.withOpacity.white10,
   },
-  ticketRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  ticketLabel: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  ticketValue: {
-    color: Colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  totalAmount: {
-    color: Colors.primary,
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  ticketRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  ticketLabel: { color: Colors.textSecondary, fontSize: 13, fontWeight: '500' },
+  ticketValue: { color: Colors.textPrimary, fontSize: 13, fontWeight: '600' },
+  totalAmount: { color: Colors.primary, fontSize: 15, fontWeight: '700' },
+
   experienceCard: {
     backgroundColor: Colors.backgroundSecondary,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: RADIUS,
+    padding: SPACING,
     borderWidth: 1,
     borderColor: Colors.withOpacity.white10,
   },
-  experienceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  experienceLabel: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    fontWeight: '500',
-    flex: 1,
-  },
-  experienceValue: {
-    color: Colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '600',
-    flex: 2,
-    textAlign: 'right',
-  },
+  experienceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
+  experienceLabel: { color: Colors.textSecondary, fontSize: 13, fontWeight: '500', flex: 1 },
+  experienceValue: { color: Colors.textPrimary, fontSize: 13, fontWeight: '600', flex: 2, textAlign: 'right' },
+
   orderCard: {
     backgroundColor: Colors.backgroundSecondary,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: RADIUS,
+    padding: SPACING,
     borderWidth: 1,
     borderColor: Colors.withOpacity.white10,
   },
@@ -732,72 +868,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  orderLabel: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  orderValue: {
-    color: Colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  orderLabel: { color: Colors.textSecondary, fontSize: 13, fontWeight: '500' },
+  orderValue: { color: Colors.textPrimary, fontSize: 13, fontWeight: '600' },
   statusBadge: {
     backgroundColor: Colors.success,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: 16,
   },
-  statusText: {
-    color: Colors.background,
-    fontSize: 12,
-    fontWeight: '600',
-  },
+  statusText: { color: Colors.background, fontSize: 12, fontWeight: '700' },
+
+  /* Bottom fixed on details page */
   bottomContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
+    padding: SPACING,
     backgroundColor: Colors.background,
     borderTopWidth: 1,
     borderTopColor: Colors.withOpacity.white10,
   },
   scanAgainButton: {
-    backgroundColor: Colors.primary,
+    borderRadius: 22,
+    overflow: 'hidden',
+    elevation: 6,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  scanAgainButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 25,
-    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    gap: 10,
   },
-  scanAgainText: {
-    color: '#000000',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  cameraBackButton: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    zIndex: 10,
-  },
-  cameraBackButtonInner: {
-    backgroundColor: Colors.primary,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#000000',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 6,
-  },
+  scanAgainText: { color: '#000', fontSize: 16, fontWeight: '800' },
 });
