@@ -17,6 +17,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import apiClient from '@/app/api/client';
 import { store } from '@/utils';
+import { EventAnalytics, AnalyticsResponse } from '@/types/analytics';
+import SalesOverview from '@/components/analytics/SalesOverview';
+import TicketTypesAnalysis from '@/components/analytics/TicketTypesAnalysis';
+import DemographicsAnalysis from '@/components/analytics/DemographicsAnalysis';
+import RevenueBreakdown from '@/components/analytics/RevenueBreakdown';
+import AnalyticsLoading from '@/components/analytics/AnalyticsLoading';
+import AnalyticsError from '@/components/analytics/AnalyticsError';
 
 interface Event {
   _id: string;
@@ -35,6 +42,9 @@ export default function AnalyticsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<EventAnalytics | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -75,8 +85,37 @@ export default function AnalyticsScreen() {
     fetchEvents();
   }, []);
 
+  const fetchAnalytics = async (eventId: string) => {
+    try {
+      setAnalyticsLoading(true);
+      setAnalyticsError(null);
+      const token = await store.get('token');
+      
+      if (!token) {
+        setAnalyticsError('Authentication required');
+        return;
+      }
+
+      const response = await apiClient.get(`/api/event/analytics/${eventId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        setAnalyticsData(response.data.data);
+      } else {
+        setAnalyticsError(response.data.message || 'Failed to fetch analytics');
+      }
+    } catch (error: any) {
+      console.error('Error fetching analytics:', error);
+      setAnalyticsError(error.response?.data?.message || 'Failed to fetch analytics');
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
   const handleEventPress = (event: Event) => {
     setSelectedEvent(event);
+    fetchAnalytics(event._id);
   };
 
   const handleLogout = async () => {
@@ -124,22 +163,68 @@ export default function AnalyticsScreen() {
           </View>
 
           {/* Analytics Content */}
-          <View style={styles.analyticsContainer}>
-            <View style={styles.analyticsCard}>
-              <View style={styles.analyticsIconContainer}>
-                <LinearGradient
-                  colors={[Colors.primary, Colors.primaryDark]}
-                  style={styles.analyticsIconGradient}
-                >
-                  <Ionicons name="analytics-outline" size={48} color={Colors.button.text} />
-                </LinearGradient>
+          <ScrollView 
+            style={styles.analyticsScrollView}
+            contentContainerStyle={styles.analyticsScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {analyticsLoading ? (
+              <AnalyticsLoading />
+            ) : analyticsError ? (
+              <AnalyticsError 
+                message={analyticsError}
+                onRetry={() => selectedEvent && fetchAnalytics(selectedEvent._id)}
+              />
+            ) : analyticsData ? (
+              <View style={styles.analyticsContent}>
+                {/* Event Header */}
+                <View style={styles.eventHeader}>
+                  <View style={styles.eventIconContainer}>
+                    <LinearGradient
+                      colors={Colors.gradients.primary as [string, string]}
+                      style={styles.eventIconGradient}
+                    >
+                      <Ionicons name="analytics-outline" size={32} color="white" />
+                    </LinearGradient>
+                  </View>
+                  <View style={styles.eventInfo}>
+                    <Text style={styles.eventName}>{analyticsData.event.name}</Text>
+                    <Text style={styles.eventDate}>
+                      {new Date(analyticsData.event.date).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })} • {analyticsData.event.time}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Analytics Components */}
+                <SalesOverview sales={analyticsData.sales} />
+                <RevenueBreakdown ticketTypes={analyticsData.ticketTypes} />
+                <TicketTypesAnalysis ticketTypes={analyticsData.ticketTypes} />
+                <DemographicsAnalysis demographics={analyticsData.demographics} />
               </View>
-              
-              <Text style={styles.analyticsTitle}>Hi, this is analytics for your</Text>
-              <Text style={styles.analyticsEventName}>{selectedEvent.name}</Text>
-              <Text style={styles.analyticsSubtitle}>event</Text>
-            </View>
-          </View>
+            ) : (
+              <View style={styles.analyticsContainer}>
+                <View style={styles.analyticsCard}>
+                  <View style={styles.analyticsIconContainer}>
+                    <LinearGradient
+                      colors={Colors.gradients.primary as [string, string]}
+                      style={styles.analyticsIconGradient}
+                    >
+                      <Ionicons name="analytics-outline" size={48} color="white" />
+                    </LinearGradient>
+                  </View>
+                  
+                  <Text style={styles.analyticsTitle}>Hi, this is analytics for your</Text>
+                  <Text style={styles.analyticsEventName}>{selectedEvent.name}</Text>
+                  <Text style={styles.analyticsSubtitle}>event</Text>
+                </View>
+              </View>
+            )}
+          </ScrollView>
         </View>
       </SafeAreaView>
     );
@@ -200,8 +285,8 @@ export default function AnalyticsScreen() {
                   </View>
                   
                   <View style={styles.eventContent}>
-                    <Text style={styles.eventName} numberOfLines={2}>{event.name}</Text>
-                    <Text style={styles.eventDate}>
+                    <Text style={styles.eventCardName} numberOfLines={2}>{event.name}</Text>
+                    <Text style={styles.eventCardDate}>
                       {new Date(event.date).toLocaleDateString('en-US', { 
                         weekday: 'short', 
                         month: 'short', 
@@ -306,6 +391,50 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   // Analytics View
+  analyticsScrollView: {
+    flex: 1,
+    marginTop: 88,
+  },
+  analyticsScrollContent: {
+    paddingBottom: 24,
+  },
+  analyticsContent: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+  },
+  eventHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: Colors.withOpacity.white10,
+  },
+  eventIconContainer: {
+    marginRight: 16,
+  },
+  eventIconGradient: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  eventInfo: {
+    flex: 1,
+  },
+  eventName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 4,
+  },
+  eventDate: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
   analyticsContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -430,14 +559,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
-  eventName: {
+  eventCardName: {
     fontSize: 18,
     fontWeight: '700',
     color: Colors.textPrimary,
     marginBottom: 4,
     lineHeight: 22,
   },
-  eventDate: {
+  eventCardDate: {
     fontSize: 14,
     color: Colors.textSecondary,
     marginBottom: 4,
@@ -446,6 +575,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
     marginBottom: 8,
+    
   },
   priceRow: {
     flexDirection: 'row',
