@@ -137,7 +137,7 @@ async function verifyOtp(req: Request, res: Response) {
 
 async function completeProfile(req: CustomRequest, res: Response) {
   try {
-    const { name, email } = completeProfileSchema.parse(req.body);
+    const { name, email, age, gender } = completeProfileSchema.parse(req.body);
     const user = req.user;
     if (!user) {
       res
@@ -150,6 +150,8 @@ async function completeProfile(req: CustomRequest, res: Response) {
       {
         name: name,
         email: email,
+        age: age,
+        gender: gender,
       },
       { new: true }
     );
@@ -160,6 +162,8 @@ async function completeProfile(req: CustomRequest, res: Response) {
         _id: user._id,
         name: name,
         email: email,
+        age: age,
+        gender: gender,
       },
     });
     return;
