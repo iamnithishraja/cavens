@@ -4,11 +4,17 @@ import { Colors } from "@/constants/Colors";
 import apiClient from "@/app/api/client";
 import { useRouter } from "expo-router";
 import BrandHeader from "@/components/common/BrandHeader";
+import AgeGroupPickerModal, { AgeGroup } from "@/components/ui/AgeGroupPickerModal";
+import GenderPickerModal, { Gender } from "@/components/ui/GenderPickerModal";
 
 const ProfileScreen = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [age, setAge] = useState<AgeGroup | null>(null);
+  const [gender, setGender] = useState<Gender | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showAgePicker, setShowAgePicker] = useState(false);
+  const [showGenderPicker, setShowGenderPicker] = useState(false);
   const router = useRouter();
 
   const validateEmail = (email: string) => {
@@ -33,12 +39,24 @@ const ProfileScreen = () => {
       return;
     }
 
+    if (!age) {
+      Alert.alert("Error", "Please select your age group");
+      return;
+    }
+
+    if (!gender) {
+      Alert.alert("Error", "Please select your gender");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const res = await apiClient.post("/api/user/completeProfile", {
         name: name.trim(),
         email: email.trim(),
+        age: age,
+        gender: gender,
       });
 
       if (res.data.success) {        
@@ -111,6 +129,32 @@ const ProfileScreen = () => {
               autoCorrect={false}
             />
           </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>AGE GROUP</Text>
+            <TouchableOpacity
+              style={styles.pickerButton}
+              onPress={() => setShowAgePicker(true)}
+            >
+              <Text style={[styles.pickerButtonText, age && styles.pickerButtonTextSelected]}>
+                {age ? age : "Select age group"}
+              </Text>
+              <Text style={styles.pickerChevron}>›</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>GENDER</Text>
+            <TouchableOpacity
+              style={styles.pickerButton}
+              onPress={() => setShowGenderPicker(true)}
+            >
+              <Text style={[styles.pickerButtonText, gender && styles.pickerButtonTextSelected]}>
+                {gender ? gender.charAt(0).toUpperCase() + gender.slice(1) : "Select gender"}
+              </Text>
+              <Text style={styles.pickerChevron}>›</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Continue Button */}
@@ -134,6 +178,21 @@ const ProfileScreen = () => {
           </Text>
         </View>
       </View>
+
+      {/* Modals */}
+      <AgeGroupPickerModal
+        visible={showAgePicker}
+        onClose={() => setShowAgePicker(false)}
+        onSelect={setAge}
+        selectedAgeGroup={age || undefined}
+      />
+      
+      <GenderPickerModal
+        visible={showGenderPicker}
+        onClose={() => setShowGenderPicker(false)}
+        onSelect={setGender}
+        selectedGender={gender || undefined}
+      />
     </View>
   );
 };
@@ -217,6 +276,29 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  pickerButton: {
+    height: 56,
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pickerButtonText: {
+    fontSize: 16,
+    color: Colors.textMuted,
+  },
+  pickerButtonTextSelected: {
+    color: Colors.textPrimary,
+  },
+  pickerChevron: {
+    fontSize: 20,
+    color: Colors.textMuted,
+    fontWeight: '300',
   },
   continueButton: {
     backgroundColor: Colors.primary,
