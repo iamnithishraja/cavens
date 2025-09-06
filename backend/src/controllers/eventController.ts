@@ -9,6 +9,7 @@ import clubModel from "../models/clubModel";
 import { calculateDistanceFromMapsLink } from "../utils/mapsDistanceCalculator";
 import orderModel from "../models/orderModel";
 import User from "../models/userModel";
+import { generateEventRecommendations, type EventAnalyticsData } from "../utils/aiService";
 
 // Validation schemas
 const eventSchema = z.object({
@@ -565,38 +566,47 @@ export const getEventAnalytics = async (req: CustomRequest, res: Response) => {
       }
     }
 
+    // Prepare analytics data for AI recommendations
+    const analyticsData: EventAnalyticsData = {
+      event: {
+        _id: event._id.toString(),
+        name: event.name || '',
+        date: event.date || '',
+        time: event.time || ''
+      },
+      sales: {
+        totalSales,
+        totalRevenue,
+        totalTicketsSold,
+        totalOrders: orders.length,
+        paidOrders: paidOrders.length,
+        averageSpentPerCustomer,
+        averageTicketsPerOrder,
+        conversionRate
+      },
+      ticketTypes: ticketTypeArray as any[],
+      salesProgression: salesProgression,
+      demographics: {
+        ageGroups: {
+          data: ageGroupAnalysis,
+          percentages: ageGroupPercentages
+        },
+        gender: {
+          data: genderAnalysis,
+          percentages: genderPercentages
+        },
+        totalUsers
+      }
+    };
+
+    // Generate AI recommendations
+    const aiRecommendations = await generateEventRecommendations(analyticsData);
+
     res.json({
       success: true,
       data: {
-        event: {
-          _id: event._id,
-          name: event.name,
-          date: event.date,
-          time: event.time
-        },
-        sales: {
-          totalSales,
-          totalRevenue,
-          totalTicketsSold,
-          totalOrders: orders.length,
-          paidOrders: paidOrders.length,
-          averageSpentPerCustomer,
-          averageTicketsPerOrder,
-          conversionRate
-        },
-        ticketTypes: ticketTypeArray,
-        salesProgression: salesProgression,
-        demographics: {
-          ageGroups: {
-            data: ageGroupAnalysis,
-            percentages: ageGroupPercentages
-          },
-          gender: {
-            data: genderAnalysis,
-            percentages: genderPercentages
-          },
-          totalUsers
-        }
+        ...analyticsData,
+        aiRecommendations
       }
     });
 
