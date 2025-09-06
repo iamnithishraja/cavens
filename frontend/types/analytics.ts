@@ -1,3 +1,11 @@
+export interface AIRecommendation {
+  shouldCreateEvent: boolean;
+  confidence: number;
+  recommendations: string[];
+  insights: string[];
+  nextSteps: string[];
+}
+
 export interface EventAnalytics {
   event: {
     _id: string;
@@ -44,6 +52,7 @@ export interface EventAnalytics {
     };
     totalUsers: number;
   };
+  aiRecommendations: AIRecommendation;
 }
 
 export interface TicketTypeAnalysis {

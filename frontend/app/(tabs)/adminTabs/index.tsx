@@ -22,6 +22,7 @@ import SalesOverview from '@/components/analytics/SalesOverview';
 import TicketTypesAnalysis from '@/components/analytics/TicketTypesAnalysis';
 import DemographicsAnalysis from '@/components/analytics/DemographicsAnalysis';
 import RevenueBreakdown from '@/components/analytics/RevenueBreakdown';
+import AIRecommendations from '@/components/analytics/AIRecommendations';
 import AnalyticsLoading from '@/components/analytics/AnalyticsLoading';
 import AnalyticsError from '@/components/analytics/AnalyticsError';
 
@@ -205,6 +206,7 @@ export default function AnalyticsScreen() {
                 <RevenueBreakdown ticketTypes={analyticsData.ticketTypes} />
                 <TicketTypesAnalysis ticketTypes={analyticsData.ticketTypes} />
                 <DemographicsAnalysis demographics={analyticsData.demographics} />
+                <AIRecommendations aiRecommendations={analyticsData.aiRecommendations} />
               </View>
             ) : (
               <View style={styles.analyticsContainer}>
