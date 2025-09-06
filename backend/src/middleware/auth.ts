@@ -75,8 +75,8 @@ export async function isProfileCompleted(
       return;
     }
 
-    // Check if user has completed their profile (has name)
-    if (!req.user.name) {
+    // Check if user has completed their profile (has name, email, age, and gender)
+    if (!req.user.name || !req.user.email || !req.user.age || !req.user.gender) {
       res.status(403).json({ 
         success: false, 
         message: "Profile not completed",
