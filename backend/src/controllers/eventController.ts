@@ -7,6 +7,8 @@ import type { CustomRequest } from "../types";
 import z from "zod";
 import clubModel from "../models/clubModel";
 import { calculateDistanceFromMapsLink } from "../utils/mapsDistanceCalculator";
+import orderModel from "../models/orderModel";
+import User from "../models/userModel";
 
 // Validation schemas
 const eventSchema = z.object({
@@ -414,5 +416,192 @@ export const getFeaturedEvents = async (req: CustomRequest, res: Response) => {
     console.error("Error fetching featured events:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
     return;
+  }
+};
+
+// Get event analytics
+export const getEventAnalytics = async (req: CustomRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "User not authenticated" });
+      return;
+    }
+
+    const eventId = req.params.eventId;
+    if (!eventId) {
+      res.status(400).json({ success: false, message: "Event ID is required" });
+      return;
+    }
+
+    // Verify the event belongs to the club
+    const club = await clubModel.findById(req.user.club);
+    if (!club) {
+      res.status(404).json({ success: false, message: "Club not found" });
+      return;
+    }
+
+    const isEventBelongs = club.events.some(
+      (ev) => ev.toString() === eventId
+    );
+    if (!isEventBelongs) {
+      res.status(404).json({ success: false, message: "Event not found for this club" });
+      return;
+    }
+
+    // Get event details
+    const event = await eventModel.findById(eventId).populate("tickets");
+    if (!event) {
+      res.status(404).json({ success: false, message: "Event not found" });
+      return;
+    }
+
+    // Get all orders for this event
+    const orders = await orderModel.find({ event: eventId }).populate("ticket");
+    
+    // Calculate total sales
+    const totalSales = orders.reduce((sum, order: any) => {
+      return sum + (order.ticket.price * order.quantity);
+    }, 0);
+
+    // Calculate total tickets sold
+    const totalTicketsSold = orders.reduce((sum, order: any) => sum + order.quantity, 0);
+
+    // Calculate total revenue (only paid orders)
+    const paidOrders = orders.filter((order: any) => order.status === "paid");
+    const totalRevenue = paidOrders.reduce((sum, order: any) => {
+      return sum + (order.ticket.price * order.quantity);
+    }, 0);
+
+    // Ticket type analysis
+    const ticketTypeAnalysis: any = {};
+    orders.forEach((order: any) => {
+      const ticketName = order.ticket.name;
+      if (!ticketTypeAnalysis[ticketName]) {
+        ticketTypeAnalysis[ticketName] = {
+          name: ticketName,
+          price: order.ticket.price,
+          quantitySold: 0,
+          revenue: 0
+        };
+      }
+      ticketTypeAnalysis[ticketName].quantitySold += order.quantity;
+      ticketTypeAnalysis[ticketName].revenue += order.ticket.price * order.quantity;
+    });
+
+    // Get user demographics for this event
+    // Note: We need to get users from the orders, but orders don't have user field directly
+    // We'll need to get users who have orders for this event
+    const users = await User.find({ orders: { $in: orders.map(order => order._id) } });
+
+    // Age group analysis
+    const ageGroupAnalysis = {
+      "18-30": 0,
+      "30-50": 0,
+      "50+": 0
+    };
+
+    // Gender analysis
+    const genderAnalysis = {
+      "male": 0,
+      "female": 0,
+      "other": 0
+    };
+
+    users.forEach(user => {
+      if (user.age) {
+        ageGroupAnalysis[user.age] = (ageGroupAnalysis[user.age] || 0) + 1;
+      }
+      if (user.gender) {
+        genderAnalysis[user.gender] = (genderAnalysis[user.gender] || 0) + 1;
+      }
+    });
+
+    // Calculate percentages
+    const totalUsers = users.length;
+    const ageGroupPercentages: any = {};
+    const genderPercentages: any = {};
+
+    Object.keys(ageGroupAnalysis).forEach(age => {
+      ageGroupPercentages[age] = totalUsers > 0 ? Math.round((ageGroupAnalysis[age as keyof typeof ageGroupAnalysis] / totalUsers) * 100) : 0;
+    });
+
+    Object.keys(genderAnalysis).forEach(gender => {
+      genderPercentages[gender] = totalUsers > 0 ? Math.round((genderAnalysis[gender as keyof typeof genderAnalysis] / totalUsers) * 100) : 0;
+    });
+
+    // Convert ticket type analysis to array
+    const ticketTypeArray = Object.values(ticketTypeAnalysis);
+
+    // Calculate additional metrics
+    const averageSpentPerCustomer = totalUsers > 0 ? Math.round(totalRevenue / totalUsers) : 0;
+    const averageTicketsPerOrder = orders.length > 0 ? Math.round((totalTicketsSold / orders.length) * 100) / 100 : 0;
+    const conversionRate = orders.length > 0 ? Math.round((paidOrders.length / orders.length) * 100) : 0;
+
+    // Calculate ticket sales progression (cumulative sales over time)
+    const sortedOrders = orders.sort((a: any, b: any) => 
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+    
+    const salesProgression: Record<string, number> = {};
+    let cumulativeSales = 0;
+    
+    // Group orders by day and calculate cumulative sales
+    sortedOrders.forEach((order: any) => {
+      const orderDate = new Date(order.createdAt).toISOString().split('T')[0];
+      if (orderDate) {
+        cumulativeSales += order.ticket.price * order.quantity;
+        salesProgression[orderDate] = cumulativeSales;
+      }
+    });
+
+    // If no sales data, create a simple progression
+    if (Object.keys(salesProgression).length === 0) {
+      if (event.date) {
+        const eventDate = new Date(event.date);
+        const eventDateStr = eventDate.toISOString().split('T')[0];
+        if (eventDateStr) {
+          salesProgression[eventDateStr] = 0;
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        event: {
+          _id: event._id,
+          name: event.name,
+          date: event.date,
+          time: event.time
+        },
+        sales: {
+          totalSales,
+          totalRevenue,
+          totalTicketsSold,
+          totalOrders: orders.length,
+          paidOrders: paidOrders.length,
+          averageSpentPerCustomer,
+          averageTicketsPerOrder,
+          conversionRate
+        },
+        ticketTypes: ticketTypeArray,
+        salesProgression: salesProgression,
+        demographics: {
+          ageGroups: {
+            data: ageGroupAnalysis,
+            percentages: ageGroupPercentages
+          },
+          gender: {
+            data: genderAnalysis,
+            percentages: genderPercentages
+          },
+          totalUsers
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error("Error fetching event analytics:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
