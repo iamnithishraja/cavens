@@ -10,6 +10,18 @@ type UserClubListItemProps = {
 };
 
 const UserClubListItem: React.FC<UserClubListItemProps> = ({ club, cityName, onPress }) => {
+  const formattedDistance = React.useMemo(() => {
+    const dAny: any = club as any;
+    if (typeof dAny.distance === 'string' && dAny.distance.trim().length > 0) return dAny.distance;
+    const meters: number | undefined = (dAny.distanceInMeters as number) ?? (dAny.distanceMeters as number);
+    if (typeof meters === 'number' && isFinite(meters)) {
+      const km = meters / 1000;
+      return `${km.toFixed(km < 10 ? 1 : 0)} km`;
+    }
+    const text: string | undefined = dAny.distanceText;
+    return typeof text === 'string' ? text : '';
+  }, [club]);
+
   return (
     <TouchableOpacity style={styles.clubCard} onPress={() => onPress(club)} activeOpacity={0.9}>
       <Image source={{ uri: club.logoUrl }} style={styles.clubImage} />
@@ -33,7 +45,7 @@ const UserClubListItem: React.FC<UserClubListItemProps> = ({ club, cityName, onP
                 />
               ))}
             </View>
-            <Text style={styles.clubDistanceText}>{club.distance ? club.distance : ''}</Text>
+            <Text style={styles.clubDistanceText}>{formattedDistance}</Text>
           </View>
         </View>
         <View style={styles.ticketButtonContainer}>

@@ -16,6 +16,7 @@ import apiClient from '@/app/api/client';
 import { useRouter } from 'expo-router';
 import UserClubHeader from '@/components/screens/UserClub/UserClubHeader';
 import UserClubListHeader from '@/components/screens/UserClub/UserClubListHeader';
+import MapViewCard from '@/components/Map/MapViewCard';
 import UserClubListItem from '@/components/screens/UserClub/UserClubListItem';
 import FilterModal from '@/components/Models/filterModel';
 
@@ -34,57 +35,37 @@ const UserClubScreen = () => {
 
   // Location state
   const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
-  const [locationLoading, setLocationLoading] = useState(true);
+  // const [locationLoading, setLocationLoading] = useState(true);
   
   // Fallback coordinates for Dubai (if location access fails)
   const FALLBACK_LATITUDE = 25.2048;
   const FALLBACK_LONGITUDE = 55.2708;
 
-  // Get user's current location
+  // Get user's current location (mirrors userHomeScreen logic with fallback)
   useEffect(() => {
+    let isMounted = true;
     const getCurrentLocation = async () => {
       try {
-        console.log("Requesting location permissions...");
         const { status } = await Location.requestForegroundPermissionsAsync();
-        
         if (status !== 'granted') {
-          console.log("Location permission denied, using fallback coordinates");
-          setUserLocation({
-            latitude: FALLBACK_LATITUDE,
-            longitude: FALLBACK_LONGITUDE
-          });
-          setLocationLoading(false);
+          if (!isMounted) return;
+          setUserLocation({ latitude: FALLBACK_LATITUDE, longitude: FALLBACK_LONGITUDE });
           return;
         }
-
-        console.log("Getting current location...");
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        
-        console.log("Current location:", location.coords.latitude, location.coords.longitude);
-        setUserLocation({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude
-        });
-      } catch (error) {
-        console.error("Error getting location:", error);
-        // Use fallback coordinates
-        setUserLocation({
-          latitude: FALLBACK_LATITUDE,
-          longitude: FALLBACK_LONGITUDE
-        });
-      } finally {
-        setLocationLoading(false);
+        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        if (!isMounted) return;
+        setUserLocation({ latitude: location.coords.latitude, longitude: location.coords.longitude });
+      } catch {
+        if (!isMounted) return;
+        setUserLocation({ latitude: FALLBACK_LATITUDE, longitude: FALLBACK_LONGITUDE });
       }
     };
-
     getCurrentLocation();
+    return () => { isMounted = false; };
   }, []);
 
   // Handle city selection
   const handleCitySelect = (city: City) => {
-    console.log("City selected:", city.name);
     setSelectedCity(city);
     setCityPickerVisible(false);
   };
@@ -100,6 +81,10 @@ const UserClubScreen = () => {
   const handleViewEvents = (club: Club) => {
     router.push(`/userClubDetailsScreen?clubId=${club._id}`);
   };
+
+  const handleMapMarkerPress = useCallback((club: Club) => {
+    router.push(`/userClubDetailsScreen?clubId=${club._id}`);
+  }, [router]);
 
   const buildRegex = (input: string) => {
     const trimmed = input.trim();
@@ -118,10 +103,12 @@ const UserClubScreen = () => {
   }, [selectedTypes]);
 
   const [clubs, setClubs] = useState<Club[]>([]);
+  const [clubsLoading, setClubsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchClubs = async () => {
       try {
+        setClubsLoading(true);
         // 1) Always fetch public clubs first for fast UI paint
         const params: Record<string, string> = {};
         if (selectedCity?.name) params.city = selectedCity.name;
@@ -165,6 +152,8 @@ const UserClubScreen = () => {
       } catch (e) {
         console.error('Failed to load clubs', e);
         setClubs([]);
+      } finally {
+        setClubsLoading(false);
       }
     };
     fetchClubs();
@@ -231,11 +220,20 @@ const UserClubScreen = () => {
             />
           }
           ListHeaderComponent={
-            <UserClubListHeader
-              headerSpacing={HEADER_SPACING}
-              selectedTypes={selectedTypes}
-              onTypeSelect={handleToggleType}
-            />
+            <View style={{ paddingTop: 130 }}>
+              <MapViewCard 
+                clubs={filteredClubs.length ? filteredClubs : clubs} 
+                loading={clubsLoading}
+                onMarkerPress={handleMapMarkerPress}
+                cityName={selectedCity.name}
+                height={190}
+              />
+              <UserClubListHeader
+                headerSpacing={HEADER_SPACING}
+                selectedTypes={selectedTypes}
+                onTypeSelect={handleToggleType}
+              />
+            </View>
           }
         />
 
@@ -278,6 +276,11 @@ const styles = StyleSheet.create({
     paddingTop: 20, // Account for fixed header
     paddingBottom: 4,
   },
+  mapViewContainer: {
+    backgroundColor: Colors.background,
+  },
+  mapCardShell: {},
+  mapCardClip: {},
   // Fixed Header
   fixedHeader: {
     position: 'absolute',
@@ -629,6 +632,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
+
 });
 
 export default UserClubScreen;
