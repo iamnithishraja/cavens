@@ -1,14 +1,16 @@
 import React from 'react';
 import { View, Image, Text, StyleSheet } from 'react-native';
+import { getClubTypeColor } from '@/utils/clubTypes';
 
 interface Props {
   title: string;
   image?: string | null;
   size?: number;
   theme?: 'light' | 'dark';
+  clubType?: string;
 }
 
-const ClubMarker = ({ title, image, size = 50, theme = 'dark' }: Props) => {
+const ClubMarker = ({ title, image, size = 50, theme = 'dark', clubType }: Props) => {
   // Generate a color based on the club name for variety
   const getMarkerColor = (clubName: string) => {
     const colors = [
@@ -34,23 +36,27 @@ const ClubMarker = ({ title, image, size = 50, theme = 'dark' }: Props) => {
     return colors[index];
   };
 
-  // Generate a border color that's different from the background color
-  const getBorderColor = (clubName: string) => {
+  // Determine border color based on club type; fallback to name-based color if unknown
+  const getBorderColor = (clubName: string, clubTypeRaw?: string) => {
+    const typeColor = getClubTypeColor(clubTypeRaw);
+    if (typeColor) return typeColor;
+
+    // fallback deterministic colors by name
     const borderColors = [
-      '#FFFFFF', // White
-      '#FFD700', // Gold
-      '#FF6B6B', // Light Red
-      '#4ECDC4', // Teal
-      '#45B7D1', // Sky Blue
-      '#96CEB4', // Mint Green
-      '#FFEAA7', // Light Yellow
-      '#DDA0DD', // Plum
-      '#98D8C8', // Mint
-      '#F7DC6F', // Light Gold
+      '#FFFFFF',
+      '#FFD700',
+      '#FF6B6B',
+      '#4ECDC4',
+      '#45B7D1',
+      '#96CEB4',
+      '#FFEAA7',
+      '#DDA0DD',
+      '#98D8C8',
+      '#F7DC6F',
     ];
-    
+
     if (!clubName) return borderColors[0];
-    
+
     let hash = 0;
     for (let i = 0; i < clubName.length; i++) {
       hash = clubName.charCodeAt(i) + ((hash << 7) - hash);
@@ -60,7 +66,7 @@ const ClubMarker = ({ title, image, size = 50, theme = 'dark' }: Props) => {
   };
 
   const markerColor = getMarkerColor(title);
-  const borderColor = getBorderColor(title);
+  const borderColor = getBorderColor(title, clubType);
   const displayName = (title || 'Club').trim();
   
   // Calculate exact sizes to ensure consistency

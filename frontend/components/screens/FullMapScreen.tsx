@@ -17,6 +17,7 @@ type Club = {
   coverBannerUrl?: string;
   photos?: string[];
   clubImages?: string[];
+  typeOfVenue?: string;
 };
 
 const cityFallbacks: Record<string, { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number }> = {
@@ -54,7 +55,7 @@ const FullMapScreen: React.FC = () => {
 
   // START OF ADDED CODE FOR PADDING
   const mapPadding = useMemo(() => {
-    const paddingBottom = 900;
+    const paddingBottom = 0;
     const iosPadding = { top: 0, right: 0, bottom: paddingBottom, left: 0 };
     const androidPadding = {
       top: PixelRatio.getPixelSizeForLayoutSize(0),
@@ -92,7 +93,7 @@ const FullMapScreen: React.FC = () => {
               tracksViewChanges
               onPress={() => { setSelected(club); setModalVisible(true); }}
             >
-              <ClubMarker title={club.name} image={image} size={56} theme={'dark'} />
+              <ClubMarker title={club.name} image={image} size={56} theme={'dark'} clubType={club.typeOfVenue} />
             </Marker>
           );
         })}

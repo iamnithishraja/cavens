@@ -1,11 +1,13 @@
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
-import { View, StyleSheet, Text, ActivityIndicator, TouchableOpacity, Image, Platform, PixelRatio } from 'react-native';
+import { View, StyleSheet, Text, ActivityIndicator, TouchableOpacity, Platform, PixelRatio } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { extractCoordinatesFromMapLink, calculateMapRegion } from '@/utils/mapUtils';
 import { darkMapStyle } from '@/utils/mapStyles';
 import ClubMarker from '@/components/Map/ClubMarker';
 import { Colors } from '@/constants/Colors';
 import { useRouter } from 'expo-router';
+import { Maximize2 } from 'lucide-react-native';
 
 type Club = {
   _id: string;
@@ -99,79 +101,103 @@ const MapViewCard: React.FC<MapViewCardProps> = ({
   }
 
   return (
-    <View style={[styles.cardContainer, { height }]}>      
-      <View style={styles.mapWrapper}>
-        <TouchableOpacity
-          onPress={() => router.push(cityName ? `/fullMap?city=${encodeURIComponent(cityName)}` : '/fullMap')}
-          activeOpacity={0.85}
-          style={styles.fullscreenBtn}
-          hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-          onLayout={() => setMapReady(true)}
-        >
-          <Image
-            source={{ uri: 'https://img.icons8.com/ios-filled/50/FFFFFF/expand-arrow.png' }}
-            style={styles.fullscreenIcon}
+    <View style={[styles.cardOuter, { height }]}>      
+      <LinearGradient
+        colors={[Colors.withOpacity.white10, Colors.withOpacity.black30]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.cardGradient}
+      >
+        <View style={styles.cardContainer}>
+          <View style={styles.mapWrapper}>
+            <TouchableOpacity
+              onPress={() => router.push(cityName ? `/fullMap?city=${encodeURIComponent(cityName)}` : '/fullMap')}
+              activeOpacity={0.85}
+              style={styles.fullscreenBtn}
+              hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+              onLayout={() => setMapReady(true)}
+            >
+              <Maximize2 size={20} color={Colors.textPrimary} />
+            </TouchableOpacity>
+            <MapView
+              provider={PROVIDER_GOOGLE}
+              style={styles.map}
+              region={region}
+              showsUserLocation={false}
+              showsCompass={false}
+              mapType="standard"
+              customMapStyle={darkMapStyle as any}
+              moveOnMarkerPress={false}
+              onMapReady={() => setMapReady(true)}
+              showsMyLocationButton={true}
+              showsScale={false}
+              showsTraffic={false}
+              showsBuildings={false}
+              showsPointsOfInterest={false}
+              showsIndoors={false}
+              showsIndoorLevelPicker={false}
+              toolbarEnabled={false}
+              mapPadding={mapPadding}
+            >
+              {clubsWithCoordinates.map((club) => {
+                const image = club.logoUrl || club.coverBannerUrl || club.clubImages?.[0] || club.photos?.[0] || null;
+                return (
+                  <Marker
+                    key={club._id}
+                    coordinate={club.coordinates as any}
+                    anchor={{ x: 0.5, y: 1 }}
+                    centerOffset={{ x: 0, y: 0 }}
+                    tracksViewChanges
+                    onPress={() => handleMarkerPress(club)}
+                  >
+                    <ClubMarker 
+                      title={club.name} 
+                      image={image} 
+                      size={50}
+                      theme={'dark'}
+                      clubType={club.typeOfVenue}
+                    />
+                  </Marker>
+                );
+              })}
+            </MapView>
+          </View>
+          <LinearGradient
+            pointerEvents="none"
+            colors={["rgba(255,255,255,0.08)", "rgba(255,255,255,0)"]}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.topLight}
           />
-        </TouchableOpacity>
-        <MapView
-  provider={PROVIDER_GOOGLE}
-  style={[styles.map, { height }]}
-  region={region}
-  showsUserLocation={false}
-  showsCompass={false}
-  mapType="standard"
-  customMapStyle={darkMapStyle as any}
-  moveOnMarkerPress={false}
-  onMapReady={() => setMapReady(true)}
-  showsMyLocationButton={true}
-  showsScale={false}
-  showsTraffic={false}
-  showsBuildings={false}
-  showsPointsOfInterest={false}
-  showsIndoors={false}
-  showsIndoorLevelPicker={false}
-  // Hide all text labels
-
-  // Additional props to hide labels
-  toolbarEnabled={false}
-  // START OF ADDED PROP
-  mapPadding={mapPadding}
-  // END OF ADDED PROP
->
-          {clubsWithCoordinates.map((club) => {
-            const image = club.logoUrl || club.coverBannerUrl || club.clubImages?.[0] || club.photos?.[0] || null;
-            return (
-              <Marker
-                key={club._id}
-                coordinate={club.coordinates as any}
-                anchor={{ x: 0.5, y: 1 }}
-                centerOffset={{ x: 0, y: 0 }}
-                tracksViewChanges
-                onPress={() => handleMarkerPress(club)}
-              >
-                <ClubMarker 
-                  title={club.name} 
-                  image={image} 
-                  size={50}
-                  theme={'dark'} 
-                />
-              </Marker>
-            );
-          })}
-        </MapView>
-      </View>
+        </View>
+      </LinearGradient>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  cardContainer: {
+  cardOuter: {
     marginHorizontal: 16,
     marginTop: 2,
+    borderRadius: 18,
+    paddingBottom: 0,
+  },
+  cardGradient: {
+    flex: 1,
+    borderRadius: 18,
+    padding: 1.5,
+  },
+  cardContainer: {
+    flex: 1,
     borderRadius: 16,
     backgroundColor: Colors.background,
     borderWidth: 1,
     borderColor: Colors.withOpacity.white10,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 12,
   },
   mapWrapper: {
     flex: 1,
@@ -188,24 +214,34 @@ const styles = StyleSheet.create({
     bottom: 12,
     right: 12,
     zIndex: 10,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.withOpacity.white10,
     borderRadius: 18,
     width: 36,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.withOpacity.white10,
+    borderColor: Colors.withOpacity.white30,
     shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 10,
   },
   fullscreenIcon: {
     width: 20,
     height: 20,
     tintColor: Colors.textPrimary,
+  },
+  topLight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 40,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    overflow: 'hidden',
   },
   clubCountText: {
     color: '#FFFFFF',
