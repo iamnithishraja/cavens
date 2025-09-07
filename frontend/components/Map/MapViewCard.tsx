@@ -147,7 +147,6 @@ const MapViewCard: React.FC<MapViewCardProps> = ({
                     coordinate={club.coordinates as any}
                     anchor={{ x: 0.5, y: 1 }}
                     centerOffset={{ x: 0, y: 0 }}
-                    tracksViewChanges
                     onPress={() => handleMarkerPress(club)}
                   >
                     <ClubMarker 
@@ -191,8 +190,8 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 16,
     backgroundColor: Colors.background,
-    borderWidth: 1,
-    borderColor: Colors.withOpacity.white10,
+    borderWidth: 0.5,
+    borderColor: Colors.withOpacity.black30,
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.35,

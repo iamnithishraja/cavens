@@ -5,8 +5,8 @@ const palette = {
   primary: '#FCC72C',
   secondary: '#4CB648',
   secondaryWithOpacity: 'rgba(76, 182, 72, 0.3)',
-  darkBlue: '#000000',
-  mediumBlue: '#000000',
+  darkBlue: '#0B0B0F',
+  mediumBlue: '#1A1A1F',
   lightBlue: '#42A9E1',
   black: '#000000',
   transluscentWhite: 'rgba(255, 255, 255, 0.7)',
@@ -21,7 +21,7 @@ export const darkMapStyle = [
   { elementType: 'geometry', stylers: [{ color: palette.black }] },
   { elementType: 'labels.icon', stylers: [{ visibility: 'on' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: palette.black }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: palette.primary }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: palette.transluscentWhite }] },
 
   // Administrative boundaries and city names - show all
   { featureType: 'administrative', elementType: 'geometry', stylers: [{ visibility: 'on' }] },
@@ -34,7 +34,7 @@ export const darkMapStyle = [
 
   // POIs: show all place names
   { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'on' }] },
-  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: palette.primary }] },
+  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: palette.transluscentWhite }] },
   { featureType: 'poi', elementType: 'geometry', stylers: [{ color: palette.black }] },
   { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: palette.secondaryWithOpacity }] },
   { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: palette.secondary, visibility: 'on' }] },
@@ -47,7 +47,7 @@ export const darkMapStyle = [
   { featureType: 'poi.sports_complex', elementType: 'labels.text.fill', stylers: [{ color: palette.primary, visibility: 'on' }] },
 
   // Roads - show road names
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: palette.darkGrey }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#151515' }] },
   { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: palette.black }] },
   { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: palette.transluscentWhite, visibility: 'on' }] },
   { featureType: 'road', elementType: 'labels.text.stroke', stylers: [{ color: palette.black }] },
@@ -56,7 +56,7 @@ export const darkMapStyle = [
   { featureType: 'road.arterial', elementType: 'labels.text.fill', stylers: [{ color: palette.transluscentWhite, visibility: 'on' }] },
   { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: palette.mediumGrey }] },
   { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: palette.black }] },
-  { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: palette.primary, visibility: 'on' }] },
+  { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: palette.transluscentWhite, visibility: 'on' }] },
 
   // Transit - show transit station names
   { featureType: 'transit', elementType: 'geometry', stylers: [{ color: palette.darkGrey }] },
@@ -64,7 +64,7 @@ export const darkMapStyle = [
   { featureType: 'transit.line', elementType: 'labels.text.fill', stylers: [{ color: palette.transluscentWhite, visibility: 'on' }] },
 
   // Water - show water body names
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: palette.mediumBlue }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: palette.darkBlue }] },
   { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: palette.lightBlue, visibility: 'on' }] },
-  { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{ color: palette.mediumBlue }] },
+  { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{ color: palette.darkBlue }] },
 ];
