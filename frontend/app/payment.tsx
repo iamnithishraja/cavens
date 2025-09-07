@@ -119,10 +119,8 @@ const PaymentScreen = () => {
       const response = await apiClient.post<PurchaseTicketResponse>('/api/user/purchase-ticket', purchaseData);
       
       if (response.data.success) {
-        const { ordersCreated, ordersUpdated, finalQuantity, totalAmount } = response.data.data;
-        const message = ordersCreated > 0 
-          ? `You have successfully purchased ${quantity} ${selectedTicketType} ticket(s) for AED ${totalAmount}`
-          : `You have successfully added ${quantity} more ${selectedTicketType} ticket(s) to your existing order. Total quantity: ${finalQuantity}`;
+        const { totalAmount } = response.data.data;
+        const message = `You have successfully purchased ${quantity} ${selectedTicketType} ticket(s) for AED ${totalAmount}`;
         
         Alert.alert(
           'Purchase Successful! 🎉',

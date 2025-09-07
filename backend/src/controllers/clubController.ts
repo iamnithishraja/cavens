@@ -6,6 +6,7 @@ import type { CustomRequest } from "../types";
 import User from "../models/userModel";
 import ticketModel from "../models/ticketModel";
 import MenuItem from "../models/menuItemSchema";
+import orderModel from "../models/orderModel";
 
 export const createClub = async (req: CustomRequest, res: Response): Promise<void> => {
   try {
@@ -244,5 +245,77 @@ export const listCities = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
+export const completeOrder = async (req: CustomRequest, res: Response): Promise<void> => {
+  try {
+    const { orderId } = req.body;
+    
+    if (!orderId) {
+      res.status(400).json({ success: false, message: "Order ID is required" });
+      return;
+    }
+
+    // First check if order exists and get its current status
+    const existingOrder = await orderModel.findById(orderId);
+    
+    if (!existingOrder) {
+      res.status(404).json({ success: false, message: "Order not found" });
+      return;
+    }
+
+    // Check if order is already scanned
+    if (existingOrder.status === "scanned") {
+      res.status(400).json({ 
+        success: false, 
+        message: "Order has already been scanned"
+      });
+      return;
+    }
+
+    // Update order status to scanned and populate all related data in one query
+    const updatedOrder = await orderModel.findByIdAndUpdate(
+      orderId, 
+      { 
+        status: "scanned",
+        updatedAt: new Date()
+      }, 
+      { new: true }
+    ).populate([
+      {
+        path: 'event',
+        select: 'name date time djArtists description coverImage guestExperience galleryPhotos promoVideos happyHourTimings status'
+      },
+      {
+        path: 'ticket',
+        select: 'name price description'
+      },
+      {
+        path: 'club',
+        select: 'name city typeOfVenue address phone'
+      }
+    ]);
+
+    if (!updatedOrder) {
+      res.status(500).json({ success: false, message: "Failed to update order" });
+      return;
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      message: "Order completed successfully",
+      data: {
+        order: updatedOrder,
+        eventDetails: updatedOrder.event,
+        ticketDetails: updatedOrder.ticket,
+        clubDetails: updatedOrder.club,
+        scanTime: new Date(),
+        orderStatus: "completed"
+      }
+    });
+
+  } catch (err) {
+    console.error("Error completing order:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+}
 
 

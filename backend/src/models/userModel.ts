@@ -29,6 +29,14 @@ const userSchema = new mongoose.Schema({
   otpExpiry: {
     type: Date,
   },
+  age:{
+    type: String,
+    enum: ["18-30", "30-50", "50+"],
+  },
+  gender:{
+    type: String,
+    enum: ["male", "female", "other"],
+  },
   club: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Club",
