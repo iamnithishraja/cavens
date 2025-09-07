@@ -1,5 +1,5 @@
 import express from "express";
-import { getClubEvents, deleteEvent, getEvent, updateEvent } from "../controllers/eventController";
+import { getClubEvents, deleteEvent, getEvent, updateEvent, getEventAnalytics } from "../controllers/eventController";
 import { isAuthenticated } from "../middleware/auth";
 import { getFeaturedEvents } from "../controllers/eventController";
 
@@ -13,6 +13,9 @@ eventRoute.get("/club-events", getClubEvents);
 
 // Get all featured events
 eventRoute.get("/featured-events", getFeaturedEvents);
+
+// Get event analytics
+eventRoute.get("/analytics/:eventId", getEventAnalytics);
 
 
 // Get a specific event for editing only applicable for the club 

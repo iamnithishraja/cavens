@@ -12,4 +12,10 @@ export const verifyOtpSchema = z.object({
 export const completeProfileSchema = z.object({
     name: z.string().min(1, "Name is required"),
     email: z.email(),
+    age: z.enum(["18-30", "30-50", "50+"], {
+        message: "Please select a valid age group"
+    }),
+    gender: z.enum(["male", "female", "other"], {
+        message: "Please select a valid gender"
+    }),
 });

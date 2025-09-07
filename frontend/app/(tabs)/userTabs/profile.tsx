@@ -7,6 +7,7 @@ import apiClient from '@/app/api/client';
 import { store } from '@/utils';
 import { Ionicons } from '@expo/vector-icons';
 import { triggerUserRoleCheck } from '@/app/_layout';
+import BookingHistory from '@/components/common/BookingHistory';
 
 interface User {
   id: string;
@@ -341,7 +342,7 @@ export default function ProfileScreen() {
           />
         </View>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
           <View style={styles.content}>
             {/* Profile Header Section */}
             <View style={styles.profileHeader}>
@@ -414,8 +415,24 @@ export default function ProfileScreen() {
                 </View>
               </TouchableOpacity>
             </View>
+
+            {/* Booking History Section */}
+            <View style={styles.bookingHistorySection}>
+              <Text style={styles.sectionTitle}>Event History</Text>
+              <Text style={styles.sectionSubtitle}>Your attended events and scanned tickets</Text>
+              <BookingHistory showHeader={false} />
+            </View>
           </View>
-        </ScrollView>
+        </View>
+
+        {/* Booking History Section - Separate from ScrollView */}
+        <View style={styles.bookingHistoryContainer}>
+          <View style={styles.bookingHistorySection}>
+            <Text style={styles.sectionTitle}>Event History</Text>
+            <Text style={styles.sectionSubtitle}>Your attended events and scanned tickets</Text>
+          </View>
+          <BookingHistory showHeader={false} />
+        </View>
       </View>
     );
   }
@@ -534,6 +551,13 @@ export default function ProfileScreen() {
                 <Ionicons name="chevron-forward" size={16} color={Colors.error} />
               </View>
             </TouchableOpacity>
+          </View>
+
+          {/* Booking History Section */}
+          <View style={styles.bookingHistorySection}>
+            <Text style={styles.sectionTitle}>Event History</Text>
+            <Text style={styles.sectionSubtitle}>Your attended events and scanned tickets</Text>
+            <BookingHistory showHeader={false} />
           </View>
         </View>
       </ScrollView>
@@ -804,5 +828,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.5,
+  },
+
+  // Booking History Section
+  bookingHistoryContainer: {
+    flex: 1,
+    paddingHorizontal: 24,
+  },
+  bookingHistorySection: {
+    marginTop: 40,
+    marginBottom: 40,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 8,
+    letterSpacing: 0.3,
+  },
+  sectionSubtitle: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    marginBottom: 24,
+    lineHeight: 22,
+    fontWeight: '400',
   },
 });

@@ -14,4 +14,6 @@ export interface IUser {
     orders?: mongoose.Types.ObjectId[];
     createdAt: Date;
     updatedAt: Date;
+    age?: string;
+    gender?: string;
   }

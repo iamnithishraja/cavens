@@ -6,86 +6,93 @@ import {
   FlatList, 
   ActivityIndicator, 
   RefreshControl,
-  SafeAreaView,
-  StatusBar 
+  TouchableOpacity
 } from "react-native";
 import { Colors } from "@/constants/Colors";
-import BookingCard from "@/components/ui/BookingCard";
+import EventHistoryCard from "./EventHistoryCard";
 import type { Order } from "@/types/order";
+import { Ionicons } from "@expo/vector-icons";
 import { useBookingsPolling } from "@/hooks/useBookingsPolling";
 
-export default function BookingsScreen() {
+interface BookingHistoryProps {
+  onBookingPress?: (booking: Order) => void;
+  showHeader?: boolean;
+}
+
+export default function BookingHistory({ onBookingPress, showHeader = true }: BookingHistoryProps) {
   const { 
     bookings, 
     loading, 
     error, 
     refresh, 
-    refreshing
+    refreshing 
   } = useBookingsPolling({
-    status: 'paid',
+    status: 'scanned',
     enabled: true,
     interval: 3000, // Poll every 3 seconds
   });
 
   const onRefresh = () => {
+    console.log('🔄 Refresh triggered!');
     refresh();
   };
 
   const handleBookingPress = (booking: Order) => {
-    // TODO: Navigate to booking details or event details
-    console.log("Booking pressed:", booking._id);
+    if (onBookingPress) {
+      onBookingPress(booking);
+    } else {
+      // Default behavior - navigate to event details
+      console.log("Booking pressed:", booking._id);
+    }
   };
 
   const renderBookingCard = ({ item }: { item: Order }) => (
-    <BookingCard 
-      booking={item} 
+    <EventHistoryCard 
+      order={item} 
       onPress={() => handleBookingPress(item)}
     />
   );
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyIcon}>🎫</Text>
-      <Text style={styles.emptyTitle}>No Bookings Yet</Text>
+      <Ionicons name="time-outline" size={64} color={Colors.textSecondary} />
+      <Text style={styles.emptyTitle}>No History Yet</Text>
       <Text style={styles.emptySubtitle}>
-        Your event bookings will appear here once you purchase tickets
+        Your scanned/attended events will appear here
       </Text>
     </View>
   );
 
   const renderErrorState = () => (
     <View style={styles.errorContainer}>
-      <Text style={styles.errorIcon}>⚠️</Text>
+      <Ionicons name="warning-outline" size={48} color={Colors.error} />
       <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
       <Text style={styles.errorMessage}>{error}</Text>
+      <TouchableOpacity style={styles.retryButton} onPress={() => refresh()}>
+        <Text style={styles.retryButtonText}>Retry</Text>
+      </TouchableOpacity>
     </View>
   );
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor={Colors.background} />
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>My Bookings</Text>
-        </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Loading your bookings...</Text>
-        </View>
-      </SafeAreaView>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={styles.loadingText}>Loading your history...</Text>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.background} />
-      
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Bookings</Text>
-        <Text style={styles.headerSubtitle}>
-          {bookings.length} {bookings.length === 1 ? 'booking' : 'bookings'}
-        </Text>
-      </View>
+    <View style={styles.container}>
+      {showHeader && (
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Booking History</Text>
+          <Text style={styles.headerSubtitle}>
+            {bookings.length} {bookings.length === 1 ? 'event' : 'events'} attended
+          </Text>
+        </View>
+      )}
 
       {error ? (
         renderErrorState()
@@ -97,23 +104,20 @@ export default function BookingsScreen() {
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
           bounces={true}
-          alwaysBounceVertical={false}
           style={styles.flatList}
-          removeClippedSubviews={false}
-          maxToRenderPerBatch={10}
-          windowSize={10}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
               tintColor={Colors.primary}
               colors={[Colors.primary]}
+              progressBackgroundColor={Colors.backgroundSecondary}
             />
           }
           ListEmptyComponent={renderEmptyState}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -121,20 +125,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-    paddingBottom: 0, // Ensure no extra padding at bottom
-    minHeight: '100%', // Ensure container takes full height
   },
   header: {
     paddingHorizontal: 20,
     paddingVertical: 16,
-    paddingBottom: 20, // Add extra bottom padding to header
+    paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: Colors.withOpacity.white10,
-    backgroundColor: Colors.background, // Ensure header stays above list
-    zIndex: 1, // Ensure header stays above list
+    backgroundColor: Colors.background,
+    zIndex: 1,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: Colors.textPrimary,
     marginBottom: 4,
@@ -147,13 +149,13 @@ const styles = StyleSheet.create({
 
   listContainer: {
     paddingVertical: 8,
-    paddingBottom: 120, // Increased bottom padding to ensure last card is fully visible
+    paddingBottom: 120,
     flexGrow: 1,
-    minHeight: '100%', // Ensure container takes full height
+    minHeight: '100%',
   },
   flatList: {
     flex: 1,
-    marginBottom: 0, // Ensure no extra margin
+    marginBottom: 0,
   },
   loadingContainer: {
     flex: 1,
@@ -171,10 +173,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+    paddingVertical: 60,
   },
   emptyTitle: {
     fontSize: 24,
@@ -182,6 +181,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginBottom: 8,
     textAlign: 'center',
+    marginTop: 16,
   },
   emptySubtitle: {
     fontSize: 16,
@@ -194,10 +194,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
-  },
-  errorIcon: {
-    fontSize: 48,
-    marginBottom: 16,
+    paddingVertical: 60,
   },
   errorTitle: {
     fontSize: 20,
@@ -205,11 +202,24 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginBottom: 8,
     textAlign: 'center',
+    marginTop: 16,
   },
   errorMessage: {
     fontSize: 16,
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: Colors.background,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

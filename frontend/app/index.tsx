@@ -19,7 +19,7 @@ export default function IndexRedirect() {
             id: data?.user?.id,
             name: data?.user?.name,
             email: data?.user?.email,
-            isProfileComplete: Boolean(data?.user?.name && data?.user?.email),
+            isProfileComplete: Boolean(data?.user?.name && data?.user?.email && data?.user?.age && data?.user?.gender),
           };
           await store.set("user", JSON.stringify(snapshot));
 

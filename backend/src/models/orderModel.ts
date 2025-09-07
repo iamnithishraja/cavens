@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { stat } from "node:fs";
 
 // Simplified Order Schema
 const orderSchema = new mongoose.Schema({
@@ -28,6 +29,11 @@ const orderSchema = new mongoose.Schema({
     required: true,
   },
   
+  status: {
+    type: String,
+    enum: ["paid", "scanned"],
+    default: "paid",
+  },
   // Payment status
   isPaid: {
     type: Boolean,
