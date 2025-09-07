@@ -8,11 +8,15 @@ import { generateToken } from "../utils/token";
 
 export async function listPendingClubs(req: Request, res: Response) {
   try {
-    const { page = "1", limit = "20", search = "" } = req.query as Record<string, string>;
+    const { page = "1", limit = "20", search = "", status = "pending", type = "", city = "" } = req.query as Record<string, string>;
     const pageNum = Math.max(parseInt(page) || 1, 1);
     const pageSize = Math.max(parseInt(limit) || 20, 1);
 
-    const filter: any = { isApproved: false };
+    const filter: any = {};
+    if (status === 'approved') filter.isApproved = true;
+    else if (status === 'pending') filter.isApproved = false;
+    if (type) filter.typeOfVenue = type;
+    if (city) filter.city = city;
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: "i" } },
@@ -32,7 +36,7 @@ export async function listPendingClubs(req: Request, res: Response) {
 
     res.status(200).json({ success: true, items, total, page: pageNum, limit: pageSize });
   } catch (error) {
-    console.error("Error listing pending clubs:", error);
+    console.error("Error listing clubs:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 }

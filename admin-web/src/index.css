@@ -3,15 +3,15 @@
 
 /* Brand tokens (match app colors/fonts) */
 :root {
-  --bg: #070B14;
-  --surface: #0B1120;
-  --surface-elevated: #0E1630;
+  --bg: #000000;
+  --surface: #1A1A1A;
+  --surface-elevated: #2A2A2A;
   --text-primary: #FFFFFF;
-  --text-secondary: #A2ACC2;
-  --text-muted: #7D879C;
-  --accent-yellow: #F9D65C;
-  --accent-blue: #4EA2FF;
-  --border-blue: rgba(78, 162, 255, 0.28);
+  --text-secondary: #B0B0B0;
+  --text-muted: #808080;
+  --accent-yellow: #FFD700;
+  --accent-blue: #FFD700;
+  --border-blue: #333333;
 }
 
 html, body, #root {
@@ -28,10 +28,7 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-a {
-  color: var(--accent-blue);
-  text-decoration: none;
-}
+a { color: var(--accent-yellow); text-decoration: none; }
 
 /* Simple utility helpers for brand colors */
 .bg-surface { background-color: var(--surface); }
@@ -39,7 +36,7 @@ a {
 .text-secondary { color: var(--text-secondary); }
 .text-muted { color: var(--text-muted); }
 .border-brand { border-color: var(--border-blue); }
-.btn-primary { background-color: var(--accent-yellow); color: #0A0F1D; }
+.btn-primary { background-color: var(--accent-yellow); color: #000000; }
 .btn-muted { background-color: var(--surface-elevated); color: var(--text-secondary); }
 
 /* Hide scrollbar but allow scrolling (modal/content) */

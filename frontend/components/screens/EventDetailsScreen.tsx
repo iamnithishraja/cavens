@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/Colors";
 import Background from "../common/Background";
 import BookingActions from "@/components/event/BookingActions";
+import MenuModal from "@/components/Models/menuModel";
 import CurrencyAED from "@/components/event/CurrencyAED";
 import type { EventItem } from "@/components/event/types";
 import apiClient from "@/app/api/client";
@@ -24,6 +25,7 @@ const EventDetailsScreen: React.FC<Props> = ({ event: initialEvent, eventId, onG
   const [event, setEvent] = useState<EventItem | null>(initialEvent || null);
   const [loading, setLoading] = useState<boolean>(!initialEvent && !!eventId);
   const [error, setError] = useState<string | null>(null);
+  const [menuVisible, setMenuVisible] = useState<boolean>(false);
 
   // Fetch event details if eventId is provided but no initial event
   useEffect(() => {
@@ -187,27 +189,12 @@ const EventDetailsScreen: React.FC<Props> = ({ event: initialEvent, eventId, onG
             </View>
           )}
 
-          {/* Menu Items Section */}
+          {/* Menu Button (opens modal) */}
           {event.menuItems && event.menuItems.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Menu Items</Text>
-              <View style={styles.menuGrid}>
-                {event.menuItems.map((item, index) => (
-                  <View key={item._id || index} style={styles.menuItem}>
-                    {item.itemImage && (
-                      <Image source={{ uri: item.itemImage }} style={styles.menuItemImage} />
-                    )}
-                    <View style={styles.menuItemInfo}>
-                      <Text style={styles.menuItemName}>{item.name}</Text>
-                      <Text style={styles.menuItemDescription}>{item.description}</Text>
-                      <View style={styles.menuItemPriceRow}>
-                        <Text style={styles.menuItemCategory}>{item.category}</Text>
-                        <Text style={styles.menuItemPrice}>AED {item.price}</Text>
-                      </View>
-                    </View>
-                  </View>
-                ))}
-              </View>
+              <TouchableOpacity style={styles.menuButton} onPress={() => setMenuVisible(true)}>
+                <Text style={styles.menuButtonText}>View Menu</Text>
+              </TouchableOpacity>
             </View>
           )}
 
@@ -290,6 +277,13 @@ const EventDetailsScreen: React.FC<Props> = ({ event: initialEvent, eventId, onG
           </View>
         </View>
       </ScrollView>
+      {/* Menu Modal */}
+      <MenuModal
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        title="Menu"
+        items={event?.menuItems || []}
+      />
     </Background>
   );
 };
@@ -376,53 +370,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   // Menu Items Styles
-  menuGrid: {
-    gap: 12,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    backgroundColor: Colors.backgroundSecondary,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
+  menuButton: {
+    backgroundColor: Colors.button?.background || Colors.primary,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  menuItemImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 12,
-  },
-  menuItemInfo: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  menuItemName: {
-    color: Colors.textPrimary,
-    fontSize: 16,
+  menuButtonText: {
+    color: Colors.button?.text || Colors.textPrimary,
     fontWeight: '700',
-    marginBottom: 4,
-  },
-  menuItemDescription: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    marginBottom: 6,
-  },
-  menuItemPriceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  menuItemCategory: {
-    color: Colors.textMuted,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  menuItemPrice: {
-    color: Colors.primary,
     fontSize: 16,
-    fontWeight: '700',
   },
   // Gallery Styles
   galleryContainer: {

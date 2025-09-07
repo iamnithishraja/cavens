@@ -15,6 +15,7 @@ import apiClient from '@/app/api/client';
 import CityPickerModal, { CITIES, type City } from '@/components/ui/CityPickerModal';
 import TimelineFilterTabs, { type TimelineTab, getDateRange } from '@/components/event/TimelineFilterTabs';
 import LocationHeader from '@/components/event/LocationHeader';
+import FilterModal from '@/components/Models/filterModel';
 import FeaturedEventsCarousel from '@/components/event/FeaturedEventsCarousel';
 import EventsList from '@/components/event/EventsList';
 import SearchSection from '@/components/event/SearchSection';
@@ -71,6 +72,8 @@ const UserHomeScreen = () => {
   const [allEvents, setAllEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filtersVisible, setFiltersVisible] = useState(false);
+  const [eventFilters, setEventFilters] = useState<{ maxPrice?: number; featured?: boolean; hasMenu?: boolean; ticketsAvailable?: boolean; soldOut?: boolean; mostPopular?: boolean; distanceKm?: number | null; sameCity?: boolean; walkingDistance?: boolean }>({ maxPrice: 100000, distanceKm: null });
   
   // Location state
   const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
@@ -229,18 +232,25 @@ const UserHomeScreen = () => {
     fetchData();
   }, [userLocation, selectedCity]); // Re-fetch when location or city changes
 
-  // Filter events based on the active tab and search
+  // Filter events based on the active tab, search (regex) and filters
   const filteredEvents = useMemo(() => {
     let events = allEvents;
     
-    // Apply search filter first
-    if (search) {
-      const searchLower = search.toLowerCase();
-      events = events.filter(event => 
-        event.name.toLowerCase().includes(searchLower) ||
-        event.djArtists?.toLowerCase().includes(searchLower) ||
-        event.venue?.toLowerCase().includes(searchLower)
-      );
+    // Apply regex-based search filter first
+    if (search.trim().length > 0) {
+      // Escape regex special characters in input to avoid invalid patterns but allow simple regex-like usage
+      const escaped = search
+        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+        .replace(/\s+/g, ".*?"); // treat spaces as fuzzy gaps
+      const pattern = new RegExp(escaped, 'i');
+      events = events.filter((event) => {
+        const fields = [
+          event.name || '',
+          event.djArtists || '',
+          event.venue || '',
+        ];
+        return fields.some((f) => pattern.test(f));
+      });
     }
     
     // Apply timeline filter
@@ -249,12 +259,38 @@ const UserHomeScreen = () => {
       const eventDate = new Date(event.date);
       return eventDate >= start && eventDate <= end;
     });
+
+    // Apply eventFilters
+    events = events.filter(event => {
+      // price filter
+      const minTicket = event.tickets && event.tickets.length > 0 ? Math.min(...event.tickets.map(t => t.price)) : 0;
+      if (eventFilters.maxPrice !== undefined && minTicket > (eventFilters.maxPrice ?? 100000)) return false;
+      // has menu
+      if (eventFilters.hasMenu && (!event.menuItems || event.menuItems.length === 0)) return false;
+      // featured
+      if (eventFilters.featured && !event.isFeatured) return false;
+      // tickets available
+      if (eventFilters.ticketsAvailable) {
+        const anyAvailable = (event.tickets || []).some(t => (t.quantityAvailable - t.quantitySold) > 0);
+        if (!anyAvailable) return false;
+      }
+      // sold out
+      if (eventFilters.soldOut) {
+        const allSold = (event.tickets || []).every(t => (t.quantityAvailable - t.quantitySold) <= 0);
+        if (!allSold) return false;
+      }
+      // distance
+      if (eventFilters.distanceKm != null && event.distanceInMeters != null) {
+        if (event.distanceInMeters > eventFilters.distanceKm * 1000) return false;
+      }
+      return true;
+    });
     
     // Sort events by date (earliest first)
     events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
     return events;
-  }, [allEvents, activeTab, search]);
+  }, [allEvents, activeTab, search, eventFilters]);
 
   // Handle city selection
   const handleCitySelect = (city: City) => {
@@ -305,10 +341,12 @@ const UserHomeScreen = () => {
             onLocationPress={() => setCityPickerVisible(true)}
             userLocation={userLocation}
             locationLoading={locationLoading}
+            onFilterPress={() => setFiltersVisible(true)}
           />
           <SearchSection
             value={search}
             onChangeText={setSearch}
+            cityName={selectedCity.name}
           />
         </View>
         
@@ -353,6 +391,15 @@ const UserHomeScreen = () => {
           onClose={() => setCityPickerVisible(false)}
           onSelect={handleCitySelect}
           selectedCityId={selectedCity.id}
+        />
+
+        {/* Filters Modal */}
+        <FilterModal
+          visible={filtersVisible}
+          onClose={() => setFiltersVisible(false)}
+          type="events"
+          initialEventFilters={eventFilters}
+          onApply={({ event }) => setEventFilters(event)}
         />
       </View>
     </SafeAreaView>

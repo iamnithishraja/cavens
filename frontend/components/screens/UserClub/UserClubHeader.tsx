@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import LocationHeader from '@/components/event/LocationHeader';
 import SearchBar from '@/components/event/SearchBar';
+import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 import type { City } from '@/components/ui/CityPickerModal';
 
@@ -10,6 +11,7 @@ type UserClubHeaderProps = {
   onLocationPress: () => void;
   search: string;
   onSearchChange: (text: string) => void;
+  onFilterPress?: () => void;
 };
 
 const UserClubHeader: React.FC<UserClubHeaderProps> = ({
@@ -17,7 +19,9 @@ const UserClubHeader: React.FC<UserClubHeaderProps> = ({
   onLocationPress,
   search,
   onSearchChange,
+  onFilterPress,
 }) => {
+  const router = useRouter();
   return (
     <View style={styles.fixedHeader}>
       <LocationHeader
@@ -25,12 +29,14 @@ const UserClubHeader: React.FC<UserClubHeaderProps> = ({
         onLocationPress={onLocationPress}
         userLocation={null}
         locationLoading={false}
+        onFilterPress={onFilterPress}
       />
       <View style={styles.searchContainer}>
         <SearchBar
           value={search}
           onChangeText={onSearchChange}
           placeholder="Search clubs, venues..."
+          onFocusNavigate={() => router.push(`/search?mode=clubs&city=${encodeURIComponent(selectedCity.name)}`)}
         />
       </View>
     </View>

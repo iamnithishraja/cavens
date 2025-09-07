@@ -6,9 +6,10 @@ type Props = {
   value: string;
   onChangeText: (t: string) => void;
   placeholder?: string;
+  onFocusNavigate?: () => void;
 };
 
-const SearchBar: React.FC<Props> = ({ value, onChangeText, placeholder }) => {
+const SearchBar: React.FC<Props> = ({ value, onChangeText, placeholder, onFocusNavigate }) => {
   return (
     <View>
       <View style={styles.searchContainer}>
@@ -25,6 +26,11 @@ const SearchBar: React.FC<Props> = ({ value, onChangeText, placeholder }) => {
           autoCapitalize="none"
           autoCorrect={false}
           selectionColor={Colors.primary}
+          onFocus={() => {
+            if (onFocusNavigate) {
+              onFocusNavigate();
+            }
+          }}
         />
         {value.length > 0 && (
           <View style={styles.clearButton}>

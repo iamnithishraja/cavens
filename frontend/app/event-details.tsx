@@ -73,7 +73,7 @@ export default function EventDetailsScreen() {
   const fetchEventDetails = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get(`/api/event/event/${eventId}`);
+      const response = await apiClient.get(`/api/user/event/${eventId}`);
       
 
 
