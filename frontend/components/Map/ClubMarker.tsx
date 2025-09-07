@@ -8,9 +8,10 @@ interface Props {
   size?: number;
   theme?: 'light' | 'dark';
   clubType?: string;
+  shape?: 'pin' | 'triangle' | 'square' | 'circle';
 }
 
-const ClubMarker = ({ title, image, size = 50, theme = 'dark', clubType }: Props) => {
+const ClubMarker = ({ title, image, size = 14, theme = 'dark', clubType, shape = 'circle' }: Props) => {
   // Generate a color based on the club name for variety
   const getMarkerColor = (clubName: string) => {
     const colors = [
@@ -69,30 +70,34 @@ const ClubMarker = ({ title, image, size = 50, theme = 'dark', clubType }: Props
   const borderColor = getBorderColor(title, clubType);
   const displayName = (title || 'Club').trim();
   
-  // Calculate exact sizes to ensure consistency
+  // Calculate sizes; keep overall container height fixed to `size`
   const containerSize = size;
-  const borderWidth = 3;
-  const imageSize = containerSize - (borderWidth * 2);
-  const borderRadius = containerSize / 2;
+  const pointerHeight = (shape === 'circle' || shape === 'pin') ? Math.max(Math.floor(containerSize * 0.28), 6) : 0;
+  const bodySize = containerSize - pointerHeight;
+  const borderWidth = 2;
+  const imageSize = bodySize - (borderWidth * 2); // Make image fill the entire circle minus border
+  
+  // Make everything circular
+  const borderRadius = bodySize / 2;
 
   const containerStyle = {
     width: containerSize,
     height: containerSize,
   };
 
-  const circleStyle = {
-    width: containerSize,
-    height: containerSize,
+  const bodyStyle = {
+    width: bodySize,
+    height: bodySize,
     borderRadius: borderRadius,
     backgroundColor: markerColor,
     borderColor: borderColor,
     borderWidth: borderWidth,
-  };
+  } as const;
 
   // inner mask handles exact sizing; keep computed values above for clarity
 
   const textStyle = {
-    fontSize: Math.max(containerSize / 3, 12),
+    fontSize: Math.max(bodySize / 3.5, 8),
   };
 
   return (
@@ -102,13 +107,14 @@ const ClubMarker = ({ title, image, size = 50, theme = 'dark', clubType }: Props
       collapsable={false}
       renderToHardwareTextureAndroid
     >
-      <View style={[styles.circle, circleStyle]}>
-        <View style={[styles.innerMask, { width: imageSize, height: imageSize, borderRadius: imageSize / 2 }] }>
+      {/* Marker Body (Pin head) */}
+      <View style={[styles.body, bodyStyle]}>
+        <View style={[
+          styles.innerMask,
+          { width: imageSize, height: imageSize, borderRadius: imageSize / 2 },
+        ]}>
           {image ? (
-            <Image
-              source={{ uri: image }}
-              style={styles.imageFill}
-            />
+            <Image source={{ uri: image }} style={styles.imageFill} />
           ) : (
             <Text style={[styles.fallback, textStyle]}>
               {displayName.charAt(0).toUpperCase()}
@@ -116,33 +122,82 @@ const ClubMarker = ({ title, image, size = 50, theme = 'dark', clubType }: Props
           )}
         </View>
       </View>
+
+      {/* Pointer Triangle (for pin/triangle shapes) */}
+      {(shape === 'circle' || shape === 'pin') ? (
+        <View style={styles.pointerWrap}>
+          {/* outer border triangle */}
+          <View
+            style={[
+              styles.pointerOuter,
+              {
+                borderTopColor: borderColor,
+                borderLeftWidth: Math.max(Math.floor(bodySize * 0.22), 4),
+                borderRightWidth: Math.max(Math.floor(bodySize * 0.22), 4),
+                borderTopWidth: pointerHeight,
+              },
+            ]}
+          />
+          {/* inner fill triangle */}
+          <View
+            style={[
+              styles.pointerInner,
+              {
+                marginTop: -pointerHeight + borderWidth,
+                borderLeftWidth: Math.max(Math.floor(bodySize * 0.22) - borderWidth, 2),
+                borderRightWidth: Math.max(Math.floor(bodySize * 0.22) - borderWidth, 2),
+                borderTopWidth: Math.max(pointerHeight - borderWidth, 1),
+                borderTopColor: markerColor,
+              },
+            ]}
+          />
+        </View>
+      ) : null}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
     backgroundColor: 'transparent',
   },
-  circle: {
+  body: {
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
   },
   innerMask: {
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  pointerWrap: {
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  pointerOuter: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+  },
+  pointerInner: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
   },
   imageFill: {
     width: '100%',
@@ -150,12 +205,12 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   fallback: {
-    color: '#FFFFFF',
-    fontWeight: '800',
+    color: '#210808FF',
+    fontWeight: '700',
     textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 0.5 },
+    textShadowRadius: 1,
   },
 });
 
