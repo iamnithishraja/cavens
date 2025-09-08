@@ -3,10 +3,9 @@ import {
   StyleSheet, 
   StatusBar, 
   View, 
-  FlatList,
-  ListRenderItem
+  ScrollView
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { Colors } from '@/constants/Colors';
 import CityPickerModal, { CITIES, type City } from '@/components/ui/CityPickerModal';
@@ -25,6 +24,7 @@ import FilterModal from '@/components/Models/filterModel';
 const HEADER_SPACING = 328;
 
 const UserClubScreen = () => {
+  const insets = useSafeAreaInsets();
   const [selectedCity, setSelectedCity] = useState<City>(CITIES[0]); // Default to Dubai
   const [cityPickerVisible, setCityPickerVisible] = useState(false);
   const [search, setSearch] = useState('');
@@ -109,45 +109,34 @@ const UserClubScreen = () => {
     const fetchClubs = async () => {
       try {
         setClubsLoading(true);
-        // 1) Always fetch public clubs first for fast UI paint
-        const params: Record<string, string> = {};
-        if (selectedCity?.name) params.city = selectedCity.name;
-        if (selectedTypes.length === 1) params.type = selectedTypes[0];
-        const res = await apiClient.get('/api/club/public/approved', { params: { ...params, includeEvents: 'true' } });
-        const items = (res.data?.items || []) as any[];
-        setClubs(items as Club[]);
-
-        // 2) In background, enrich with distance if location available
+        
+        // If user location is available, fetch clubs with distance in one call
         if (userLocation) {
-          apiClient
-            .get('/api/user/getAllEvents', {
-              params: {
-                latitude: userLocation.latitude,
-                longitude: userLocation.longitude,
-                city: selectedCity?.name,
-              },
-            })
-            .then((nearbyRes) => {
-              const clubsWithDistance = (nearbyRes.data?.clubs || []) as any[];
-              const distanceById = new Map<string, { distance?: string; distanceInMeters?: number }>();
-              clubsWithDistance.forEach((c: any) => {
-                if (c?.club?._id) {
-                  distanceById.set(c.club._id, {
-                    distance: c.distanceText as string,
-                    distanceInMeters: c.distanceInMeters as number,
-                  });
-                }
-              });
-              setClubs((prev) =>
-                prev.map((club) => {
-                  const d = distanceById.get(club._id);
-                  return d ? { ...club, ...d } : club;
-                })
-              );
-            })
-            .catch((err) => {
-              console.warn('Distance enrichment failed:', err);
-            });
+          const params: Record<string, string> = {
+            latitude: userLocation.latitude.toString(),
+            longitude: userLocation.longitude.toString(),
+          };
+          if (selectedCity?.name) params.city = selectedCity.name;
+          if (selectedTypes.length === 1) params.type = selectedTypes[0];
+          
+          const res = await apiClient.get('/api/user/getAllEvents', { params });
+          const clubsWithDistance = (res.data?.clubs || []) as any[];
+          const clubs = clubsWithDistance.map((c: any) => ({
+            ...c.club,
+            distance: c.distanceText,
+            distanceInMeters: c.distanceInMeters,
+            durationText: c.durationText,
+            durationInSeconds: c.durationInSeconds,
+          }));
+          setClubs(clubs as Club[]);
+        } else {
+          // Fallback to public clubs without distance
+          const params: Record<string, string> = {};
+          if (selectedCity?.name) params.city = selectedCity.name;
+          if (selectedTypes.length === 1) params.type = selectedTypes[0];
+          const res = await apiClient.get('/api/club/public/approved', { params: { ...params, includeEvents: 'true' } });
+          const items = (res.data?.items || []) as any[];
+          setClubs(items as Club[]);
         }
       } catch (e) {
         console.error('Failed to load clubs', e);
@@ -185,14 +174,6 @@ const UserClubScreen = () => {
     });
   }, [clubs, selectedCity, search, clubMatchesSelectedTypes, clubFilters]);
 
-  const renderClubItem: ListRenderItem<Club> = ({ item }) => (
-    <UserClubListItem
-      club={item}
-      cityName={selectedCity.name}
-      onPress={handleViewEvents}
-    />
-  );
-
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
@@ -207,35 +188,48 @@ const UserClubScreen = () => {
         />
 
         {/* Content */}
-        <FlatList
-          data={filteredClubs}
-          keyExtractor={(item) => item._id}
-          renderItem={renderClubItem}
-          contentContainerStyle={styles.listContent}
+        <ScrollView 
+          style={styles.container} 
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: 130, paddingBottom: insets.bottom + 120 }
+          ]}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
+          scrollIndicatorInsets={{ top: 130, bottom: insets.bottom + 80 }}
+        >
+          {/* Map View Card */}
+          <MapViewCard 
+            clubs={filteredClubs.length ? filteredClubs : clubs} 
+            loading={clubsLoading}
+            onMarkerPress={handleMapMarkerPress}
+            cityName={selectedCity.name}
+            height={190}
+          />
+          
+          {/* User Club List Header */}
+          <UserClubListHeader
+            headerSpacing={HEADER_SPACING}
+            selectedTypes={selectedTypes}
+            onTypeSelect={handleToggleType}
+          />
+
+          {/* Clubs List */}
+          {filteredClubs.length > 0 ? (
+            filteredClubs.map((club) => (
+              <UserClubListItem
+                key={club._id}
+                club={club}
+                cityName={selectedCity.name}
+                onPress={handleViewEvents}
+              />
+            ))
+          ) : (
             <EmptyClubsView 
               title="No clubs found"
               subtitle="Try changing city, types or search keywords."
             />
-          }
-          ListHeaderComponent={
-            <View style={{ paddingTop: 130 }}>
-              <MapViewCard 
-                clubs={filteredClubs.length ? filteredClubs : clubs} 
-                loading={clubsLoading}
-                onMarkerPress={handleMapMarkerPress}
-                cityName={selectedCity.name}
-                height={190}
-              />
-              <UserClubListHeader
-                headerSpacing={HEADER_SPACING}
-                selectedTypes={selectedTypes}
-                onTypeSelect={handleToggleType}
-              />
-            </View>
-          }
-        />
+          )}
+        </ScrollView>
 
         {/* City Picker Modal */}
         <CityPickerModal
@@ -269,12 +263,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
-  },
   scrollContent: {
-    paddingTop: 20, // Account for fixed header
-    paddingBottom: 4,
+    paddingBottom: 24,
   },
   mapViewContainer: {
     backgroundColor: Colors.background,
@@ -300,9 +290,6 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: 16,
     marginBottom: 12,
-  },
-  listContent: {
-    paddingBottom: 32,
   },
   // Content Sections
   sectionTitle: {

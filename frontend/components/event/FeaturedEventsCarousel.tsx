@@ -105,7 +105,13 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
                   <Text style={styles.venueName} numberOfLines={2}>{item.name}</Text>
                   <Text style={styles.clubLocation}>{getClubName(item)}, {selectedCity.name}</Text>
                   <Text style={styles.distanceText}>{item.distance || `${Math.floor(Math.random() * 20) + 1} km`} away</Text>
-                  <TouchableOpacity style={styles.bookButton}>
+                  <TouchableOpacity 
+                    style={styles.bookButton}
+                    onPress={() => {
+                      console.log("BOOK NOW clicked for event:", item._id, item.name);
+                      onEventPress(item._id || '');
+                    }}
+                  >
                     <Text style={styles.bookButtonText}>BOOK NOW</Text>
                   </TouchableOpacity>
                 </View>

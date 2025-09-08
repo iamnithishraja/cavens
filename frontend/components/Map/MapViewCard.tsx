@@ -161,13 +161,6 @@ const MapViewCard: React.FC<MapViewCardProps> = ({
               })}
             </MapView>
           </View>
-          <LinearGradient
-            pointerEvents="none"
-            colors={["rgba(255,255,255,0.08)", "rgba(255,255,255,0)"]}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            style={styles.topLight}
-          />
         </View>
       </LinearGradient>
     </View>
@@ -231,16 +224,6 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     tintColor: Colors.textPrimary,
-  },
-  topLight: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 40,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    overflow: 'hidden',
   },
   clubCountText: {
     color: '#FFFFFF',

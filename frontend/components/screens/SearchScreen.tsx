@@ -9,6 +9,7 @@ import UserClubListItem from '@/components/screens/UserClub/UserClubListItem';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { store } from '@/utils';
 import EventDetailsScreen from '@/components/screens/EventDetailsScreen';
+import * as Location from 'expo-location';
 
 type Mode = 'events' | 'clubs';
 
@@ -32,6 +33,36 @@ export default function SearchScreen() {
   const [history, setHistory] = useState<string[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedHistory, setSelectedHistory] = useState<{ id: string; name: string }[]>([]);
+  
+  // Location state for distance calculation
+  const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
+  
+  // Fallback coordinates for Dubai (if location access fails)
+  const FALLBACK_LATITUDE = 25.2048;
+  const FALLBACK_LONGITUDE = 55.2708;
+
+  // Get user's current location
+  useEffect(() => {
+    let isMounted = true;
+    const getCurrentLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          if (!isMounted) return;
+          setUserLocation({ latitude: FALLBACK_LATITUDE, longitude: FALLBACK_LONGITUDE });
+          return;
+        }
+        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        if (!isMounted) return;
+        setUserLocation({ latitude: location.coords.latitude, longitude: location.coords.longitude });
+      } catch {
+        if (!isMounted) return;
+        setUserLocation({ latitude: FALLBACK_LATITUDE, longitude: FALLBACK_LONGITUDE });
+      }
+    };
+    getCurrentLocation();
+    return () => { isMounted = false; };
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,17 +82,38 @@ export default function SearchScreen() {
           });
           setEvents(aggregated);
         } else {
-          const res = await apiClient.get('/api/club/public/approved', {
-            params: { city: cityParam, includeEvents: 'false' }
-          });
-          setClubs(res.data?.items || []);
+          // If user location is available, fetch clubs with distance in one call
+          if (userLocation) {
+            const params: Record<string, string> = {
+              latitude: userLocation.latitude.toString(),
+              longitude: userLocation.longitude.toString(),
+            };
+            if (cityParam) params.city = cityParam;
+            
+            const res = await apiClient.get('/api/user/getAllEvents', { params });
+            const clubsWithDistance = (res.data?.clubs || []) as any[];
+            const clubs = clubsWithDistance.map((c: any) => ({
+              ...c.club,
+              distance: c.distanceText,
+              distanceInMeters: c.distanceInMeters,
+              durationText: c.durationText,
+              durationInSeconds: c.durationInSeconds,
+            }));
+            setClubs(clubs as Club[]);
+          } else {
+            // Fallback to public clubs without distance
+            const res = await apiClient.get('/api/club/public/approved', {
+              params: { city: cityParam, includeEvents: 'false' }
+            });
+            setClubs(res.data?.items || []);
+          }
         }
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [mode, city]);
+  }, [mode, city, userLocation]);
 
   // Load search history on mount for current mode
   useEffect(() => {
@@ -269,7 +321,11 @@ export default function SearchScreen() {
           </View>
         </View>
         <View style={styles.tileCtaContainer}>
-          <TouchableOpacity style={styles.tileCta} activeOpacity={0.85}>
+          <TouchableOpacity 
+            style={styles.tileCta} 
+            activeOpacity={0.85}
+            onPress={() => handlePressEvent(item)}
+          >
             <Text style={styles.tileCtaText}>GET TICKETS</Text>
           </TouchableOpacity>
         </View>
