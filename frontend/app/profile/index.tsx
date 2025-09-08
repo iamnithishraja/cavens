@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, StatusBar } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, StatusBar, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { Colors } from "@/constants/Colors";
 import apiClient from "@/app/api/client";
 import { useRouter } from "expo-router";
@@ -91,7 +91,8 @@ const ProfileScreen = () => {
       <BrandHeader />
 
       {/* Content */}
-      <View style={styles.content}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={styles.titleSection}>
           <View style={styles.yellowLine} />
           <Text style={styles.title}>Complete your profile</Text>
@@ -177,7 +178,8 @@ const ProfileScreen = () => {
             <Text style={styles.footerLink}>Content Policies</Text>
           </Text>
         </View>
-      </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Modals */}
       <AgeGroupPickerModal
@@ -229,9 +231,10 @@ const styles = StyleSheet.create({
     marginLeft: 28,
   },
   content: {
-    flex: 1,
     paddingHorizontal: 20,
     paddingTop: 40,
+    paddingBottom: 32,
+    flexGrow: 1,
   },
   titleSection: {
     marginBottom: 60,
