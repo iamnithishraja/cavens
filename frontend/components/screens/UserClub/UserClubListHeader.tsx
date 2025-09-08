@@ -16,8 +16,7 @@ const UserClubListHeader: React.FC<UserClubListHeaderProps> = ({
 }) => {
   return (
     <View>
-      <View style={{ height: headerSpacing }} />
-      <Text style={styles.sectionTitle}>Location Maps coming soon</Text>
+      <View style={{ height: Math.max(4, headerSpacing - 320) }} />
       <View style={styles.categoryContainer}>
         <ClubTypeSelector selectedTypes={selectedTypes} onTypeSelect={onTypeSelect} />
       </View>
@@ -26,17 +25,8 @@ const UserClubListHeader: React.FC<UserClubListHeaderProps> = ({
 };
 
 const styles = StyleSheet.create({
-  sectionTitle: {
-    color: Colors.textSecondary,
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 20,
-    paddingHorizontal: 16,
-    textAlign: 'center',
-    opacity: 0.8,
-  },
   categoryContainer: {
-    marginBottom: 24,
+    marginBottom: 8,
     paddingHorizontal: 16,
   },
 });

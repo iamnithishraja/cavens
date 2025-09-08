@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
 import { Colors } from '@/constants/Colors';
+import { getClubTypeColor } from '@/utils/clubTypes';
 
 export type VenueType = {
   id: string;
@@ -63,6 +64,7 @@ const ClubTypeSelector: React.FC<Props> = ({ selectedTypes, onTypeSelect }) => {
       >
         {VENUE_TYPES.map((type) => {
           const isSelected = type.id === 'all' ? selectedTypes.length === 0 : selectedTypes.includes(type.id);
+          const selectedColor = isSelected ? (type.id === 'all' ? Colors.primary : (getClubTypeColor(type.id) || type.color)) : undefined;
           return (
             <TouchableOpacity
               key={type.id}
@@ -75,14 +77,14 @@ const ClubTypeSelector: React.FC<Props> = ({ selectedTypes, onTypeSelect }) => {
                   source={{ uri: type.icon }}
                   style={[
                     styles.typeIcon,
-                    { tintColor: isSelected ? Colors.primary : Colors.textSecondary }
+                    { tintColor: isSelected ? (selectedColor || Colors.primary) : Colors.textSecondary }
                   ]}
                 />
-                <Text style={[styles.typeName, { color: isSelected ? Colors.primary : Colors.textSecondary }]}>
+                <Text style={[styles.typeName, { color: isSelected ? (selectedColor || Colors.primary) : Colors.textSecondary }]}>
                   {type.name}
                 </Text>
               </View>
-              <View style={[styles.indicator, isSelected && { backgroundColor: Colors.primary, width: 36 }]} />
+              <View style={[styles.indicator, isSelected && { backgroundColor: (selectedColor || Colors.primary), width: 36 }]} />
             </TouchableOpacity>
           );
         })}

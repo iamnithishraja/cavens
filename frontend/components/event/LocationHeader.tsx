@@ -11,13 +11,15 @@ interface LocationHeaderProps {
     longitude: number;
   } | null;
   locationLoading: boolean;
+  onFilterPress?: () => void;
 }
 
 const LocationHeader: React.FC<LocationHeaderProps> = ({
   selectedCity,
   onLocationPress,
   userLocation,
-  locationLoading
+  locationLoading,
+  onFilterPress
 }) => {
   return (
     <View style={styles.locationHeader}>
@@ -36,7 +38,7 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
         />
       </TouchableOpacity>
       
-      <TouchableOpacity style={styles.filterButton}>
+      <TouchableOpacity style={styles.filterButton} onPress={onFilterPress}>
         <Image 
           source={{ uri: "https://img.icons8.com/ios/50/FFFFFF/menu--v1.png" }}
           style={styles.filterIcon}

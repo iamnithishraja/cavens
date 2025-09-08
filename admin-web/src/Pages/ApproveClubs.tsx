@@ -9,6 +9,10 @@ export default function ApproveClubs() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [status, setStatus] = useState<'pending' | 'approved' | 'all'>("pending");
+  const [type, setType] = useState<string>("");
+  const [city, setCity] = useState<string>("");
   const [selected, setSelected] = useState<ClubItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -27,7 +31,13 @@ export default function ApproveClubs() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get("/api/v1/admin/clubs/pending");
+      const params: Record<string, string> = {};
+      if (status) params.status = status;
+      if (type) params.type = type;
+      if (city) params.city = city;
+      if (search) params.search = search;
+      const query = new URLSearchParams(params).toString();
+      const res = await api.get(`/api/v1/admin/clubs/pending${query ? `?${query}` : ""}`);
       setItems(res.data.items || []);
     } catch (e: any) {
       setError(e?.response?.data?.message || "Failed to load clubs");
@@ -126,8 +136,38 @@ export default function ApproveClubs() {
               )}
             </div>
             <button onClick={load} className="px-3 py-2 rounded-xl btn-primary font-bold cursor-pointer hover:opacity-90 active:translate-y-px">Refresh</button>
+            <button onClick={() => setFiltersOpen((v) => !v)} className="px-3 py-2 rounded-xl bg-surface-elevated text-[var(--text-secondary)] border border-brand cursor-pointer hover:bg-[var(--surface)]">Filters</button>
           </div>
         </div>
+
+        {filtersOpen && (
+          <div className="mb-4 p-3 rounded-xl bg-surface-elevated border border-brand grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-[var(--text-secondary)] text-sm">Status</label>
+              <div className="flex gap-2">
+                {(["pending","approved","all"] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setStatus(s)}
+                    className={["px-3 py-2 rounded-full border", status === s ? "bg-[var(--accent-yellow)] text-black border-[var(--accent-yellow)]" : "bg-surface text-[var(--text-secondary)] border-brand"].join(" ")}
+                  >{s[0].toUpperCase()+s.slice(1)}</button>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[var(--text-secondary)] text-sm">Type of Venue</label>
+              <input value={type} onChange={(e)=>setType(e.target.value)} placeholder="e.g., Nightclub, Lounge" className="px-3 py-2 rounded-xl bg-[var(--surface)] text-[var(--text-primary)] border border-brand outline-none placeholder:text-[var(--text-secondary)]" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[var(--text-secondary)] text-sm">City</label>
+              <input value={city} onChange={(e)=>setCity(e.target.value)} placeholder="e.g., Dubai" className="px-3 py-2 rounded-xl bg-[var(--surface)] text-[var(--text-primary)] border border-brand outline-none placeholder:text-[var(--text-secondary)]" />
+            </div>
+            <div className="md:col-span-3 flex justify-end gap-2">
+              <button onClick={()=>{ setType(""); setCity(""); setStatus("pending"); }} className="px-3 py-2 rounded-xl bg-surface text-[var(--text-primary)] border border-brand cursor-pointer">Reset</button>
+              <button onClick={load} className="px-3 py-2 rounded-xl btn-primary font-bold cursor-pointer">Apply</button>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="bg-[rgba(239,68,68,0.12)] border border-[rgba(239,68,68,0.4)] text-[var(--text-primary)] p-3 rounded-lg mb-4">
@@ -139,7 +179,7 @@ export default function ApproveClubs() {
           {loading ? (
             <div>Loading...</div>
           ) : filtered.length === 0 ? (
-            <div className="text-[var(--text-secondary)]">No pending clubs</div>
+            <div className="text-[var(--text-secondary)]">No clubs</div>
           ) : (
             filtered.map((c) => {
               const merged = { ...c, ...(detailsById[c._id] || {}) } as ClubItem;
@@ -239,7 +279,9 @@ export default function ApproveClubs() {
             <div className="px-6 py-4 border-t border-brand flex gap-3 justify-end bg-surface-elevated">
               <button onClick={() => setSelected(null)} className="px-4 py-3 rounded-xl bg-surface text-[var(--text-primary)] border border-brand hover:bg-[var(--surface)] transition-colors cursor-pointer">Close</button>
               <button onClick={() => { if (window.confirm('Reject this club?')) { reject(selected._id); } }} disabled={submitting} className="px-4 py-3 rounded-xl bg-surface text-[var(--text-primary)] border border-brand hover:bg-[var(--surface)] transition-colors cursor-pointer">Reject</button>
-              <button onClick={() => { if (window.confirm('Approve this club?')) { approve(selected._id); } }} disabled={submitting} className="px-4 py-3 rounded-xl btn-primary font-semibold hover:opacity-90 transition-colors cursor-pointer">Approve</button>
+              {!selected.isApproved && (
+                <button onClick={() => { if (window.confirm('Approve this club?')) { approve(selected._id); } }} disabled={submitting} className="px-4 py-3 rounded-xl btn-primary font-semibold hover:opacity-90 transition-colors cursor-pointer">Approve</button>
+              )}
             </div>
           </div>
         </div>

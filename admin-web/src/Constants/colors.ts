@@ -1,40 +1,33 @@
 export const Colors = {
-    // Base surfaces
-    background: "#070B14", // near-black with a hint of navy
-    surface: "#0B1120", // primary surface used behind content
-    surfaceElevated: "#0E1630", // slightly brighter card surface
-  
+    // Base surfaces (matched to mobile app)
+    background: "#000000",
+    surface: "#1A1A1A",
+    surfaceElevated: "#2A2A2A",
+
     // Text
     textPrimary: "#FFFFFF",
-    textSecondary: "#A2ACC2",
-    textMuted: "#7D879C",
-  
+    textSecondary: "#B0B0B0",
+    textMuted: "#808080",
+
     // Accents
-    accentYellow: "#F9D65C", // button/background accent
-    accentBlue: "#4EA2FF", // neon blue highlights
-  
+    accentYellow: "#FFD700",
+    accentBlue: "#FFD700",
+
     // Borders / outlines
-    borderBlue: "rgba(78, 162, 255, 0.28)",
-    borderGold: "rgba(249, 214, 92, 0.25)",
-  
+    borderBlue: "#333333",
+    borderGold: "rgba(255, 215, 0, 0.25)",
+
     // Common gradients used across the app (top -> bottom)
     gradients: {
-      // App background gradient
-      background: ["#05070D", "#0B1120"],
-  
-      // Generic card background (dark navy to near-black)
-      card: ["#0B1225", "#090F1C"],
-  
-      // Extra dark fade
-      dark: ["#060910", "#0A0F1D"],
-  
-      // A soft blue glow that fades out (good for borders/overlays)
-      blueGlow: ["rgba(78, 162, 255, 0.35)", "rgba(78, 162, 255, 0)"]
+      background: ["#000000", "#1A1A1A"],
+      card: ["#1A1A1A", "#2A2A2A"],
+      dark: ["#000000", "#1A1A1A"],
+      blueGlow: ["rgba(255, 215, 0, 0.25)", "rgba(255, 215, 0, 0)"]
     },
-  
+
     // Button theme
     button: {
-      background: "#F9D65C", // same as accentYellow
-      text: "#0A0F1D"
+      background: "#FFD700",
+      text: "#000000"
     }
   }

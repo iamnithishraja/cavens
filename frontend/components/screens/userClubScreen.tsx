@@ -7,6 +7,7 @@ import {
   ListRenderItem
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Location from 'expo-location';
 import { Colors } from '@/constants/Colors';
 import CityPickerModal, { CITIES, type City } from '@/components/ui/CityPickerModal';
 import type { Club } from '@/components/Map/ClubCard';
@@ -15,7 +16,9 @@ import apiClient from '@/app/api/client';
 import { useRouter } from 'expo-router';
 import UserClubHeader from '@/components/screens/UserClub/UserClubHeader';
 import UserClubListHeader from '@/components/screens/UserClub/UserClubListHeader';
+import MapViewCard from '@/components/Map/MapViewCard';
 import UserClubListItem from '@/components/screens/UserClub/UserClubListItem';
+import FilterModal from '@/components/Models/filterModel';
 
 // Placeholder: screen only shows header and search now
 
@@ -27,10 +30,42 @@ const UserClubScreen = () => {
   const [search, setSearch] = useState('');
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const router = useRouter();
+  const [filtersVisible, setFiltersVisible] = useState(false);
+  const [clubFilters, setClubFilters] = useState<{ distanceKm?: number | null; hasUpcomingEvents?: boolean; mostPopular?: boolean; clubTypes?: string[] }>({ distanceKm: null, clubTypes: [] });
+
+  // Location state
+  const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
+  // const [locationLoading, setLocationLoading] = useState(true);
+  
+  // Fallback coordinates for Dubai (if location access fails)
+  const FALLBACK_LATITUDE = 25.2048;
+  const FALLBACK_LONGITUDE = 55.2708;
+
+  // Get user's current location (mirrors userHomeScreen logic with fallback)
+  useEffect(() => {
+    let isMounted = true;
+    const getCurrentLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          if (!isMounted) return;
+          setUserLocation({ latitude: FALLBACK_LATITUDE, longitude: FALLBACK_LONGITUDE });
+          return;
+        }
+        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        if (!isMounted) return;
+        setUserLocation({ latitude: location.coords.latitude, longitude: location.coords.longitude });
+      } catch {
+        if (!isMounted) return;
+        setUserLocation({ latitude: FALLBACK_LATITUDE, longitude: FALLBACK_LONGITUDE });
+      }
+    };
+    getCurrentLocation();
+    return () => { isMounted = false; };
+  }, []);
 
   // Handle city selection
   const handleCitySelect = (city: City) => {
-    console.log("City selected:", city.name);
     setSelectedCity(city);
     setCityPickerVisible(false);
   };
@@ -47,8 +82,18 @@ const UserClubScreen = () => {
     router.push(`/userClubDetailsScreen?clubId=${club._id}`);
   };
 
-  const normalizedIncludes = (haystack: string, needle: string) =>
-    haystack.toLowerCase().includes(needle.trim().toLowerCase());
+  const handleMapMarkerPress = useCallback((club: Club) => {
+    router.push(`/userClubDetailsScreen?clubId=${club._id}`);
+  }, [router]);
+
+  const buildRegex = (input: string) => {
+    const trimmed = input.trim();
+    if (trimmed.length === 0) return null;
+    const escaped = trimmed
+      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+      .replace(/\s+/g, ".*?");
+    return new RegExp(escaped, 'i');
+  };
 
   const clubMatchesSelectedTypes = useCallback((club: Club) => {
     if (selectedTypes.length === 0) return true;
@@ -58,32 +103,87 @@ const UserClubScreen = () => {
   }, [selectedTypes]);
 
   const [clubs, setClubs] = useState<Club[]>([]);
+  const [clubsLoading, setClubsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchClubs = async () => {
       try {
+        setClubsLoading(true);
+        // 1) Always fetch public clubs first for fast UI paint
         const params: Record<string, string> = {};
         if (selectedCity?.name) params.city = selectedCity.name;
         if (selectedTypes.length === 1) params.type = selectedTypes[0];
         const res = await apiClient.get('/api/club/public/approved', { params: { ...params, includeEvents: 'true' } });
         const items = (res.data?.items || []) as any[];
         setClubs(items as Club[]);
+
+        // 2) In background, enrich with distance if location available
+        if (userLocation) {
+          apiClient
+            .get('/api/user/getAllEvents', {
+              params: {
+                latitude: userLocation.latitude,
+                longitude: userLocation.longitude,
+                city: selectedCity?.name,
+              },
+            })
+            .then((nearbyRes) => {
+              const clubsWithDistance = (nearbyRes.data?.clubs || []) as any[];
+              const distanceById = new Map<string, { distance?: string; distanceInMeters?: number }>();
+              clubsWithDistance.forEach((c: any) => {
+                if (c?.club?._id) {
+                  distanceById.set(c.club._id, {
+                    distance: c.distanceText as string,
+                    distanceInMeters: c.distanceInMeters as number,
+                  });
+                }
+              });
+              setClubs((prev) =>
+                prev.map((club) => {
+                  const d = distanceById.get(club._id);
+                  return d ? { ...club, ...d } : club;
+                })
+              );
+            })
+            .catch((err) => {
+              console.warn('Distance enrichment failed:', err);
+            });
+        }
       } catch (e) {
         console.error('Failed to load clubs', e);
         setClubs([]);
+      } finally {
+        setClubsLoading(false);
       }
     };
     fetchClubs();
-  }, [selectedCity, selectedTypes]);
+  }, [selectedCity, selectedTypes, userLocation]);
 
   const filteredClubs = useMemo(() => {
+    const pattern = buildRegex(search);
     return clubs.filter((club) => {
       const cityOk = !selectedCity?.name || club.city.toLowerCase() === selectedCity.name.toLowerCase();
-      const searchOk = !search || normalizedIncludes(club.name, search) || normalizedIncludes(club.clubDescription, search);
+      const searchOk = !pattern || [
+        club.name || '',
+        club.clubDescription || '',
+        club.address || '',
+        club.typeOfVenue || '',
+      ].some((f) => pattern.test(f));
       const typeOk = clubMatchesSelectedTypes(club);
+
+      // Apply filter modal selections
+      if (clubFilters.distanceKm != null && club.distanceInMeters != null) {
+        if (club.distanceInMeters > (clubFilters.distanceKm * 1000)) return false;
+      }
+      if (clubFilters.clubTypes && clubFilters.clubTypes.length > 0) {
+        const raw = (club.typeOfVenue || '').toLowerCase();
+        const types = raw.split(',').map((t) => t.trim().replace(/\s+/g, '_')).filter(Boolean);
+        const hasType = types.some(t => clubFilters.clubTypes?.includes(t));
+        if (!hasType) return false;
+      }
       return cityOk && searchOk && typeOk;
     });
-  }, [clubs, selectedCity, search, clubMatchesSelectedTypes]);
+  }, [clubs, selectedCity, search, clubMatchesSelectedTypes, clubFilters]);
 
   const renderClubItem: ListRenderItem<Club> = ({ item }) => (
     <UserClubListItem
@@ -103,6 +203,7 @@ const UserClubScreen = () => {
           onLocationPress={() => setCityPickerVisible(true)}
           search={search}
           onSearchChange={setSearch}
+          onFilterPress={() => setFiltersVisible(true)}
         />
 
         {/* Content */}
@@ -119,11 +220,20 @@ const UserClubScreen = () => {
             />
           }
           ListHeaderComponent={
-            <UserClubListHeader
-              headerSpacing={HEADER_SPACING}
-              selectedTypes={selectedTypes}
-              onTypeSelect={handleToggleType}
-            />
+            <View style={{ paddingTop: 130 }}>
+              <MapViewCard 
+                clubs={filteredClubs.length ? filteredClubs : clubs} 
+                loading={clubsLoading}
+                onMarkerPress={handleMapMarkerPress}
+                cityName={selectedCity.name}
+                height={190}
+              />
+              <UserClubListHeader
+                headerSpacing={HEADER_SPACING}
+                selectedTypes={selectedTypes}
+                onTypeSelect={handleToggleType}
+              />
+            </View>
           }
         />
 
@@ -133,6 +243,15 @@ const UserClubScreen = () => {
           onClose={() => setCityPickerVisible(false)}
           onSelect={handleCitySelect}
           selectedCityId={selectedCity.id}
+        />
+
+        {/* Filters Modal */}
+        <FilterModal
+          visible={filtersVisible}
+          onClose={() => setFiltersVisible(false)}
+          type="clubs"
+          initialClubFilters={clubFilters}
+          onApply={({ club }) => setClubFilters(club)}
         />
       </View>
     </SafeAreaView>
@@ -157,6 +276,11 @@ const styles = StyleSheet.create({
     paddingTop: 20, // Account for fixed header
     paddingBottom: 4,
   },
+  mapViewContainer: {
+    backgroundColor: Colors.background,
+  },
+  mapCardShell: {},
+  mapCardClip: {},
   // Fixed Header
   fixedHeader: {
     position: 'absolute',
@@ -508,6 +632,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
+
 });
 
 export default UserClubScreen;

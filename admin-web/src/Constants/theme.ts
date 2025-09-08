@@ -2,9 +2,9 @@ import { Colors } from "./colors";
 
 export const adminTheme = {
   colors: {
-    primary: Colors.accentBlue,
+    primary: Colors.accentYellow,
     secondary: Colors.accentYellow,
-    accent: Colors.accentBlue,
+    accent: Colors.accentYellow,
     neutral: Colors.textSecondary,
     success: "#22C55E",
     warning: "#F59E0B",
