@@ -6,6 +6,8 @@ const palette = {
   secondary: '#4CB648',
   secondaryWithOpacity: 'rgba(76, 182, 72, 0.3)',
   darkBlue: '#0B0B0F',
+  waterBlue: '#0E2740',
+  waterLabel: '#4FA3E3',
   mediumBlue: '#1A1A1F',
   lightBlue: '#42A9E1',
   black: '#000000',
@@ -63,8 +65,8 @@ export const darkMapStyle = [
   { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{ color: palette.primary, visibility: 'on' }] },
   { featureType: 'transit.line', elementType: 'labels.text.fill', stylers: [{ color: palette.transluscentWhite, visibility: 'on' }] },
 
-  // Water - show water body names
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: palette.darkBlue }] },
-  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: palette.lightBlue, visibility: 'on' }] },
-  { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{ color: palette.darkBlue }] },
+  // Water - show water body names with a subtle blue shade
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: palette.waterBlue }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: palette.waterLabel, visibility: 'on' }] },
+  { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{ color: palette.waterBlue }] },
 ];

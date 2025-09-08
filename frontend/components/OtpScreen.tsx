@@ -5,6 +5,7 @@ import { Colors } from "@/constants/Colors";
 import apiClient from "@/app/api/client";
 import { useRouter } from "expo-router";
 import { store } from "@/utils";
+import { KeyboardAvoidingView, Platform } from "react-native";
 import BrandHeader from "@/components/common/BrandHeader";
 
 const OtpScreen = ({
@@ -105,6 +106,10 @@ const OtpScreen = ({
   };
 
   return (
+    <KeyboardAvoidingView 
+      style={styles.container} 
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    > 
     <View style={styles.container}>
       <BrandHeader />
       {/* Header */}
@@ -171,6 +176,7 @@ const OtpScreen = ({
         </TouchableOpacity>
       </View>
     </View>
+    </KeyboardAvoidingView>
   );
 };
 

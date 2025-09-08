@@ -32,6 +32,7 @@ const UserClubScreen = () => {
   const router = useRouter();
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [clubFilters, setClubFilters] = useState<{ distanceKm?: number | null; hasUpcomingEvents?: boolean; mostPopular?: boolean; clubTypes?: string[] }>({ distanceKm: null, clubTypes: [] });
+  const [scrollEnabled, setScrollEnabled] = useState(true);
 
   // Location state
   const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
@@ -196,6 +197,9 @@ const UserClubScreen = () => {
           ]}
           showsVerticalScrollIndicator={false}
           scrollIndicatorInsets={{ top: 130, bottom: insets.bottom + 80 }}
+          scrollEnabled={scrollEnabled}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
         >
           {/* Map View Card */}
           <MapViewCard 
@@ -204,6 +208,8 @@ const UserClubScreen = () => {
             onMarkerPress={handleMapMarkerPress}
             cityName={selectedCity.name}
             height={190}
+            onMapInteractionStart={() => setScrollEnabled(false)}
+            onMapInteractionEnd={() => setScrollEnabled(true)}
           />
           
           {/* User Club List Header */}

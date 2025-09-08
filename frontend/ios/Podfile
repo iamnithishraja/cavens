@@ -42,6 +42,9 @@ target 'cavens' do
     :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
   )
 
+  # Google Maps for iOS - include AirGoogleMaps sources
+  pod 'react-native-google-maps', :path => '../node_modules/react-native-maps'
+
   post_install do |installer|
     react_native_post_install(
       installer,
@@ -58,6 +61,17 @@ target 'cavens' do
         resource_bundle_target.build_configurations.each do |config|
           config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         end
+      end
+    end
+
+    # Ensure HAVE_GOOGLE_MAPS macro is set so react-native-maps registers AIRGoogleMap
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        defs = config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || ['$(inherited)']
+        unless defs.any? { |d| d.include? 'HAVE_GOOGLE_MAPS=1' }
+          defs << 'HAVE_GOOGLE_MAPS=1'
+        end
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = defs
       end
     end
   end
