@@ -95,7 +95,13 @@ const EventsList: React.FC<EventsListProps> = ({
               </View>
             </View>
             <View style={styles.ticketButtonContainer}>
-              <TouchableOpacity style={styles.ticketButton}>
+              <TouchableOpacity 
+                style={styles.ticketButton}
+                onPress={() => {
+                  console.log("GET TICKETS clicked for event:", event._id, event.name);
+                  onEventPress(event._id || '');
+                }}
+              >
                 <Text style={styles.ticketButtonText}>GET TICKETS</Text>
               </TouchableOpacity>
             </View>

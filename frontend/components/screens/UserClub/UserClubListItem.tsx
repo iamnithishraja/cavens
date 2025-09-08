@@ -12,15 +12,27 @@ type UserClubListItemProps = {
 const UserClubListItem: React.FC<UserClubListItemProps> = ({ club, cityName, onPress }) => {
   const formattedDistance = React.useMemo(() => {
     const dAny: any = club as any;
-    if (typeof dAny.distance === 'string' && dAny.distance.trim().length > 0) return dAny.distance;
+    
+    // Priority 1: Use pre-calculated distance text
+    if (typeof dAny.distance === 'string' && dAny.distance.trim().length > 0) {
+      return dAny.distance;
+    }
+    
+    // Priority 2: Use distanceText from API
+    if (typeof dAny.distanceText === 'string' && dAny.distanceText.trim().length > 0) {
+      return dAny.distanceText;
+    }
+    
+    // Priority 3: Calculate from meters
     const meters: number | undefined = (dAny.distanceInMeters as number) ?? (dAny.distanceMeters as number);
-    if (typeof meters === 'number' && isFinite(meters)) {
+    if (typeof meters === 'number' && isFinite(meters) && meters > 0) {
       const km = meters / 1000;
       return `${km.toFixed(km < 10 ? 1 : 0)} km`;
     }
-    const text: string | undefined = dAny.distanceText;
-    return typeof text === 'string' ? text : '';
-  }, [club]);
+    
+    // Fallback: Show empty string instead of calculating
+    return '';
+  }, [club.distance, club.distanceText, club.distanceInMeters, club.distanceMeters]);
 
   return (
     <TouchableOpacity style={styles.clubCard} onPress={() => onPress(club)} activeOpacity={0.9}>
@@ -45,11 +57,16 @@ const UserClubListItem: React.FC<UserClubListItemProps> = ({ club, cityName, onP
                 />
               ))}
             </View>
-            <Text style={styles.clubDistanceText}>{formattedDistance}</Text>
+            <Text style={styles.clubDistanceText}>
+              {formattedDistance || '...'}
+            </Text>
           </View>
         </View>
         <View style={styles.ticketButtonContainer}>
-          <TouchableOpacity style={styles.ticketButton}>
+          <TouchableOpacity 
+            style={styles.ticketButton}
+            onPress={() => onPress(club)}
+          >
             <Text style={styles.ticketButtonText}>VIEW EVENTS</Text>
           </TouchableOpacity>
         </View>
