@@ -416,21 +416,16 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Booking History Section */}
+            {/* Booking History Section Header */}
             <View style={styles.bookingHistorySection}>
               <Text style={styles.sectionTitle}>Event History</Text>
               <Text style={styles.sectionSubtitle}>Your attended events and scanned tickets</Text>
-              <BookingHistory showHeader={false} />
             </View>
           </View>
         </View>
 
-        {/* Booking History Section - Separate from ScrollView */}
+        {/* Booking History Section - Separate from ScrollView to avoid VirtualizedLists nesting */}
         <View style={styles.bookingHistoryContainer}>
-          <View style={styles.bookingHistorySection}>
-            <Text style={styles.sectionTitle}>Event History</Text>
-            <Text style={styles.sectionSubtitle}>Your attended events and scanned tickets</Text>
-          </View>
           <BookingHistory showHeader={false} />
         </View>
       </View>
@@ -553,14 +548,18 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Booking History Section */}
+          {/* Booking History Section Header */}
           <View style={styles.bookingHistorySection}>
             <Text style={styles.sectionTitle}>Event History</Text>
             <Text style={styles.sectionSubtitle}>Your attended events and scanned tickets</Text>
-            <BookingHistory showHeader={false} />
           </View>
         </View>
       </ScrollView>
+
+      {/* Booking History Section - Separate from ScrollView to avoid VirtualizedLists nesting */}
+      <View style={styles.bookingHistoryContainer}>
+        <BookingHistory showHeader={false} />
+      </View>
     </View>
   );
 }
@@ -834,10 +833,11 @@ const styles = StyleSheet.create({
   bookingHistoryContainer: {
     flex: 1,
     paddingHorizontal: 24,
+    paddingTop: 0,
   },
   bookingHistorySection: {
     marginTop: 40,
-    marginBottom: 40,
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 24,
