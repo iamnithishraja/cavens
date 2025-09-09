@@ -122,6 +122,7 @@ const DemographicsAnalysis: React.FC<DemographicsAnalysisProps> = ({ demographic
         data={demographics.ageGroups.data}
         title="Age Groups Distribution"
         colors={[Colors.blueAccent, Colors.success, Colors.info]}
+        singleGroupMessage="All attendees are in the same age group"
       />
 
       {/* Gender Distribution */}
@@ -129,6 +130,7 @@ const DemographicsAnalysis: React.FC<DemographicsAnalysisProps> = ({ demographic
         data={demographics.gender.data}
         title="Gender Distribution"
         colors={[Colors.blueAccent, Colors.warning, Colors.success]}
+        singleGroupMessage="All attendees are of the same gender"
       />
     </View>
   );

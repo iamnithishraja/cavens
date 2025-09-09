@@ -1,17 +1,21 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 
 interface PieChartProps {
   data: Record<string, number>;
   title: string;
   colors?: string[];
+  singleGroupMessage?: string; // Custom message for single group scenarios
 }
 
 const PieChart: React.FC<PieChartProps> = ({ 
   data, 
   title, 
-  colors = [Colors.primary, Colors.success, Colors.warning, Colors.info, Colors.error]
+  colors = [Colors.primary, Colors.success, Colors.warning, Colors.info, Colors.error],
+  singleGroupMessage
 }) => {
   const entries = Object.entries(data).filter(([, value]) => value > 0);
   const total = entries.reduce((sum, [, value]) => sum + value, 0);
@@ -22,6 +26,51 @@ const PieChart: React.FC<PieChartProps> = ({
         <Text style={styles.title}>{title}</Text>
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>No data available</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Handle single group scenario - show as a progress card instead of pie chart
+  if (entries.length === 1) {
+    const [label, value] = entries[0];
+    const percentage = Math.round((value / total) * 100);
+    
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>{title}</Text>
+        <View style={styles.singleGroupContainer}>
+          <LinearGradient
+            colors={[colors[0], colors[0] + '80'] as [string, string]}
+            style={styles.singleGroupCard}
+          >
+            <View style={styles.singleGroupContent}>
+              <View style={styles.singleGroupIcon}>
+                <Ionicons name="checkmark-circle" size={32} color="white" />
+              </View>
+              <View style={styles.singleGroupInfo}>
+                <Text style={styles.singleGroupLabel}>{label}</Text>
+                <Text style={styles.singleGroupValue}>{value} attendees</Text>
+                <Text style={styles.singleGroupPercentage}>{percentage}% of total</Text>
+                {singleGroupMessage && (
+                  <Text style={styles.singleGroupMessage}>{singleGroupMessage}</Text>
+                )}
+              </View>
+            </View>
+            <View style={styles.singleGroupProgress}>
+              <View style={styles.progressBar}>
+                <View 
+                  style={[
+                    styles.progressFill, 
+                    { 
+                      width: `${percentage}%`,
+                      backgroundColor: 'white'
+                    }
+                  ]} 
+                />
+              </View>
+            </View>
+          </LinearGradient>
         </View>
       </View>
     );
@@ -168,6 +217,63 @@ const styles = StyleSheet.create({
   legendValue: {
     fontSize: 11,
     color: Colors.textSecondary,
+  },
+  // Single group styles
+  singleGroupContainer: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  singleGroupCard: {
+    padding: 20,
+    borderRadius: 16,
+  },
+  singleGroupContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  singleGroupIcon: {
+    marginRight: 16,
+  },
+  singleGroupInfo: {
+    flex: 1,
+  },
+  singleGroupLabel: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: 'white',
+    marginBottom: 4,
+  },
+  singleGroupValue: {
+    fontSize: 14,
+    color: 'white',
+    opacity: 0.9,
+    marginBottom: 2,
+  },
+  singleGroupPercentage: {
+    fontSize: 12,
+    color: 'white',
+    opacity: 0.8,
+  },
+  singleGroupMessage: {
+    fontSize: 11,
+    color: 'white',
+    opacity: 0.7,
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  singleGroupProgress: {
+    marginTop: 8,
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
   },
 });
 
