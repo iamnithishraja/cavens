@@ -28,7 +28,7 @@ export default function BookingHistory({ onBookingPress, showHeader = true }: Bo
     refreshing 
   } = useBookingsPolling({
     status: 'scanned',
-    enabled: true,
+    enabled: false, // Do not poll in history view
     interval: 3000, // Poll every 3 seconds
   });
 

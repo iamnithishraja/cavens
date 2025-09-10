@@ -51,17 +51,17 @@ export const useBookingsPolling = ({
     setRefreshing(false);
   }, [fetchBookings]);
 
-  // Start polling when component mounts
+  // Always perform an initial fetch on mount and when status changes
+  useEffect(() => {
+    fetchBookings();
+  }, [fetchBookings]);
+
+  // Polling only when explicitly enabled
   useEffect(() => {
     if (!enabled) return;
 
-    // Initial fetch
-    fetchBookings();
-
-    // Set up polling interval
     intervalRef.current = setInterval(fetchBookings, interval);
 
-    // Cleanup on unmount or when dependencies change
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
