@@ -15,6 +15,7 @@ export interface ClubEvent {
   description: string;
   ticketTypes: TicketType[];
   coverImage: string | null;
+  eventMap: string | null;
   // Event-specific data
   menuItems?: MenuItemFull[];
   happyHourTimings?: string;

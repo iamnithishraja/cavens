@@ -19,6 +19,7 @@ const eventSchema = z.object({
   djArtists: z.string().optional(),
   description: z.string().min(1),
   coverImage: z.string().optional(),
+  eventMap: z.string().min(1, "Event map is required"),
 
   tickets: z.array(z.object({
     name: z.string().min(1),
@@ -76,7 +77,7 @@ export const getClubEvents = async (req: CustomRequest, res: Response) => {
         .sort({ date: 1 })
         .populate("tickets")
         .populate("menuItems");
-
+       console.log('populatedEvents', populatedEvents);
       res.json({
         success: true,
         data: populatedEvents,

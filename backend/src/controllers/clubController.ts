@@ -81,6 +81,7 @@ export const saveEventData = async (req: CustomRequest, res: Response): Promise<
       time,
       description,
       coverImage,
+      eventMap,
       djArtists,
       tickets = [],
       menuItems = [],
@@ -91,8 +92,8 @@ export const saveEventData = async (req: CustomRequest, res: Response): Promise<
     } = req.body;
      console.log(req.body);
     // Basic required fields check
-    if (!name?.trim() || !date?.trim() || !time?.trim() || !description?.trim()) {
-      res.status(400).json({ success: false, message: "Event name, date, time, and description are required" });
+    if (!name?.trim() || !date?.trim() || !time?.trim() || !description?.trim() || !eventMap?.trim()) {
+      res.status(400).json({ success: false, message: "Event name, date, time, description, and event map are required" });
       return;
     }
 
@@ -132,6 +133,7 @@ export const saveEventData = async (req: CustomRequest, res: Response): Promise<
       description: description.trim(),
       djArtists: djArtists || "",
       coverImage: coverImage || "",
+      eventMap: eventMap || "",
       clubId,
       tickets: ticketDocs,
       menuItems: menuItemDocs,

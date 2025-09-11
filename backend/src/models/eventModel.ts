@@ -10,6 +10,7 @@ const eventSchema = new mongoose.Schema({
     djArtists: String,
     description: String,
     coverImage: String,
+    eventMap: String,
     tickets: [{
       ref: "Ticket",
       type: mongoose.Schema.Types.ObjectId,

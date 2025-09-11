@@ -159,6 +159,19 @@ const EventsTicketingSection: React.FC<Props> = ({
             />
           </View>
 
+          <View style={styles.inputSpacing}>
+            <ImageUploader
+              label="Event Map *"
+              multiple={false}
+              onUploaded={(urls) =>
+                onUpdateEvent(event.id, "eventMap", urls[0] || null)
+              }
+              existingUrls={event.eventMap ? [event.eventMap] : []}
+              fullWidth
+              aspectRatio={16 / 9}
+            />
+          </View>
+
           {/* Tickets Section */}
           <View style={styles.ticketsSection}>
             <View style={styles.ticketsHeader}>

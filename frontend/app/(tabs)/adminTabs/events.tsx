@@ -54,7 +54,7 @@ export default function EventsScreen() {
       const response = await apiClient.get('/api/event/club-events', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+      console.log('response', response.data);
       if (response.data.success) {
         
         setEvents(response.data.data);

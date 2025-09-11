@@ -84,6 +84,7 @@ const EditEventForm = () => {
             quantity: ticket.quantityAvailable?.toString() || ticket.quantity?.toString() || "",
           })) || [],
           coverImage: eventData.coverImage || null,
+          eventMap: eventData.eventMap || null,
         };
         
         setEvents([event]);
@@ -268,6 +269,9 @@ const EditEventForm = () => {
     if (!event.description?.trim()) {
       errors.push("Event description is required");
     }
+    if (!event.eventMap?.trim()) {
+      errors.push("Event map is required");
+    }
 
     // Validate tickets
     if (event.ticketTypes && event.ticketTypes.length > 0) {
@@ -325,6 +329,20 @@ const EditEventForm = () => {
         }
       } else if (typeof events[0].coverImage === 'string') {
         coverImageUrl = events[0].coverImage;
+      }
+
+      // Upload event map if exists and is a new file
+      let eventMapUrl = "";
+      if (events[0].eventMap && typeof events[0].eventMap === 'object') {
+        try {
+          const fileName = `event-map-${Date.now()}.jpg`;
+          eventMapUrl = await uploadImage(events[0].eventMap as File, fileName);
+        } catch (error) {
+          console.error("Failed to upload event map:", error);
+          Alert.alert("Warning", "Failed to upload event map, but continuing...");
+        }
+      } else if (typeof events[0].eventMap === 'string') {
+        eventMapUrl = events[0].eventMap;
       }
   
       // Upload gallery photos (only if they're File objects, not URLs)
@@ -404,6 +422,7 @@ const EditEventForm = () => {
         djArtists: events[0].djArtists?.trim() || "",
         description: events[0].description.trim(),
         coverImage: coverImageUrl || "",
+        eventMap: eventMapUrl || "",
         tickets: events[0].ticketTypes.map((ticket) => ({
           name: ticket.name.trim(),
           price: parseFloat(ticket.price) || 0, // Convert to number

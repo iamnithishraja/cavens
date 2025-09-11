@@ -57,6 +57,7 @@ const CreateEventForm = () => {
       description: "",
       ticketTypes: [],
       coverImage: null,
+      eventMap: null,
     };
     setEvents([...events, newEvent]);
   };
@@ -73,6 +74,7 @@ const CreateEventForm = () => {
         description: "",
         ticketTypes: [],
         coverImage: null,
+        eventMap: null,
       };
       setEvents([defaultEvent]);
     } else if (events.length > 1) {
@@ -188,6 +190,9 @@ const CreateEventForm = () => {
     if (!event.description?.trim()) {
       errors.push("Event description is required");
     }
+    if (!event.eventMap?.trim()) {
+      errors.push("Event map is required");
+    }
 
     // Validate tickets
     if (event.ticketTypes && event.ticketTypes.length > 0) {
@@ -245,6 +250,20 @@ const CreateEventForm = () => {
         }
       } else if (typeof events[0].coverImage === 'string') {
         coverImageUrl = events[0].coverImage;
+      }
+
+      // Upload event map if exists
+      let eventMapUrl = "";
+      if (events[0].eventMap && typeof events[0].eventMap === 'object') {
+        try {
+          const fileName = `event-map-${Date.now()}.jpg`;
+          eventMapUrl = await uploadImage(events[0].eventMap as File, fileName);
+        } catch (error) {
+          console.error("Failed to upload event map:", error);
+          Alert.alert("Warning", "Failed to upload event map, but continuing...");
+        }
+      } else if (typeof events[0].eventMap === 'string') {
+        eventMapUrl = events[0].eventMap;
       }
   
       // Upload gallery photos
@@ -322,6 +341,7 @@ const CreateEventForm = () => {
         djArtists: events[0].djArtists?.trim() || "",
         description: events[0].description.trim(),
         coverImage: coverImageUrl || "",
+        eventMap: eventMapUrl || "",
         // FIX: Match backend expectation - use 'tickets' not 'ticketTypes'
         tickets: events[0].ticketTypes.map((ticket) => ({
           name: ticket.name.trim(),
