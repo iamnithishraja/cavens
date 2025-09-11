@@ -29,6 +29,7 @@ interface Event {
   djArtists: string;
   description: string;
   coverImage: string;
+  eventMap?: string;
   tickets: { _id: string; name: string; price: number }[];
   venue?: string;
 }

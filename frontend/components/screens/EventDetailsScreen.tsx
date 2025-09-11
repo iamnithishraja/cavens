@@ -169,6 +169,20 @@ const EventDetailsScreen: React.FC<Props> = ({ event: initialEvent, eventId, onG
             <CurrencyAED amount={lowestTicket} />
           </View>
 
+          {/* Event Map */}
+          {event.eventMap && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Event Map</Text>
+              <View style={styles.eventMapContainer}>
+                <Image 
+                  source={{ uri: event.eventMap }}
+                  style={styles.eventMapImage}
+                  resizeMode="contain"
+                />
+              </View>
+            </View>
+          )}
+
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>About</Text>
             <Text style={styles.body}>{event.description}</Text>
@@ -475,6 +489,18 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 20,
     paddingHorizontal: 16,
+  },
+  eventMapContainer: {
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  eventMapImage: {
+    width: '100%',
+    height: 250,
+    borderRadius: 8,
   },
 });
 
