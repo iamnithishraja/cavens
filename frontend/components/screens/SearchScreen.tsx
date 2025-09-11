@@ -8,7 +8,6 @@ import type { Club } from '@/components/Map/ClubCard';
 import UserClubListItem from '@/components/screens/UserClub/UserClubListItem';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { store } from '@/utils';
-import EventDetailsScreen from '@/components/screens/EventDetailsScreen';
 import * as Location from 'expo-location';
 
 type Mode = 'events' | 'clubs';
@@ -31,7 +30,6 @@ export default function SearchScreen() {
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState<string[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedHistory, setSelectedHistory] = useState<{ id: string; name: string }[]>([]);
   
   // Location state for distance calculation
@@ -200,7 +198,7 @@ export default function SearchScreen() {
   const handlePressEvent = (event: EventItem) => {
     if (event._id) {
       saveSelection(event._id, event.name || 'Event');
-      setSelectedEventId(event._id);
+      router.push(`/event/${event._id}`);
     }
   };
 
@@ -286,7 +284,7 @@ export default function SearchScreen() {
                   style={styles.historyChipPress}
                   onPress={() => {
                     if (mode === 'events') {
-                      setSelectedEventId(s.id);
+                      router.push(`/event/${s.id}`);
                     } else {
                       router.push(`/userClubDetailsScreen?clubId=${s.id}`);
                     }
@@ -332,13 +330,6 @@ export default function SearchScreen() {
       </View>
     </TouchableOpacity>
   );
-
-  // Show event details inline (same behavior as userHomeScreen)
-  if (selectedEventId) {
-    return (
-      <EventDetailsScreen eventId={selectedEventId} onGoBack={() => setSelectedEventId(null)} />
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

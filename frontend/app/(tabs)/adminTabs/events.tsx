@@ -5,8 +5,7 @@ import {
   StyleSheet, 
   ScrollView, 
   TouchableOpacity, 
-  Alert, 
-  ActivityIndicator,
+  Alert,  
   RefreshControl,
   StatusBar
 } from 'react-native';
@@ -18,6 +17,7 @@ import { useRouter } from 'expo-router';
 import apiClient from '@/app/api/client';
 import { store } from '@/utils';
 import AdminEventCard from '@/components/event/AdminEventCard';
+import LoadingScreen  from '@/components/common/LoadingScreen';
 
 // no-op
 
@@ -94,20 +94,12 @@ export default function EventsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
-        <View style={styles.fullBackground}>
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={Colors.primary} />
-            <Text style={styles.loadingText}>Loading events...</Text>
-          </View>
-        </View>
-      </SafeAreaView>
+      <LoadingScreen />
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={[]}>
+    <SafeAreaView style={styles.safeArea} >
       <StatusBar backgroundColor={Colors.background} barStyle="light-content" />
       <View style={styles.fullBackground}>
         {/* Fixed Header */}

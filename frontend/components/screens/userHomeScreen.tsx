@@ -20,6 +20,7 @@ import FeaturedEventsCarousel from '@/components/event/FeaturedEventsCarousel';
 import EventsList from '@/components/event/EventsList';
 import SearchSection from '@/components/event/SearchSection';
 import { LoadingState, ErrorState } from '@/components/event/LoadingStates';
+import { router } from 'expo-router';
 
 // Types for API responses
 type ClubWithEvents = {
@@ -61,7 +62,6 @@ type GetFeaturedEventsResponse = {
 
 const UserHomeScreen = () => {
   const insets = useSafeAreaInsets();
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TimelineTab>('tonight');
   const [selectedCity, setSelectedCity] = useState<City>(CITIES[0]); // Default to Dubai
   const [cityPickerVisible, setCityPickerVisible] = useState(false);
@@ -302,7 +302,7 @@ const UserHomeScreen = () => {
   // Event handlers
   const handleEventPress = (eventId: string) => {
     console.log("Event clicked:", eventId);
-    setSelectedEventId(eventId);
+    router.push(`/event/${eventId}`);
   };
 
   const handleRetry = () => {
@@ -310,15 +310,6 @@ const UserHomeScreen = () => {
     setLoading(true);
   };
 
-  // Show event details modal
-  if (selectedEventId) {
-    return (
-      <EventDetailsScreen
-        eventId={selectedEventId}
-        onGoBack={() => setSelectedEventId(null)}
-      />
-    );
-  }
 
   // Show loading state
   if (loading && featuredEvents.length === 0 && allEvents.length === 0) {

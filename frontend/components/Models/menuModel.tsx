@@ -13,7 +13,6 @@ type MenuModalProps = {
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
-
 type LocalMenuItem = MenuItem & { nameLower?: string; descriptionLower?: string; categoryLower?: string };
 
 const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, title = 'Menu', items }) => {
@@ -81,7 +80,7 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, title = 'Menu',
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: insets.bottom }]}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>{title}</Text>
             <TouchableOpacity style={styles.nextButton} onPress={onClose} activeOpacity={0.9}>
@@ -115,7 +114,6 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, title = 'Menu',
                 </View>
                 <View style={styles.actions}>
                   <Text style={styles.price}>AED {item.price}</Text>
-
                 </View>
               </View>
             )}
@@ -164,20 +162,20 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, title = 'Menu',
               </View>
             )}
             ListFooterComponent={(
-              <Text style={styles.footerNote}>Prices inclusive of taxes. Images are for illustration only.</Text>
+              <View style={styles.footerContainer}>
+                <Text style={styles.footerNote}>Prices inclusive of taxes. Images are for illustration only.</Text>
+              </View>
             )}
-            contentContainerStyle={[styles.content, { paddingBottom: 16 }]}
+            contentContainerStyle={styles.content}
+            style={styles.flatList}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            removeClippedSubviews
-            initialNumToRender={8}
-            maxToRenderPerBatch={10}
+            removeClippedSubviews={false}
+            initialNumToRender={10}
+            maxToRenderPerBatch={15}
             windowSize={10}
             updateCellsBatchingPeriod={16}
-            getItemLayout={(_, index) => ({ length: 96, offset: 96 * index, index })}
           />
-          {/* Bottom spacer to avoid nav bar gap */}
-          <View style={{ height: insets.bottom, backgroundColor: Colors.background }} />
         </View>
       </View>
     </Modal>
@@ -227,8 +225,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
+  flatList: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
   content: {
+    flexGrow: 1,
     padding: 16,
+    paddingBottom: 24,
   },
   categoryPillsRow: {
     flexDirection: 'row',
@@ -255,15 +259,6 @@ const styles = StyleSheet.create({
   },
   pillTextActive: {
     color: Colors.button?.text || '#000',
-  },
-  sectionBlock: {
-    marginBottom: 16,
-  },
-  sectionHeading: {
-    color: Colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '800',
-    marginBottom: 8,
   },
   card: {
     flexDirection: 'row',
@@ -310,11 +305,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 6,
   },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
   actions: {
     alignItems: 'flex-end',
     justifyContent: 'space-between',
@@ -327,20 +317,6 @@ const styles = StyleSheet.create({
   price: {
     color: Colors.primary,
     fontSize: 16,
-    fontWeight: '800',
-  },
-  addButton: {
-    marginTop: 8,
-    backgroundColor: Colors.backgroundSecondary,
-    borderWidth: 1,
-    borderColor: Colors.withOpacity.white10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  addButtonText: {
-    color: Colors.textPrimary,
-    fontSize: 12,
     fontWeight: '800',
   },
   empty: {
@@ -363,14 +339,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     color: Colors.textPrimary,
   },
+  footerContainer: {
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
   footerNote: {
     color: Colors.textMuted,
     fontSize: 12,
     textAlign: 'center',
-    marginTop: 8,
   },
 });
 
 export default MenuModal;
-
- 

@@ -96,7 +96,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
         <TouchableWithoutFeedback onPress={onClose}>
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: insets.bottom }]}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>{title}</Text>
             <View style={styles.headerActions}>
@@ -109,7 +109,11 @@ const FilterModal: React.FC<FilterModalProps> = ({
             </View>
           </View>
 
-          <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 16 }]} showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            contentContainerStyle={styles.content} 
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+          >
             {/* Location Section */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Location</Text>
@@ -121,11 +125,6 @@ const FilterModal: React.FC<FilterModalProps> = ({
                     </Text>
                   </TouchableOpacity>
                 ))}
-                {/* {type === 'events' && (
-                  <TouchableOpacity style={[styles.chip, eventFilters.walkingDistance && styles.chipActive]} onPress={() => setEventFilters((p)=>({ ...p, walkingDistance: !p.walkingDistance, distanceKm: p.walkingDistance ? p.distanceKm : 1 }))}>
-                    <Text style={[styles.chipText, eventFilters.walkingDistance && styles.chipTextActive]}>{'< 1 km'}</Text>
-                  </TouchableOpacity>
-                )} */}
               </View>
             </View>
 
@@ -208,27 +207,11 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   {formatPrice(type === 'events' ? (eventFilters.maxPrice ?? 100000) : 100000)}
                 </Text>
               </View>
-              {/* {type==='events' && (
-                <View style={[styles.chipsRow, { marginTop: 12 }]}>
-                  {[
-                    { max: 0, label: 'Free' },
-                    { max: 100, label: 'Under AED 100' },
-                    { max: 500, label: 'AED 100-500' },
-                    { max: 1000, label: 'AED 500-1000' },
-                    { max: 2500, label: 'AED 1000-2500' },
-                    { max: 100000, label: 'AED 2500+' },
-                  ].map(({ max, label }) => (
-                    <TouchableOpacity key={label} style={[styles.chip, (eventFilters.maxPrice ?? 100000)===max && styles.chipActive]} onPress={() => setEventFilters((p)=>({ ...p, maxPrice: max }))}>
-                      <Text style={[styles.chipText, (eventFilters.maxPrice ?? 100000)===max && styles.chipTextActive]}>{label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )} */}
             </View>
 
             {/* Time Section (events only) */}
             {type==='events' && (
-              <View style={styles.section}>
+              <View style={[styles.section, styles.lastSection]}>
                 <Text style={styles.sectionTitle}>Date & Time</Text>
                 <View style={styles.chipsRow}>
                   {['Today','Tomorrow','This Weekend','Next 7 Days','This Month'].map((label) => (
@@ -240,9 +223,6 @@ const FilterModal: React.FC<FilterModalProps> = ({
               </View>
             )}
           </ScrollView>
-
-          {/* Bottom spacer to cover system navigation area */}
-          <View style={{ height: insets.bottom, backgroundColor: Colors.background }} />
         </View>
       </View>
     </Modal>
@@ -312,11 +292,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  scrollView: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
   content: {
+    flexGrow: 1,
     padding: 20,
+    paddingBottom: 32,
   },
   section: {
     marginBottom: 24,
+  },
+  lastSection: {
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 16,
@@ -373,9 +362,6 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     marginTop: 8,
   },
-  // footer removed; using bottom spacer instead
 });
 
 export default FilterModal;
-
- 
