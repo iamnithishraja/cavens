@@ -302,7 +302,7 @@ const switchToClub = async (req: CustomRequest, res: Response): Promise<void> =>
 const getNearbyEvents = async (req: CustomRequest, res: Response) => {
 
   try {
-    await updateExpiredEvents();
+    // await updateExpiredEvents();
     const { latitude, longitude,city } = req.query;
     if (!latitude || !longitude) {
       res.status(400).json({ message: "Latitude and longitude required as query parameters" });
