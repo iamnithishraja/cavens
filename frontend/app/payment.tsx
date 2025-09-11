@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,10 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  SafeAreaView,
-  StatusBar
+  StatusBar,
+  Image
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors } from '@/constants/Colors';
@@ -64,12 +65,13 @@ type PurchaseTicketResponse = {
 };
 
 const PaymentScreen = () => {
-  const { eventId, eventName, eventDate, eventTime, tickets } = useLocalSearchParams<{
+  const { eventId, eventName, eventDate, eventTime, tickets, coverImage } = useLocalSearchParams<{
     eventId: string;
     eventName: string;
     eventDate: string;
     eventTime: string;
     tickets: string;
+    coverImage?: string;
   }>();
 
   const [purchasing, setPurchasing] = useState(false);
@@ -77,7 +79,13 @@ const PaymentScreen = () => {
   const [quantity, setQuantity] = useState(1);
 
   // Parse tickets from navigation params
-  const eventTickets: TicketType[] = tickets ? JSON.parse(tickets) : [];
+  const eventTickets: TicketType[] = useMemo(() => {
+    try {
+      return tickets ? JSON.parse(tickets) : [];
+    } catch {
+      return [];
+    }
+  }, [tickets]);
 
   // Set default ticket type to first available ticket
   useEffect(() => {
@@ -89,7 +97,7 @@ const PaymentScreen = () => {
         setSelectedTicketType(firstAvailableTicket.name);
       }
     }
-  }, []);
+  }, [eventTickets]);
 
   // Get selected ticket details
   const selectedTicket = eventTickets.find(ticket => ticket.name === selectedTicketType);
@@ -145,7 +153,7 @@ const PaymentScreen = () => {
 
   if (!eventId || !eventName || eventTickets.length === 0) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top','bottom']}>
         <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
         <LinearGradient colors={Colors.gradients.background as [string, string]} style={styles.container}>
           <View style={styles.errorContainer}>
@@ -160,7 +168,7 @@ const PaymentScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top','bottom']}>
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
       <LinearGradient colors={Colors.gradients.background as [string, string]} style={styles.container}>
         {/* Header */}
@@ -175,8 +183,15 @@ const PaymentScreen = () => {
         <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
           {/* Event Info */}
           <View style={styles.eventInfoContainer}>
-            <Text style={styles.eventName}>{eventName}</Text>
-            <Text style={styles.eventDate}>{eventDate} • {eventTime}</Text>
+            <View style={styles.eventRow}>
+              {!!coverImage && (
+                <Image source={{ uri: String(coverImage) }} style={styles.eventImage} resizeMode="cover" />
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.eventName} numberOfLines={2}>{eventName}</Text>
+                <Text style={styles.eventDate}>{eventDate} • {eventTime}</Text>
+              </View>
+            </View>
           </View>
 
           {/* Ticket Selection */}
@@ -275,6 +290,7 @@ const PaymentScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    backgroundColor: Colors.background,
   },
   container: {
     flex: 1,
@@ -306,10 +322,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.withOpacity.white10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   backButton: {
     flexDirection: 'row',
@@ -317,7 +331,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
-    backgroundColor: Colors.backgroundSecondary,
+    backgroundColor: Colors.withOpacity.black60,
+    borderWidth: 1,
+    borderColor: Colors.withOpacity.white10,
   },
   backButtonText: {
     color: Colors.primary,
@@ -332,10 +348,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     textAlign: 'center',
-    zIndex: -1, // Put behind back button
+    zIndex: -1,
   },
   spacer: {
-    width: 80, // Match back button width
+    width: 80,
   },
   scrollContainer: {
     flex: 1,
@@ -345,18 +361,29 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   eventInfoContainer: {
-    backgroundColor: Colors.backgroundSecondary,
+    backgroundColor: Colors.withOpacity.white10,
     borderRadius: 16,
-    padding: 20,
+    padding: 14,
     marginBottom: 24,
     borderWidth: 1,
     borderColor: Colors.withOpacity.white10,
+  },
+  eventRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  eventImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    backgroundColor: Colors.backgroundSecondary,
   },
   eventName: {
     color: Colors.textPrimary,
     fontSize: 24,
     fontWeight: '700',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   eventDate: {
     color: Colors.textSecondary,
@@ -465,9 +492,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 16,
-    backgroundColor: Colors.background,
-    borderTopWidth: 1,
-    borderTopColor: Colors.withOpacity.white10,
+    backgroundColor: Colors.withOpacity.black80,
+    borderTopWidth: 0,
   },
   purchaseButton: {
     backgroundColor: Colors.primary,
@@ -484,7 +510,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   purchaseButtonText: {
-    color: Colors.textPrimary,
+    color: Colors.button.text,
     fontSize: 18,
     fontWeight: '700',
   },

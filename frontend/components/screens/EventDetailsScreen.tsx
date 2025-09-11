@@ -117,6 +117,7 @@ const EventDetailsScreen: React.FC<Props> = ({
         eventDate: event.date,
         eventTime: event.time,
         tickets: JSON.stringify(event.tickets || []),
+        coverImage: event.coverImage || '',
       },
     });
   };

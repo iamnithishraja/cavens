@@ -36,10 +36,12 @@ const TicketCounter: React.FC<TicketCounterProps> = ({
         <TouchableOpacity
           style={[
             styles.counterButton,
+            styles.decrementButton,
             !canDecrement && styles.disabledButton
           ]}
           onPress={handleDecrement}
           disabled={!canDecrement}
+          activeOpacity={0.8}
         >
           <Text style={[
             styles.counterButtonText,
@@ -56,13 +58,16 @@ const TicketCounter: React.FC<TicketCounterProps> = ({
         <TouchableOpacity
           style={[
             styles.counterButton,
+            styles.incrementButton,
             !canIncrement && styles.disabledButton
           ]}
           onPress={handleIncrement}
           disabled={!canIncrement}
+          activeOpacity={0.8}
         >
           <Text style={[
             styles.counterButtonText,
+            styles.incrementButtonText,
             !canIncrement && styles.disabledButtonText
           ]}>
             +
@@ -90,41 +95,69 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.backgroundSecondary,
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.withOpacity.white10,
     overflow: 'hidden',
+    shadowColor: Colors.shadow,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   counterButton: {
-    width: 50,
-    height: 50,
+    width: 48,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 0.5,
+    borderColor: Colors.withOpacity.white10,
+  },
+  decrementButton: {
+    backgroundColor: Colors.backgroundTertiary,
+    borderTopLeftRadius: 11,
+    borderBottomLeftRadius: 11,
+  },
+  incrementButton: {
     backgroundColor: Colors.primary,
+    borderTopRightRadius: 11,
+    borderBottomRightRadius: 11,
   },
   disabledButton: {
     backgroundColor: Colors.backgroundTertiary,
+    opacity: 0.5,
   },
   counterButtonText: {
-    color: Colors.textPrimary,
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '600',
-    lineHeight: 24,
+    lineHeight: 20,
+    color: Colors.textPrimary,
+  },
+  incrementButtonText: {
+    color: Colors.button.text, // Black text on gold background
+    fontWeight: '700',
   },
   disabledButtonText: {
     color: Colors.textMuted,
   },
   valueContainer: {
-    width: 80,
-    height: 50,
+    width: 60,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: Colors.backgroundSecondary,
+    borderTopWidth: 0.5,
+    borderBottomWidth: 0.5,
+    borderColor: Colors.withOpacity.white10,
   },
   valueText: {
     color: Colors.textPrimary,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
+    letterSpacing: 0.5,
   },
   infoContainer: {
     marginTop: 12,
@@ -132,15 +165,16 @@ const styles = StyleSheet.create({
   },
   infoText: {
     color: Colors.textSecondary,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
+    letterSpacing: 0.3,
   },
   limitText: {
     color: Colors.error,
     fontSize: 12,
     fontWeight: '500',
     marginTop: 4,
+    opacity: 0.9,
   },
 });
-
 export default TicketCounter;
