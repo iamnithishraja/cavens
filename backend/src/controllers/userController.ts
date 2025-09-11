@@ -331,53 +331,72 @@ const getNearbyEvents = async (req: CustomRequest, res: Response) => {
     });
 
     // Calculate distances for all clubs in parallel using Promise.all
-    const distancePromises = clubs
-      .filter(club => club.mapLink) // Only process clubs with map links
-      .map(async (club) => {
-        try {
-          const distanceResult = await calculateDistanceFromMapsLink(
-            userLat,
-            userLng,
-            club.mapLink,
-            process.env.GOOGLE_MAPS_API_KEY || "",
-            "driving",
-            true // use fallback
-          );
+    const distancePromises = clubs.map(async (club) => {
+      // If club has no map link, return with N/A distance
+      if (!club.mapLink) {
+        return {
+          club,
+          distanceInMeters: Number.MAX_VALUE,
+          distanceText: "N/A",
+          durationText: "N/A",
+          durationInSeconds: 0,
+          method: "No map link available"
+        };
+      }
 
-          // Check if it's a Google Maps result or Haversine fallback
-          if ('duration' in distanceResult.distance) {
-            // Google Maps API result
-            return {
-              club,
-              distanceInMeters: distanceResult.distance.distance.value,
-              distanceText: distanceResult.distance.distance.text,
-              durationText: distanceResult.distance.duration.text,
-              durationInSeconds: distanceResult.distance.duration.value,
-              method: "Google Maps API"
-            };
-          } else {
-            // Haversine fallback result
-            return {
-              club,
-              distanceInMeters: distanceResult.distance.distance.value,
-              distanceText: distanceResult.distance.distance.text,
-              durationText: "N/A",
-              durationInSeconds: 0,
-              method: distanceResult.distance.method
-            };
-          }
-        } catch (error) {
-          console.warn(`Failed to calculate distance for club ${club.name}:`, error);
-          return null; // Return null for failed calculations
+      try {
+        const distanceResult = await calculateDistanceFromMapsLink(
+          userLat,
+          userLng,
+          club.mapLink,
+          process.env.GOOGLE_MAPS_API_KEY || "",
+          "driving",
+          true // use fallback
+        );
+
+        // Check if it's a Google Maps result or Haversine fallback
+        if ('duration' in distanceResult.distance) {
+          // Google Maps API result
+          return {
+            club,
+            distanceInMeters: distanceResult.distance.distance.value,
+            distanceText: distanceResult.distance.distance.text,
+            durationText: distanceResult.distance.duration.text,
+            durationInSeconds: distanceResult.distance.duration.value,
+            method: "Google Maps API"
+          };
+        } else {
+          // Haversine fallback result
+          return {
+            club,
+            distanceInMeters: distanceResult.distance.distance.value,
+            distanceText: distanceResult.distance.distance.text,
+            durationText: "N/A",
+            durationInSeconds: 0,
+            method: distanceResult.distance.method
+          };
         }
-      });
+      } catch (error) {
+        console.warn(`⚠️ Failed to calculate distance for club "${club.name}" (Google Maps blocked):`, error);
+        // Return with N/A distance instead of null
+        return {
+          club,
+          distanceInMeters: Number.MAX_VALUE,
+          distanceText: "N/A",
+          durationText: "N/A",
+          durationInSeconds: 0,
+          method: "Distance calculation failed"
+        };
+      }
+    });
 
     // Wait for all distance calculations to complete
-    const distanceResults = await Promise.all(distancePromises);
-    
-    // Filter out failed calculations and create final results
-    const results = distanceResults.filter(result => result !== null);
+    const results = await Promise.all(distancePromises);
 
+    // Log statistics about distance calculations
+    const withDistance = results.filter(r => r.distanceText !== "N/A").length;
+    const withoutDistance = results.filter(r => r.distanceText === "N/A").length;
+    console.log(`📊 Distance calculation results: ${withDistance} clubs with distance, ${withoutDistance} clubs with N/A distance`);
     
     results.sort((a, b) => a.distanceInMeters - b.distanceInMeters);
 
