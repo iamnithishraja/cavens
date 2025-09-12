@@ -80,11 +80,11 @@ const UserClubScreen = () => {
   };
 
   const handleViewEvents = (club: Club) => {
-    router.push(`/userClubDetailsScreen?clubId=${club._id}`);
+    router.push(`/club/userClubDetailsScreen?clubId=${club._id}`);
   };
 
   const handleMapMarkerPress = useCallback((club: Club) => {
-    router.push(`/userClubDetailsScreen?clubId=${club._id}`);
+    router.push(`/club/userClubDetailsScreen?clubId=${club._id}`);
   }, [router]);
 
   const buildRegex = (input: string) => {

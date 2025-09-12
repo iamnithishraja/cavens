@@ -205,7 +205,7 @@ export default function SearchScreen() {
   const handlePressClub = (club: Club) => {
     if (club?._id) {
       saveSelection(club._id, club.name || 'Club');
-      router.push(`/userClubDetailsScreen?clubId=${club._id}`);
+      router.push(`/club/userClubDetailsScreen?clubId=${club._id}`);
     }
   };
 
@@ -286,7 +286,7 @@ export default function SearchScreen() {
                     if (mode === 'events') {
                       router.push(`/event/${s.id}`);
                     } else {
-                      router.push(`/userClubDetailsScreen?clubId=${s.id}`);
+                      router.push(`/club/userClubDetailsScreen?clubId=${s.id}`);
                     }
                   }}
                   activeOpacity={0.8}
