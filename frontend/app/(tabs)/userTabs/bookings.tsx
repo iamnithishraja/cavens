@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { 
   View, 
   Text, 
@@ -9,12 +9,15 @@ import {
   SafeAreaView,
   StatusBar 
 } from "react-native";
+import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from "@/constants/Colors";
 import BookingCard from "@/components/ui/BookingCard";
 import type { Order } from "@/types/order";
 import { useBookingsPolling } from "@/hooks/useBookingsPolling";
 
 export default function BookingsScreen() {
+  const [isScreenFocused, setIsScreenFocused] = useState(false);
+
   const { 
     bookings, 
     loading, 
@@ -23,9 +26,22 @@ export default function BookingsScreen() {
     refreshing
   } = useBookingsPolling({
     status: 'paid',
-    enabled: true,
+    enabled: isScreenFocused, // Only poll when screen is focused
     interval: 3000, // Poll every 3 seconds
   });
+
+  // Handle screen focus/blur to control polling
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('📱 BookingsScreen focused - starting polling');
+      setIsScreenFocused(true);
+      
+      return () => {
+        console.log('📱 BookingsScreen blurred - stopping polling');
+        setIsScreenFocused(false);
+      };
+    }, [])
+  );
 
   const onRefresh = () => {
     refresh();

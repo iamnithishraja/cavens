@@ -6,6 +6,7 @@ export interface Order {
     date: string;
     time: string;
     image?: string;
+    coverImage?: string;
   };
   club: {
     _id: string;
