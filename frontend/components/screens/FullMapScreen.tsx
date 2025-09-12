@@ -191,7 +191,7 @@ const FullMapScreen: React.FC = () => {
         visible={modalVisible} 
         club={selected}
         onClose={() => setModalVisible(false)}
-        onView={(c) => { setModalVisible(false); router.push(`/userClubDetailsScreen?clubId=${c._id}`); }}
+        onView={(c) => { setModalVisible(false); router.push(`/club/userClubDetailsScreen?clubId=${c._id}`); }}
         inline
       />
       <TouchableOpacity
