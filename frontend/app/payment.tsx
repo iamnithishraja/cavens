@@ -128,18 +128,7 @@ const PaymentScreen = () => {
       
       if (response.data.success) {
         const { totalAmount } = response.data.data;
-        const message = `You have successfully purchased ${quantity} ${selectedTicketType} ticket(s) for AED ${totalAmount}`;
-        
-        Alert.alert(
-          'Purchase Successful! 🎉',
-          message,
-          [
-            {
-              text: 'OK',
-              onPress: () => router.back()
-            }
-          ]
-        );
+        router.navigate('/userTabs/bookings');
       } else {
         Alert.alert('Purchase Failed', response.data.message || 'Something went wrong');
       }
@@ -170,7 +159,6 @@ const PaymentScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top','bottom']}>
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
-      <LinearGradient colors={Colors.gradients.background as [string, string]} style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
@@ -262,12 +250,7 @@ const PaymentScreen = () => {
               </View>
             </View>
           )}
-        </ScrollView>
-
-        {/* Bottom Action */}
-        {selectedTicket && availableTickets > 0 && (
-          <View style={styles.bottomContainer}>
-            <TouchableOpacity
+                      <TouchableOpacity
               style={[styles.purchaseButton, purchasing && styles.purchaseButtonDisabled]}
               onPress={handlePurchase}
               disabled={purchasing}
@@ -280,9 +263,7 @@ const PaymentScreen = () => {
                 </Text>
               )}
             </TouchableOpacity>
-          </View>
-        )}
-      </LinearGradient>
+        </ScrollView>
     </SafeAreaView>
   );
 };
@@ -485,15 +466,6 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: 20,
     fontWeight: '700',
-  },
-  bottomContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 16,
-    backgroundColor: Colors.withOpacity.black80,
-    borderTopWidth: 0,
   },
   purchaseButton: {
     backgroundColor: Colors.primary,

@@ -54,7 +54,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
   initialClubFilters,
   onApply,
 }) => {
-  const [eventFilters, setEventFilters] = useState<EventFilters>(initialEventFilters || { maxPrice: 100000, distanceKm: null });
+  const [eventFilters, setEventFilters] = useState<EventFilters>(initialEventFilters || { maxPrice: 10000, distanceKm: null });
   const [clubFilters, setClubFilters] = useState<ClubFilters>(initialClubFilters || { distanceKm: null, clubTypes: [] });
   const insets = useSafeAreaInsets();
 
@@ -66,7 +66,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
   };
 
   const clear = () => {
-    const defaultEventFilters = { maxPrice: 100000, distanceKm: null };
+    const defaultEventFilters = { maxPrice: 10000, distanceKm: null };
     const defaultClubFilters = { distanceKm: null, clubTypes: [] };
     setEventFilters(defaultEventFilters);
     setClubFilters(defaultClubFilters);
@@ -85,7 +85,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
   const formatPrice = (price: number) => {
     if (price === 0) return 'Free';
-    if (price >= 100000) return 'AED 100,000+';
+    if (price >= 10000) return 'AED 10,000+';
     return `AED ${price.toLocaleString()}`;
   };
 
@@ -96,7 +96,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
         <TouchableWithoutFeedback onPress={onClose}>
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
-        <View style={[styles.sheet, { paddingBottom: insets.bottom }]}>
+        <View style={styles.sheet}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>{title}</Text>
             <View style={styles.headerActions}>
@@ -110,7 +110,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
           </View>
 
           <ScrollView 
-            contentContainerStyle={styles.content} 
+            contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]} 
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
           >
@@ -187,13 +187,13 @@ const FilterModal: React.FC<FilterModalProps> = ({
               <View style={styles.sliderContainer}>
                 <View style={styles.sliderLabels}>
                   <Text style={styles.sliderLabel}>AED 0</Text>
-                  <Text style={styles.sliderLabel}>AED 100,000</Text>
+                  <Text style={styles.sliderLabel}>AED 10,000</Text>
                 </View>
                 <Slider
                   style={styles.slider}
                   minimumValue={0}
-                  maximumValue={100000}
-                  value={type === 'events' ? (eventFilters.maxPrice ?? 100000) : 100000}
+                  maximumValue={10000}
+                  value={type === 'events' ? (eventFilters.maxPrice ?? 10000) : 10000}
                   onValueChange={(value) => {
                     if (type === 'events') {
                       setEventFilters((p) => ({ ...p, maxPrice: Math.round(value) }));
@@ -204,7 +204,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   thumbTintColor={Colors.primary}
                 />
                 <Text style={styles.priceValue}>
-                  {formatPrice(type === 'events' ? (eventFilters.maxPrice ?? 100000) : 100000)}
+                  {formatPrice(type === 'events' ? (eventFilters.maxPrice ?? 10000) : 10000)}
                 </Text>
               </View>
             </View>
@@ -244,12 +244,13 @@ const styles = StyleSheet.create({
   },
   sheet: {
     height: '80%',
+    width: '100%',
     backgroundColor: Colors.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    borderWidth: 0.2,
-    borderColor: Colors.border,
     overflow: 'hidden',
+    marginHorizontal: 0,
+    paddingBottom: 0,
   },
   header: {
     flexDirection: 'row',
@@ -299,7 +300,6 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     padding: 20,
-    paddingBottom: 32,
   },
   section: {
     marginBottom: 24,

@@ -80,7 +80,7 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, title = 'Menu',
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
-        <View style={[styles.sheet, { paddingBottom: insets.bottom }]}>
+        <View style={styles.sheet}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>{title}</Text>
             <TouchableOpacity style={styles.nextButton} onPress={onClose} activeOpacity={0.9}>
@@ -162,7 +162,7 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, title = 'Menu',
               </View>
             )}
             ListFooterComponent={(
-              <View style={styles.footerContainer}>
+              <View style={[styles.footerContainer, { paddingBottom: insets.bottom + 24 }]}>
                 <Text style={styles.footerNote}>Prices inclusive of taxes. Images are for illustration only.</Text>
               </View>
             )}
@@ -190,12 +190,15 @@ const styles = StyleSheet.create({
   },
   sheet: {
     height: SCREEN_HEIGHT * 0.8,
+    width: '100%',
     backgroundColor: Colors.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    borderWidth: 0.5,
-    borderColor: Colors.border,
     overflow: 'hidden',
+    // Remove border and extend to edges
+    marginHorizontal: 0,
+    // Ensure it covers the full bottom area
+    paddingBottom: 0,
   },
   header: {
     flexDirection: 'row',
@@ -232,7 +235,7 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     padding: 16,
-    paddingBottom: 24,
+    // paddingBottom will be handled by ListFooterComponent
   },
   categoryPillsRow: {
     flexDirection: 'row',
@@ -341,7 +344,7 @@ const styles = StyleSheet.create({
   },
   footerContainer: {
     paddingTop: 16,
-    paddingBottom: 8,
+    // paddingBottom will be set dynamically with safe area insets
   },
   footerNote: {
     color: Colors.textMuted,

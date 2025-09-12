@@ -30,7 +30,7 @@ const GuestRulesModal: React.FC<Props> = ({ visible, onClose, guestExperience })
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
-        <View style={[styles.sheet, { paddingBottom: insets.bottom }]}>
+        <View style={styles.sheet}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Guest Rules</Text>
             <TouchableOpacity style={styles.nextButton} onPress={onClose} activeOpacity={0.9}>
@@ -38,7 +38,11 @@ const GuestRulesModal: React.FC<Props> = ({ visible, onClose, guestExperience })
             </TouchableOpacity>
           </View>
 
-          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]} 
+            showsVerticalScrollIndicator={false}
+            style={styles.scrollView}
+          >
             {sections.map((s) => (
               <View key={s.title} style={styles.card}>
                 <Text style={styles.cardTitle}>{s.title}</Text>
@@ -62,12 +66,15 @@ const styles = StyleSheet.create({
   },
   sheet: {
     height: '70%',
+    width: '100%',
     backgroundColor: Colors.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    borderWidth: 0.5,
-    borderColor: Colors.border,
     overflow: 'hidden',
+    // Remove border and extend to edges
+    marginHorizontal: 0,
+    // Ensure it covers the full bottom area
+    paddingBottom: 0,
   },
   header: {
     flexDirection: 'row',
@@ -97,10 +104,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
+  scrollView: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
   content: {
     flexGrow: 1,
     padding: 16,
-    paddingBottom: 24,
+    // paddingBottom will be set dynamically with safe area
   },
   card: {
     backgroundColor: Colors.withOpacity.black30,
@@ -122,6 +133,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default GuestRulesModal;
-
-
+export default GuestRulesModal
