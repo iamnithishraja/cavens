@@ -67,11 +67,9 @@ const ClubQuickViewModal: React.FC<Props> = ({ visible, onClose, club, onView, i
             </View>
           </View>
 
-          {/* Content Body */}
           {/* Address */}
           {club.address ? (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Address</Text>
               <Text style={styles.address}>{club.address}</Text>
             </View>
           ) : null}

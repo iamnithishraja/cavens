@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Image, Platform, PixelRatio, Text } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE, Circle } from 'react-native-maps';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { darkMapStyle } from '@/utils/mapStyles';
+import { useLocalSearchParams, useRouter } from 'expo-router';  
 import ClubMarker from '@/components/Map/ClubMarker';
 import { extractCoordinatesFromMapLink, calculateMapRegion } from '@/utils/mapUtils';
+import darkMapStyle from '@/utils/mapStyles';
 import apiClient from '@/app/api/client';
 import { Colors } from '@/constants/Colors';
 import ClubQuickViewModal from '@/components/Models/ClubQuickViewModal';
@@ -65,58 +65,59 @@ const FullMapScreen: React.FC = () => {
   });
 
   // Scale heatmap visibility based on zoom level (latitudeDelta)
+  // Boosted curve so heat remains prominent even when zoomed out
   const zoomScale = useMemo(() => {
     const d = (mapRegion as any)?.latitudeDelta || 0.5;
-    // At ~0.2 delta => 1x, at larger deltas escalate up to 8x
-    const s = Math.min(Math.max(d / 0.2, 1), 8);
-    return s;
+    // Gentle exponential scaling; keeps heat visible at wide deltas
+    const s = Math.pow(d / 0.18, 1.05);
+    return Math.min(Math.max(s, 1), 18);
   }, [mapRegion]);
 
   const minRadius = useMemo(() => {
     const d = (mapRegion as any)?.latitudeDelta || 0.5;
-    if (d > 2) return 600;
-    if (d > 1) return 300;
-    if (d > 0.5) return 150;
-    return 60;
+    if (d > 4) return 1200;
+    if (d > 2) return 800;
+    if (d > 1) return 450;
+    if (d > 0.5) return 240;
+    return 120;
   }, [mapRegion]);
 
   const getCircleVisuals = (weight: number) => {
-    // Snap-like gradient palette: Blue (low) → Yellow (mid) → Red (high)
+    // Blended heat with softer falloff: outer layers very transparent for smoother gradients
     const intensity = Math.max(1, Math.min(weight, 100));
-    const baseRadius = Math.min(220 + intensity * 16, 2600);
+    const baseRadius = Math.min(380 + intensity * 24, 4600);
 
     if (intensity >= 70) {
-      // High: red core with yellow halo and faint blue outer
       return {
         radius: baseRadius,
         layers: [
-          { scale: 1.15, color: 'rgba(0, 122, 255, 0.08)' },  // soft blue outer
-          { scale: 1.00, color: 'rgba(255, 204, 0, 0.14)' },  // yellow halo
-          { scale: 0.82, color: 'rgba(255, 149, 0, 0.20)' },  // orange
-          { scale: 0.65, color: 'rgba(255, 69, 58, 0.28)' },  // red
-          { scale: 0.45, color: 'rgba(255, 59, 48, 0.38)' },  // deeper red core
+          { scale: 1.55, color: 'rgba(0, 122, 255, 0.06)' },
+          { scale: 1.38, color: 'rgba(0, 122, 255, 0.08)' },
+          { scale: 1.18, color: 'rgba(255, 204, 0, 0.14)' },
+          { scale: 0.98, color: 'rgba(255, 159, 10, 0.18)' },
+          { scale: 0.78, color: 'rgba(255, 99, 71, 0.22)' },
+          { scale: 0.60, color: 'rgba(255, 59, 48, 0.28)' },
         ],
       };
     }
     if (intensity >= 30) {
-      // Mid: yellow core with blue outer
       return {
-        radius: Math.min(200 + intensity * 14, 2300),
+        radius: Math.min(340 + intensity * 22, 3800),
         layers: [
-          { scale: 1.10, color: 'rgba(0, 122, 255, 0.08)' }, // blue outer
-          { scale: 0.95, color: 'rgba(0, 122, 255, 0.10)' },
-          { scale: 0.75, color: 'rgba(255, 204, 0, 0.18)' }, // yellow
-          { scale: 0.55, color: 'rgba(255, 159, 10, 0.18)' }, // amber
+          { scale: 1.45, color: 'rgba(0, 122, 255, 0.06)' },
+          { scale: 1.22, color: 'rgba(0, 122, 255, 0.08)' },
+          { scale: 1.02, color: 'rgba(0, 122, 255, 0.10)' },
+          { scale: 0.84, color: 'rgba(255, 204, 0, 0.16)' },
+          { scale: 0.66, color: 'rgba(255, 159, 10, 0.18)' },
         ],
       };
     }
-    // Low: blue glow only
     return {
-      radius: Math.min(180 + intensity * 10, 2000),
+      radius: Math.min(280 + intensity * 16, 3200),
       layers: [
-        { scale: 1.05, color: 'rgba(0, 122, 255, 0.10)' },
-        { scale: 0.85, color: 'rgba(0, 122, 255, 0.08)' },
-        { scale: 0.65, color: 'rgba(0, 122, 255, 0.06)' },
+        { scale: 1.35, color: 'rgba(0, 122, 255, 0.06)' },
+        { scale: 1.10, color: 'rgba(0, 122, 255, 0.08)' },
+        { scale: 0.88, color: 'rgba(0, 122, 255, 0.10)' },
       ],
     };
   };
@@ -147,10 +148,17 @@ const FullMapScreen: React.FC = () => {
         provider={PROVIDER_GOOGLE}
         style={styles.map}
         region={mapRegion}
-        customMapStyle={darkMapStyle as any}
-        showsPointsOfInterest={false}
-        onRegionChangeComplete={(r) => setMapRegion(r as any)}
+        customMapStyle={darkMapStyle}
         mapPadding={mapPadding as any}
+        showsCompass={false}
+        showsMyLocationButton={false}
+        showsScale={false}
+        showsTraffic={false}
+        showsBuildings={false}
+        showsIndoors={false}
+        showsIndoorLevelPicker={false}
+        toolbarEnabled={false}
+        showsPointsOfInterest={false}
       >
         {heatmapEnabled && heatPoints.map((p, idx) => {
           const { radius, layers } = getCircleVisuals(p.weight) as any;
@@ -169,24 +177,51 @@ const FullMapScreen: React.FC = () => {
             </React.Fragment>
           );
         })}
+        {/* Club-centered halos to place clubs in the middle of a visible heat area */}
+        {clubsWithCoordinates.map((club, cIdx) => {
+          const center = club.coordinates as any;
+          const base = Math.max(280 * zoomScale, minRadius * 0.9);
+          return (
+            <React.Fragment key={`fm-halo-${club._id}-${cIdx}`}>
+              <Circle
+                center={center}
+                radius={base * 1.55}
+                fillColor={'rgba(0, 122, 255, 0.06)'}
+                strokeColor={'rgba(0, 122, 255, 0.06)'}
+                strokeWidth={0}
+              />
+              <Circle
+                center={center}
+                radius={base * 1.18}
+                fillColor={'rgba(0, 122, 255, 0.08)'}
+                strokeColor={'rgba(0, 122, 255, 0.08)'}
+                strokeWidth={0}
+              />
+              <Circle
+                center={center}
+                radius={base * 0.78}
+                fillColor={'rgba(255, 204, 0, 0.16)'}
+                strokeColor={'rgba(255, 204, 0, 0.16)'}
+                strokeWidth={0}
+              />
+            </React.Fragment>
+          );
+        })}
         {clubsWithCoordinates.map((club) => {
           const image = club.logoUrl || club.coverBannerUrl || club.clubImages?.[0] || club.photos?.[0] || null;
           return (
             <Marker 
               key={club._id} 
               coordinate={club.coordinates as any} 
-              anchor={{ x: 0.5, y: 1 }}
+              anchor={{ x: 0.5, y: 0.9 }}
               centerOffset={{ x: 0, y: 0 }}
               onPress={() => { setSelected(club); setModalVisible(true); }}
             >
-              <ClubMarker title={club.name} image={image} size={50} theme={'dark'} clubType={club.typeOfVenue} />
+              <ClubMarker title={club.name} image={image} size={56} theme={'dark'} clubType={club.typeOfVenue} />
             </Marker>
           );
         })}
       </MapView>
-      {/* <View style={styles.clubCountBadge}>
-        <Text style={styles.clubCountText}>{clubsWithCoordinates.length} of {clubs.length} clubs</Text>
-      </View> */}
       <ClubQuickViewModal 
         visible={modalVisible} 
         club={selected}

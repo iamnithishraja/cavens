@@ -72,7 +72,8 @@ const ClubMarker = ({ title, image, size = 14, theme = 'dark', clubType, shape =
   
   // Calculate sizes; keep overall container height fixed to `size`
   const containerSize = size;
-  const pointerHeight = (shape === 'circle' || shape === 'pin') ? Math.max(Math.floor(containerSize * 0.28), 6) : 0;
+  // Remove inverted triangle pointer for a clean circular badge look
+  const pointerHeight = 0;
   const bodySize = containerSize - pointerHeight;
   const borderWidth = 2;
   const imageSize = bodySize - (borderWidth * 2); // Make image fill the entire circle minus border
@@ -80,9 +81,13 @@ const ClubMarker = ({ title, image, size = 14, theme = 'dark', clubType, shape =
   // Make everything circular
   const borderRadius = bodySize / 2;
 
+  // Reserve space for label so it is captured in marker snapshot
+  const labelBlockHeight = Math.max(Math.floor(containerSize * 0.52), 18);
+  const labelMaxWidth = Math.max(Math.floor(bodySize * 2.2), 64);
+
   const containerStyle = {
-    width: containerSize,
-    height: containerSize,
+    width: Math.max(containerSize, labelMaxWidth),
+    height: containerSize + labelBlockHeight,
   };
 
   const bodyStyle = {
@@ -107,7 +112,7 @@ const ClubMarker = ({ title, image, size = 14, theme = 'dark', clubType, shape =
       collapsable={false}
       renderToHardwareTextureAndroid
     >
-      {/* Marker Body (Pin head) */}
+      {/* Marker Body */}
       <View style={[styles.body, bodyStyle]}>
         <View style={[
           styles.innerMask,
@@ -123,43 +128,17 @@ const ClubMarker = ({ title, image, size = 14, theme = 'dark', clubType, shape =
         </View>
       </View>
 
-      {/* Pointer Triangle (for pin/triangle shapes) */}
-      {(shape === 'circle' || shape === 'pin') ? (
-        <View style={styles.pointerWrap}>
-          {/* outer border triangle */}
-          <View
-            style={[
-              styles.pointerOuter,
-              {
-                borderTopColor: borderColor,
-                borderLeftWidth: Math.max(Math.floor(bodySize * 0.22), 4),
-                borderRightWidth: Math.max(Math.floor(bodySize * 0.22), 4),
-                borderTopWidth: pointerHeight,
-              },
-            ]}
-          />
-          {/* inner fill triangle */}
-          <View
-            style={[
-              styles.pointerInner,
-              {
-                marginTop: -pointerHeight + borderWidth,
-                borderLeftWidth: Math.max(Math.floor(bodySize * 0.22) - borderWidth, 2),
-                borderRightWidth: Math.max(Math.floor(bodySize * 0.22) - borderWidth, 2),
-                borderTopWidth: Math.max(pointerHeight - borderWidth, 1),
-                borderTopColor: markerColor,
-              },
-            ]}
-          />
-        </View>
-      ) : null}
+      {/* Club label below the marker */}
+      <Text numberOfLines={1} style={[styles.label, { maxWidth: labelMaxWidth }] }>
+        {displayName}
+      </Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'flex-start',
     backgroundColor: 'transparent',
   },
@@ -211,6 +190,18 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.3)',
     textShadowOffset: { width: 0, height: 0.5 },
     textShadowRadius: 1,
+  },
+  label: {
+    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    borderRadius: 10,
+    overflow: 'hidden',
   },
 });
 

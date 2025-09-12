@@ -3,9 +3,9 @@ import { View, StyleSheet, Text, ActivityIndicator, TouchableOpacity, Platform, 
 import { LinearGradient } from 'expo-linear-gradient';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { extractCoordinatesFromMapLink, calculateMapRegion } from '@/utils/mapUtils';
-import { darkMapStyle } from '@/utils/mapStyles';
 import ClubMarker from '@/components/Map/ClubMarker';
 import { Colors } from '@/constants/Colors';
+import darkMapStyle from '@/utils/mapStyles';
 import { useRouter } from 'expo-router';
 import { Maximize2 } from 'lucide-react-native';
 
@@ -123,13 +123,13 @@ const MapViewCard: React.FC<MapViewCardProps> = ({
               provider={PROVIDER_GOOGLE}
               style={styles.map}
               region={region}
+              customMapStyle={darkMapStyle}
               showsUserLocation={false}
               showsCompass={false}
               mapType="standard"
-              customMapStyle={darkMapStyle as any}
               moveOnMarkerPress={false}
               onMapReady={() => setMapReady(true)}
-              showsMyLocationButton={true}
+              showsMyLocationButton={false}
               showsScale={false}
               showsTraffic={false}
               showsBuildings={false}
@@ -138,6 +138,8 @@ const MapViewCard: React.FC<MapViewCardProps> = ({
               showsIndoorLevelPicker={false}
               toolbarEnabled={false}
               mapPadding={mapPadding}
+              rotateEnabled={false}
+              pitchEnabled={false}
             >
               {clubsWithCoordinates.map((club) => {
                 const image = club.logoUrl || club.coverBannerUrl || club.clubImages?.[0] || club.photos?.[0] || null;
@@ -145,14 +147,14 @@ const MapViewCard: React.FC<MapViewCardProps> = ({
                   <Marker
                     key={club._id}
                     coordinate={club.coordinates as any}
-                    anchor={{ x: 0.5, y: 1 }}
+                    anchor={{ x: 0.5, y: 0.9 }}
                     centerOffset={{ x: 0, y: 0 }}
                     onPress={() => handleMarkerPress(club)}
                   >
                     <ClubMarker 
                       title={club.name} 
                       image={image} 
-                      size={50}
+                      size={56}
                       theme={'dark'}
                       clubType={club.typeOfVenue}
                     />
@@ -224,6 +226,16 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     tintColor: Colors.textPrimary,
+  },
+  googleMask: {
+    position: 'absolute',
+    left: 8,
+    bottom: 8,
+    width: 70,
+    height: 18,
+    borderRadius: 6,
+    backgroundColor: Colors.background,
+    opacity: 0.9,
   },
   clubCountText: {
     color: '#FFFFFF',

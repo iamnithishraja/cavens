@@ -1,72 +1,155 @@
-// Google Maps style arrays for react-native-maps customMapStyle
-// Updated to match requested palette and show place names and city names
-
-const palette = {
-  primary: '#FCC72C',
-  secondary: '#4CB648',
-  secondaryWithOpacity: 'rgba(76, 182, 72, 0.3)',
-  darkBlue: '#0B0B0F',
-  waterBlue: '#0E2740',
-  waterLabel: '#4FA3E3',
-  mediumBlue: '#1A1A1F',
-  lightBlue: '#42A9E1',
-  black: '#000000',
-  transluscentWhite: 'rgba(255, 255, 255, 0.7)',
-  lightGrey: '#f8f4f4',
-  danger: '#ff5252',
-  mediumGrey: '#6e6969',
-  darkGrey: '#333333',
-};
+// Enhanced dark, minimal Google Maps style for react-native-maps
+// Perfectly aligned with app theme: gold accents, improved contrast, premium feel
+// Focuses on roads and navigation while maintaining the dark aesthetic
 
 export const darkMapStyle = [
-  // Base geometry and text
-  { elementType: 'geometry', stylers: [{ color: palette.black }] },
-  { elementType: 'labels.icon', stylers: [{ visibility: 'on' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: palette.black }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: palette.transluscentWhite }] },
+  // Base: deep black background
+  {
+    elementType: 'geometry',
+    stylers: [{ color: '#000000' }],
+  },
+  {
+    elementType: 'labels',
+    stylers: [{ visibility: 'off' }],
+  },
 
-  // Administrative boundaries and city names - show all
-  { featureType: 'administrative', elementType: 'geometry', stylers: [{ visibility: 'on' }] },
-  { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: palette.primary, visibility: 'on' }] },
-  { featureType: 'administrative.locality', elementType: 'labels.text.stroke', stylers: [{ color: palette.black }] },
-  { featureType: 'administrative.neighborhood', elementType: 'labels', stylers: [{ visibility: 'on' }] },
-  { featureType: 'administrative.neighborhood', elementType: 'labels.text.fill', stylers: [{ color: palette.transluscentWhite }] },
-  { featureType: 'administrative.land_parcel', elementType: 'labels', stylers: [{ visibility: 'on' }] },
-  { featureType: 'administrative.land_parcel', elementType: 'labels.text.fill', stylers: [{ color: palette.transluscentWhite }] },
+  // Roads: Enhanced hierarchy with better contrast
+  {
+    featureType: 'road',
+    elementType: 'geometry',
+    stylers: [{ color: '#1A1A1A' }], // Matches backgroundSecondary
+  },
+  {
+    featureType: 'road',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#333333' }], // Matches border color
+  },
+  {
+    featureType: 'road',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#FFFFFF' }, { visibility: 'on' }], // White text for better readability
+  },
+  {
+    featureType: 'road',
+    elementType: 'labels.text.stroke',
+    stylers: [{ color: '#000000' }, { visibility: 'on' }, { width: 2 }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'labels.icon',
+    stylers: [{ visibility: 'off' }],
+  },
 
-  // POIs: show all place names
-  { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'on' }] },
-  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: palette.transluscentWhite }] },
-  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: palette.black }] },
-  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: palette.secondaryWithOpacity }] },
-  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: palette.secondary, visibility: 'on' }] },
-  { featureType: 'poi.attraction', elementType: 'labels.text.fill', stylers: [{ color: palette.primary, visibility: 'on' }] },
-  { featureType: 'poi.business', elementType: 'labels.text.fill', stylers: [{ color: palette.transluscentWhite, visibility: 'on' }] },
-  { featureType: 'poi.government', elementType: 'labels.text.fill', stylers: [{ color: palette.primary, visibility: 'on' }] },
-  { featureType: 'poi.medical', elementType: 'labels.text.fill', stylers: [{ color: palette.primary, visibility: 'on' }] },
-  { featureType: 'poi.place_of_worship', elementType: 'labels.text.fill', stylers: [{ color: palette.primary, visibility: 'on' }] },
-  { featureType: 'poi.school', elementType: 'labels.text.fill', stylers: [{ color: palette.primary, visibility: 'on' }] },
-  { featureType: 'poi.sports_complex', elementType: 'labels.text.fill', stylers: [{ color: palette.primary, visibility: 'on' }] },
+  // Road hierarchy: clearer distinction
+  {
+    featureType: 'road.arterial',
+    elementType: 'geometry',
+    stylers: [{ color: '#2A2A2A' }], // Matches backgroundTertiary
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry',
+    stylers: [{ color: '#333333' }], // More prominent for highways
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#404040' }],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#FFD700' }], // Gold for highway labels - premium feel
+  },
+  {
+    featureType: 'road.local',
+    elementType: 'geometry',
+    stylers: [{ color: '#1A1A1A' }], // Subtler for local roads
+  },
+  {
+    featureType: 'road.local',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#B0B0B0' }], // Secondary text color for local roads
+  },
 
-  // Roads - show road names
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#151515' }] },
-  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: palette.black }] },
-  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: palette.transluscentWhite, visibility: 'on' }] },
-  { featureType: 'road', elementType: 'labels.text.stroke', stylers: [{ color: palette.black }] },
-  { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: palette.darkGrey }] },
-  { featureType: 'road.arterial', elementType: 'geometry.stroke', stylers: [{ color: '#1f1f1f' }] },
-  { featureType: 'road.arterial', elementType: 'labels.text.fill', stylers: [{ color: palette.transluscentWhite, visibility: 'on' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: palette.mediumGrey }] },
-  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: palette.black }] },
-  { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: palette.transluscentWhite, visibility: 'on' }] },
+  // Water: Deep blue that complements the theme
+  {
+    featureType: 'water',
+    elementType: 'geometry',
+    stylers: [{ color: '#001a66' }], // From your blue gradient
+  },
+  {
+    featureType: 'water',
+    elementType: 'labels',
+    stylers: [{ visibility: 'off' }],
+  },
 
-  // Transit - show transit station names
-  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: palette.darkGrey }] },
-  { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{ color: palette.primary, visibility: 'on' }] },
-  { featureType: 'transit.line', elementType: 'labels.text.fill', stylers: [{ color: palette.transluscentWhite, visibility: 'on' }] },
+  // Parks and natural areas: Very subtle presence
+  {
+    featureType: 'poi.park',
+    elementType: 'geometry',
+    stylers: [{ color: '#0A0A0A' }], // Barely visible
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'labels',
+    stylers: [{ visibility: 'off' }],
+  },
 
-  // Water - show water body names with a subtle blue shade
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: palette.waterBlue }] },
-  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: palette.waterLabel, visibility: 'on' }] },
-  { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{ color: palette.waterBlue }] },
+  // Landscape: match background colors
+  {
+    featureType: 'landscape',
+    elementType: 'geometry',
+    stylers: [{ color: '#000000' }],
+  },
+  {
+    featureType: 'landscape.natural',
+    elementType: 'geometry',
+    stylers: [{ color: '#0A0A0A' }],
+  },
+
+  // Important roads get gold accents for premium feel
+  {
+    featureType: 'road.arterial',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#FFED4E' }], // Light gold for arterial roads
+  },
+
+  // Transit stations: if any slip through, make them gold
+  {
+    featureType: 'transit.station',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#FFD700' }, { visibility: 'simplified' }],
+  },
+
+  // Country/state borders: subtle gold lines
+  {
+    featureType: 'administrative.country',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#FFD700' }, { visibility: 'simplified' }, { weight: 0.5 }],
+  },
+  {
+    featureType: 'administrative.province',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#FFA500' }, { visibility: 'simplified' }, { weight: 0.3 }],
+  },
+
+  // Hide everything we don't want
+  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.medical', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.place_of_worship', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.school', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.sports_complex', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.locality', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.neighborhood', stylers: [{ visibility: 'off' }] },
+  { featureType: 'landscape.man_made', stylers: [{ visibility: 'off' }] },
+  
+  // Buildings: completely hidden
+  { featureType: 'poi.attraction', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.government', stylers: [{ visibility: 'off' }] },
 ];
+
+export default darkMapStyle;
