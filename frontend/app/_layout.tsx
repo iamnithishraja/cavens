@@ -2,8 +2,11 @@ import { Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { View, ActivityIndicator, AppState, StatusBar } from "react-native";
+import Toast from 'react-native-toast-message';
 import { store } from "@/utils";
 import Background from "@/components/common/Background";
+import NotificationService from "@/components/common/NotificationService";
+import { toastConfig } from "@/components/common/CustomToastConfig";
 
 // Global callback to allow other screens to request a user re-check
 let externalCheckUserRef: null | (() => void) = null;
@@ -72,7 +75,7 @@ export default function RootLayout() {
   if (loading) {
     return (
       <SafeAreaProvider>
-        <View className="flex-1 justify-center items-center">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" />
         </View>
       </SafeAreaProvider>
@@ -85,6 +88,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <Background>
         <StatusBar barStyle="light-content" backgroundColor="#000000" />
+        <NotificationService />
         <Stack
           screenOptions={{ headerShown: false }}
           initialRouteName="index"
@@ -94,6 +98,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)/adminTabs" />
           <Stack.Screen name="(tabs)/userTabs" />
         </Stack>
+        <Toast config={toastConfig as any} />
       </Background>
     </SafeAreaProvider>
   );

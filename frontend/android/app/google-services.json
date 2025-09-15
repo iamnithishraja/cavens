@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "604754931361",
+    "project_id": "amigos-c994e",
+    "storage_bucket": "amigos-c994e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:604754931361:android:886407838dd282d1a48ae0",
+        "android_client_info": {
+          "package_name": "com.nithishraja.cavens"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAt2QybWMIy3c8HqoK_uog6jW6iyys1KLY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
