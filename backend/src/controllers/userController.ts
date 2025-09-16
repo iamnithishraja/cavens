@@ -1,4 +1,4 @@
-import clubModel from "../models/clubModel.js";
+import clubModel from "../models/clubModel";
 import axios from "axios";
 import User from "../models/userModel";
 import {
@@ -12,7 +12,6 @@ import z from "zod";
 import { generateToken } from "../utils/token";
 import { completeProfileSchema } from "../schemas/onboardingSchema";
 import type { CustomRequest } from "../types";
-import Club from "../models/clubModel";
 import eventModel from "../models/eventModel";
 import { calculateDistanceFromMapsLink } from "../utils/mapsDistanceCalculator";
 import orderModel from "../models/orderModel";
@@ -200,7 +199,7 @@ export const getUserProfile = async (req: CustomRequest, res: Response): Promise
     let clubStatus = null;
 
     if (user.club) {
-      const club = await Club.findById(user.club);
+      const club = await clubModel.findById(user.club);
       if (club) {
         const status = club.isApproved ? 'approved' : 'pending';
         clubData = {
@@ -484,7 +483,7 @@ const purchaseTicket = async (req: CustomRequest, res: Response) => {
     }
 
     // Find the club hosting the event
-    const club = await Club.findOne({ events: eventId });
+    const club = await clubModel.findOne({ events: eventId });
     if (!club) {
       res.status(404).json({ success: false, message: "Club not found for this event" });
       return;
