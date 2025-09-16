@@ -87,7 +87,6 @@ export async function isProfileCompleted(
 
     next();
   } catch (error) {
-    console.error("Profile completion check error:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
     return;
   }

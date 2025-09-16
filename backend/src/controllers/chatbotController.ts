@@ -37,7 +37,6 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
     
     // Ensure city is a string
     const cityString = typeof city === 'string' ? city : 'Dubai';
-    console.log('🌍 Received city:', city, '→ Using:', cityString);
 
     if (!message || typeof message !== 'string') {
        res.status(400).json({
@@ -49,9 +48,6 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
 
     // Analyze user intent with conversation context
     const intent = await openRouterService.analyzeIntent(message, conversationHistory);
-    console.log('Detected intent:', intent);
-    console.log('User message:', message);
-    console.log('User city:', city);
 
     let response: string;
     let responseType: number;
@@ -62,23 +58,19 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
     // Handle "near me" queries - just use their current city setting
     if (intent.extractedInfo?.nearMe || intent.extractedInfo?.location === 'current') {
       effectiveCity = cityString; // Use the city they have selected in the app
-      console.log(`User asked for "near me" - using their city: ${effectiveCity}`);
     } else if (intent.extractedInfo?.location && intent.extractedInfo.location !== 'current') {
       // User specified a different city
       effectiveCity = intent.extractedInfo.location;
-      console.log(`User specified city: ${effectiveCity}`);
     }
 
     switch (intent.type) {
       case 'find_events':
       case 'filter_events':
         responseType = 2; // Return 2 for finding events
-        console.log('🔍 Starting AI-powered event search...');
         
         try {
           // Use AI to generate optimal database query
           const aiQuery = await executeAIGeneratedQuery(message, intent, effectiveCity);
-          console.log('🤖 AI query result:', aiQuery.type, aiQuery.data.length, 'items');
           
           let events: any[] = [];
           
@@ -118,7 +110,6 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
             }));
           }
           
-          console.log('✅ Final events for AI:', events.length);
           
           response = await openRouterService.generateEventRecommendations(
             message,
@@ -129,7 +120,6 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
           );
           
         } catch (error) {
-          console.error('❌ AI query failed, using fallback:', error);
           // Fallback to existing method
           const events = await searchEventsForChatbot(
             intent.query || message, 
@@ -148,12 +138,10 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
       case 'find_clubs':
       case 'filter_clubs':
         responseType = 3; // Return 3 for finding clubs
-        console.log('🔍 Starting AI-powered club search...');
         
         try {
           // Use AI to generate optimal database query
           const aiQuery = await executeAIGeneratedQuery(message, intent, effectiveCity);
-          console.log('🤖 AI query result:', aiQuery.type, aiQuery.data.length, 'items');
           
           const clubs = aiQuery.data.map((club: any) => ({
             id: club._id,
@@ -169,7 +157,6 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
             eventsCount: club.events?.length || 0
           }));
           
-          console.log('✅ Final clubs for AI:', clubs.length);
           
           response = await openRouterService.generateClubRecommendations(
             message,
@@ -180,7 +167,6 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
           );
           
         } catch (error) {
-          console.error('❌ AI query failed, using fallback:', error);
           // Fallback to existing method
           const clubs = await searchClubsForChatbot(
             intent.query || message,
@@ -273,14 +259,12 @@ async function executeAIGeneratedQuery(
   city: string
 ): Promise<{ data: any[]; type: string }> {
   try {
-    console.log('🤖 Using AI to generate database query...');
     
     // Get database schema for AI
     const schema = getSchemaForAI();
     
     // Generate query using AI
     const queryConfig = await openRouterService.generateDatabaseQuery(userMessage, intent, schema);
-    console.log('🔍 AI generated query config:', JSON.stringify(queryConfig, null, 2));
     
     let results = [];
     
@@ -311,7 +295,6 @@ async function executeAIGeneratedQuery(
         break;
     }
     
-    console.log(`🎯 AI query found ${results.length} results`);
     
     return {
       data: results,
@@ -319,7 +302,6 @@ async function executeAIGeneratedQuery(
     };
     
   } catch (error) {
-    console.error('❌ Error executing AI generated query:', error);
     // Fallback to simple query
     const fallbackResults = await clubModel.find({ 
       city: { $regex: new RegExp(`^${city}$`, 'i') }, 

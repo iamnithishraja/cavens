@@ -167,7 +167,6 @@ async function completeProfile(req: CustomRequest, res: Response) {
     });
     return;
   } catch (error) {
-    console.error("Error during profile completion:", error);
     if (error instanceof z.ZodError) {
       res.status(400).json({
         success: false,
@@ -227,7 +226,6 @@ export const getUserProfile = async (req: CustomRequest, res: Response): Promise
       }
     });
   } catch (error) {
-    console.error("Error fetching user profile:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
@@ -622,11 +620,9 @@ const getBookings = async (req: CustomRequest, res: Response) => {
     }
 
     const bookings = await userQuery;
-    console.log("bookings", bookings);
     res.status(200).json({ success: true, data: bookings });
     return;
   }catch(err){
-    console.error("Error fetching bookings:", err);
     res.status(500).json({ success: false, message: "Internal server error" });
     return;
   }

@@ -133,11 +133,8 @@ RESPOND WITH ONLY JSON - NO OTHER TEXT.`
         }
         
         const intent = JSON.parse(jsonContent) as ChatbotIntent;
-        console.log('✅ Successfully parsed intent:', intent);
         return intent;
       } catch (parseError) {
-        console.error('❌ Failed to parse intent response:', content);
-        console.error('❌ Parse error:', parseError);
         
         // Simple fallback based on keywords
         const lowerMessage = content.toLowerCase();
@@ -525,7 +522,6 @@ RESPOND WITH ONLY JSON - NO OTHER TEXT.`;
         }
         throw new Error('No JSON found in response');
       } catch (parseError) {
-        console.error('Failed to parse query response:', response);
         // Fallback to simple query based on intent
         if (intent.type?.includes('club')) {
           return {

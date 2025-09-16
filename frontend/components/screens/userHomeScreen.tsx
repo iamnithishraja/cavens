@@ -87,11 +87,9 @@ const UserHomeScreen = () => {
   useEffect(() => {
     const getCurrentLocation = async () => {
       try {
-        console.log("Requesting location permissions...");
         const { status } = await Location.requestForegroundPermissionsAsync();
         
         if (status !== 'granted') {
-          console.log("Location permission denied, using fallback coordinates");
           setUserLocation({
             latitude: FALLBACK_LATITUDE,
             longitude: FALLBACK_LONGITUDE
@@ -100,18 +98,15 @@ const UserHomeScreen = () => {
           return;
         }
 
-        console.log("Getting current location...");
         const location = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
         
-        console.log("Current location:", location.coords.latitude, location.coords.longitude);
         setUserLocation({
           latitude: location.coords.latitude,
           longitude: location.coords.longitude
         });
       } catch (error) {
-        console.error("Error getting location:", error);
         // Use fallback coordinates
         setUserLocation({
           latitude: FALLBACK_LATITUDE,
@@ -133,7 +128,6 @@ const UserHomeScreen = () => {
       try {
         setLoading(true);
         setError(null);
-        console.log("Fetching data for location:", userLocation, "city:", selectedCity.name);
 
         // Call both APIs in parallel using Promise.all with user's location
         const [allEventsResponse, featuredEventsResponse] = await Promise.all([
@@ -154,7 +148,6 @@ const UserHomeScreen = () => {
         ]);
 
         // Process getAllEvents response
-        console.log("allEventsResponse", allEventsResponse.data);
         if (allEventsResponse.data.clubs) {
           // Extract all events from clubs and enrich with distance data
           const extractedEvents: EventItem[] = [];
@@ -171,7 +164,6 @@ const UserHomeScreen = () => {
             }
           });
           setAllEvents(extractedEvents);
-          console.log("Extracted events with dates:", extractedEvents.map(e => ({ name: e.name, date: e.date, venue: e.venue })));
         }
 
         // Process getFeaturedEvents response
@@ -182,15 +174,9 @@ const UserHomeScreen = () => {
             venue: event.venue || 'Unknown Venue'
           }));
           setFeaturedEvents(featuredWithDistances.slice(0, 3)); // Limit to 3 for carousel
-          console.log("Featured events with distances:", featuredWithDistances.map(e => ({ 
-            name: e.name, 
-            distance: e.distanceText,
-            venue: e.venue 
-          })));
         }
 
       } catch (err) {
-        console.error('Error fetching data (auth endpoints):', err);
         // Fallback to public clubs endpoint
         try {
           const publicClubsRes = await apiClient.get('/api/club/public/approved', {
@@ -218,7 +204,6 @@ const UserHomeScreen = () => {
           setFeaturedEvents(derivedFeatured);
           setError(null);
         } catch (fallbackErr) {
-          console.error('Fallback public clubs fetch failed:', fallbackErr);
           setError('Failed to load events. Please try again.');
           // Final fallback to sample data
           setFeaturedEvents(SAMPLE_EVENTS.filter(event => event.promoVideos?.length > 0 || event.coverImage).slice(0, 3));
@@ -294,14 +279,12 @@ const UserHomeScreen = () => {
 
   // Handle city selection
   const handleCitySelect = (city: City) => {
-    console.log("Selected city:", city.name);
     setSelectedCity(city);
     setCityPickerVisible(false);
   };
 
   // Event handlers
   const handleEventPress = (eventId: string) => {
-    console.log("Event clicked:", eventId);
     router.push(`/event/${eventId}`);
   };
 

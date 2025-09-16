@@ -40,7 +40,6 @@ export const useBookingsPolling = ({
         setError('Failed to fetch bookings');
       }
     } catch (err: any) {
-      console.error('Error fetching bookings:', err);
       setError('Something went wrong');
     }
   }, [status]);

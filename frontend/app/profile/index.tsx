@@ -76,7 +76,6 @@ const ProfileScreen = () => {
         Alert.alert("Error", res.data.message || "Failed to complete profile");
       }
     } catch (error: any) {
-      console.error("Error completing profile:", error);
       Alert.alert(
         "Error",
         error.response?.data?.message || "Something went wrong"
