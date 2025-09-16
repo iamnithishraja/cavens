@@ -12,6 +12,7 @@ export interface IUser {
     otpExpiry?: Date;
     club?: mongoose.Schema.Types.ObjectId;
     orders?: mongoose.Types.ObjectId[];
+    fcmToken?: string | null;
     createdAt: Date;
     updatedAt: Date;
     age?: string;

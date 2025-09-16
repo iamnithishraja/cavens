@@ -1,6 +1,7 @@
 import { getMessaging, getToken, requestPermission, hasPermission, AuthorizationStatus } from '@react-native-firebase/messaging';
 import { getApp } from '@react-native-firebase/app';
 import { store } from './index';
+import apiClient from '@/app/api/client';
 
 export class FCMService {
   private static instance: FCMService;
@@ -59,11 +60,21 @@ export class FCMService {
    */
   async sendTokenToServer(token: string, userId?: string): Promise<boolean> {
     try {
-      // TODO: Implement API call to send token to your backend
-      console.log('FCM: Token ready for backend integration:', { token: token.substring(0, 20) + '...', userId });
-      return true;
+      console.log('🔔 FCM Token:', token);
+      
+      const response = await apiClient.post('/api/notifications/fcm-token', {
+        fcmToken: token,
+      });
+
+      if (response.data.success) {
+        console.log('🔔 FCM token registered successfully');
+        return true;
+      } else {
+        console.error('🔔 Token registration failed:', response.data.message);
+        return false;
+      }
     } catch (error) {
-      console.error('FCM: Error sending token to server:', error);
+      console.error('🔔 Error registering token:', error);
       return false;
     }
   }
@@ -107,30 +118,61 @@ export class FCMService {
    */
   async initialize(): Promise<void> {
     try {
-      console.log('FCM: Initializing service...');
-      
       // Request permission
       const hasPermission = await this.requestPermission();
       
       if (hasPermission) {
-        console.log('FCM: Permission granted');
-        
         // Get and save token
         const token = await this.getToken();
         if (token) {
           await this.saveTokenToStorage(token);
-          console.log('FCM: Service initialized successfully');
-          console.log('FCM: Token available for backend integration');
+          
+          // Send token to backend
+          const sentToServer = await this.sendTokenToServer(token);
+          if (!sentToServer) {
+            console.warn('🔔 Failed to register FCM token');
+          }
         } else {
-          console.warn('FCM: Failed to get token after permission granted');
+          console.warn('🔔 Failed to get FCM token');
         }
       } else {
-        console.log('FCM: Permission denied');
+        console.log('🔔 Notification permission denied');
       }
     } catch (error) {
-      console.error('FCM: Error initializing service:', error);
+      console.error('🔔 Error initializing FCM:', error);
     }
   }
+
+  /**
+   * Refresh FCM token and send to backend
+   */
+  async refreshToken(): Promise<boolean> {
+    try {
+      console.log('FCM: Refreshing token...');
+      
+      const token = await this.getToken();
+      if (token) {
+        await this.saveTokenToStorage(token);
+        const sentToServer = await this.sendTokenToServer(token);
+        
+        if (sentToServer) {
+          console.log('FCM: Token refreshed and sent to backend successfully');
+          return true;
+        } else {
+          console.warn('FCM: Failed to send refreshed token to backend');
+          return false;
+        }
+      } else {
+        console.warn('FCM: Failed to get refreshed token');
+        return false;
+      }
+    } catch (error) {
+      console.error('FCM: Error refreshing token:', error);
+      return false;
+    }
+  }
+
+
 }
 
 // Export singleton instance

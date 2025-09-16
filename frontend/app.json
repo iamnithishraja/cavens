@@ -60,10 +60,35 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location to show nearby events and calculate distances."
         }
+      ],
+      [
+        "@react-native-firebase/app",
+        {
+          "android": {
+            "googleServicesFile": "./google-services.json"
+          },
+          "ios": {
+            "googleServicesFile": "./GoogleService-Info.plist"
+          }
+        }
+      ],
+      [
+        "@react-native-firebase/messaging",
+        {
+          "android": {
+            "headlessTaskName": "ReactNativeFirebaseMessagingHeadlessTask"
+          }
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "notification": {
+      "icon": "./assets/images/icon.png",
+      "color": "#0B1120",
+      "androidMode": "default",
+      "androidCollapsedTitle": "#{unread_notifications} new interactions"
     }
   }
 }

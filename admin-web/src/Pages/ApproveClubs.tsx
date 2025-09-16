@@ -77,9 +77,16 @@ export default function ApproveClubs() {
     setSubmitting(true);
     setMessage(null);
     try {
-      await api.post(`/api/v1/admin/clubs/${id}/approve`);
+      const response = await api.post(`/api/v1/admin/clubs/${id}/approve`);
       setItems((prev) => prev.filter((x) => x._id !== id));
-      setMessage("Approved successfully");
+      
+      // Check if notification was sent
+      const notificationSent = response.data?.notificationSent;
+      if (notificationSent) {
+        setMessage("✅ Club approved successfully! Push notification sent to club owner.");
+      } else {
+        setMessage("✅ Club approved successfully!");
+      }
       setSelected(null);
     } catch (e: any) {
       setMessage(e?.response?.data?.message || "Approve failed");
@@ -92,9 +99,16 @@ export default function ApproveClubs() {
     setSubmitting(true);
     setMessage(null);
     try {
-      await api.post(`/api/v1/admin/clubs/${id}/reject`);
+      const response = await api.post(`/api/v1/admin/clubs/${id}/reject`);
       setItems((prev) => prev.filter((x) => x._id !== id));
-      setMessage("Rejected successfully");
+      
+      // Check if notification was sent
+      const notificationSent = response.data?.notificationSent;
+      if (notificationSent) {
+        setMessage("❌ Club rejected. Push notification sent to club owner.");
+      } else {
+        setMessage("❌ Club rejected successfully");
+      }
       setSelected(null);
     } catch (e: any) {
       setMessage(e?.response?.data?.message || "Reject failed");

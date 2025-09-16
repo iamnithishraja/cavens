@@ -5,6 +5,7 @@ import User from "../models/userModel";
 import { generateOTP } from "../utils/otp";
 import { sendPhoneOtp } from "../utils/sms";
 import { generateToken } from "../utils/token";
+import { notificationService } from "../utils/notificationService";
 
 export async function listPendingClubs(req: Request, res: Response) {
   try {
@@ -67,7 +68,34 @@ export async function approveClub(req: Request, res: Response) {
       owner.club = updated._id;
       await owner.save();
     }
-    res.status(200).json({ success: true, club: updated, userUpdated: owner ? owner._id : null });
+
+    // Send push notification to club owner about approval
+    try {
+      if (owner) {
+        const notificationResult = await notificationService.sendClubApprovalNotification(
+          updated._id.toString(),
+          'approved'
+        );
+        
+        if (notificationResult.success) {
+          console.log(`✅ Club approval notification sent successfully to user ${owner._id}`);
+        } else {
+          console.warn(`⚠️ Failed to send club approval notification: ${notificationResult.error}`);
+        }
+      } else {
+        console.warn(`⚠️ No club owner found for club ${updated._id}, skipping notification`);
+      }
+    } catch (notificationError) {
+      console.error("❌ Error sending club approval notification:", notificationError);
+      // Don't fail the approval process if notification fails
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      club: updated, 
+      userUpdated: owner ? owner._id : null,
+      notificationSent: true
+    });
   } catch (error) {
     console.error("Error approving club:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
@@ -90,7 +118,32 @@ export async function rejectClub(req: Request, res: Response) {
       res.status(404).json({ success: false, message: "Club not found" });
       return;
     }
-    res.status(200).json({ success: true, club: updated });
+    // Send push notification to club owner about rejection
+    try {
+      if (updated.owner) {
+        const notificationResult = await notificationService.sendClubApprovalNotification(
+          updated._id.toString(),
+          'rejected'
+        );
+        
+        if (notificationResult.success) {
+          console.log(`✅ Club rejection notification sent successfully to user ${updated.owner}`);
+        } else {
+          console.warn(`⚠️ Failed to send club rejection notification: ${notificationResult.error}`);
+        }
+      } else {
+        console.warn(`⚠️ No club owner found for club ${updated._id}, skipping notification`);
+      }
+    } catch (notificationError) {
+      console.error("❌ Error sending club rejection notification:", notificationError);
+      // Don't fail the rejection process if notification fails
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      club: updated,
+      notificationSent: true
+    });
   } catch (error) {
     console.error("Error rejecting club:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
