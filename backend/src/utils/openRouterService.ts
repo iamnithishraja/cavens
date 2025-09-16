@@ -476,6 +476,83 @@ Use a helpful, practical tone with appropriate emojis.`;
 
     return this.generateResponse(message, { extractedInfo, context }, systemPrompt);
   }
+
+  async generateDatabaseQuery(
+    userMessage: string,
+    intent: any,
+    databaseSchema: string
+  ): Promise<{ model: string; query: any; populate?: any }> {
+    try {
+      const systemPrompt = `You are a MongoDB query generator for a nightlife events app. 
+
+DATABASE SCHEMA:
+${databaseSchema}
+
+Based on the user's message and intent, generate the optimal MongoDB query.
+
+User message: "${userMessage}"
+Intent: ${JSON.stringify(intent, null, 2)}
+
+Respond with ONLY a JSON object in this format:
+{
+  "model": "Club|Event|User|Order",
+  "query": { /* MongoDB query object */ },
+  "populate": { /* populate options if needed */ }
+}
+
+Examples:
+- "Find clubs in Dubai" → {"model": "Club", "query": {"city": {"$regex": "^Dubai$", "$options": "i"}, "isApproved": true}}
+- "Events with hip-hop" → {"model": "Club", "query": {"events": {"$exists": true}, "isApproved": true}, "populate": {"path": "events", "match": {"status": "active", "$or": [{"name": {"$regex": "hip-hop", "$options": "i"}}, {"djArtists": {"$regex": "hip-hop", "$options": "i"}}]}}}
+- "Rooftop venues" → {"model": "Club", "query": {"typeOfVenue": {"$regex": "rooftop", "$options": "i"}, "isApproved": true}}
+
+IMPORTANT: 
+- Do NOT use JavaScript functions like new Date() in queries
+- Use simple string values for dates
+- Keep all values as basic JSON types (string, number, boolean, object, array)
+
+RESPOND WITH ONLY JSON - NO OTHER TEXT.`;
+
+      const response = await this.generateResponse(userMessage, { intent }, systemPrompt);
+      
+      try {
+        // Extract JSON from response
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[0]);
+        }
+        throw new Error('No JSON found in response');
+      } catch (parseError) {
+        console.error('Failed to parse query response:', response);
+        // Fallback to simple query based on intent
+        if (intent.type?.includes('club')) {
+          return {
+            model: 'Club',
+            query: { isApproved: true }
+          };
+        } else {
+          return {
+            model: 'Club',
+            query: { 
+              isApproved: true,
+              events: { $exists: true, $not: { $size: 0 } }
+            },
+            populate: {
+              path: 'events',
+              match: { status: 'active' },
+              populate: { path: 'tickets' }
+            }
+          };
+        }
+      }
+
+    } catch (error) {
+      console.error('Error generating database query:', error);
+      return {
+        model: 'Club',
+        query: { isApproved: true }
+      };
+    }
+  }
 }
 
 export const openRouterService = new OpenRouterService();
