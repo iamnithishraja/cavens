@@ -1,0 +1,925 @@
+import type { Request, Response } from 'express';
+import openRouterService from '../utils/openRouterService';
+import eventModel from '../models/eventModel';
+import clubModel from '../models/clubModel';
+import { getSchemaForAI } from '../utils/databaseSchema';
+
+interface ChatbotMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp?: string;
+  type?: number; // 0: general, 1: event question, 2: find events
+}
+
+interface ChatbotRequest extends Request {
+  body: {
+    message: string;
+    userId?: string;
+    eventId?: string;
+    city?: string;
+    userLocation?: {
+      latitude: number;
+      longitude: number;
+    };
+    conversationHistory?: ChatbotMessage[];
+    preferences?: {
+      musicGenres?: string[];
+      priceRange?: { min: number; max: number };
+      eventTypes?: string[];
+      clubTypes?: string[];
+    };
+  };
+}
+
+export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
+  try {
+    const { message, userId, eventId, city = 'Dubai', userLocation, preferences, conversationHistory = [] } = req.body;
+    
+    // Ensure city is a string
+    const cityString = typeof city === 'string' ? city : 'Dubai';
+    console.log('🌍 Received city:', city, '→ Using:', cityString);
+
+    if (!message || typeof message !== 'string') {
+       res.status(400).json({
+        success: false,
+        error: 'Message is required and must be a string'
+      });
+      return;
+    }
+
+    // Analyze user intent with conversation context
+    const intent = await openRouterService.analyzeIntent(message, conversationHistory);
+    console.log('Detected intent:', intent);
+    console.log('User message:', message);
+    console.log('User city:', city);
+
+    let response: string;
+    let responseType: number;
+
+    // Determine user's actual location
+    let effectiveCity = cityString;
+    
+    // Handle "near me" queries - just use their current city setting
+    if (intent.extractedInfo?.nearMe || intent.extractedInfo?.location === 'current') {
+      effectiveCity = cityString; // Use the city they have selected in the app
+      console.log(`User asked for "near me" - using their city: ${effectiveCity}`);
+    } else if (intent.extractedInfo?.location && intent.extractedInfo.location !== 'current') {
+      // User specified a different city
+      effectiveCity = intent.extractedInfo.location;
+      console.log(`User specified city: ${effectiveCity}`);
+    }
+
+    switch (intent.type) {
+      case 'find_events':
+      case 'filter_events':
+        responseType = 2; // Return 2 for finding events
+        console.log('🔍 Starting AI-powered event search...');
+        
+        try {
+          // Use AI to generate optimal database query
+          const aiQuery = await executeAIGeneratedQuery(message, intent, effectiveCity);
+          console.log('🤖 AI query result:', aiQuery.type, aiQuery.data.length, 'items');
+          
+          let events: any[] = [];
+          
+          if (aiQuery.type === 'Club') {
+            // Extract events from clubs
+            aiQuery.data.forEach((club: any) => {
+              if (club.events && Array.isArray(club.events)) {
+                club.events.forEach((event: any) => {
+                  if (event && event._id) {
+                    events.push({
+                      id: event._id,
+                      name: event.name,
+                      description: event.description,
+                      date: event.date,
+                      time: event.time,
+                      venue: club.name,
+                      city: club.city,
+                      djArtists: event.djArtists,
+                      tickets: event.tickets,
+                      guestExperience: event.guestExperience
+                    });
+                  }
+                });
+              }
+            });
+          } else {
+            // Direct event results
+            events = aiQuery.data.map((event: any) => ({
+              id: event._id,
+              name: event.name,
+              description: event.description,
+              date: event.date,
+              time: event.time,
+              djArtists: event.djArtists,
+              tickets: event.tickets,
+              guestExperience: event.guestExperience
+            }));
+          }
+          
+          console.log('✅ Final events for AI:', events.length);
+          
+          response = await openRouterService.generateEventRecommendations(
+            message,
+            events,
+            preferences,
+            conversationHistory,
+            intent.extractedInfo
+          );
+          
+        } catch (error) {
+          console.error('❌ AI query failed, using fallback:', error);
+          // Fallback to existing method
+          const events = await searchEventsForChatbot(
+            intent.query || message, 
+            effectiveCity, 
+            preferences,
+            intent.extractedInfo,
+            userLocation
+          );
+          response = await openRouterService.generateEventRecommendations(
+            message,
+            events,
+            preferences,
+            conversationHistory,
+            intent.extractedInfo
+          );
+        }
+        break;
+
+      case 'find_clubs':
+      case 'filter_clubs':
+        responseType = 3; // Return 3 for finding clubs
+        console.log('🔍 Starting AI-powered club search...');
+        
+        try {
+          // Use AI to generate optimal database query
+          const aiQuery = await executeAIGeneratedQuery(message, intent, effectiveCity);
+          console.log('🤖 AI query result:', aiQuery.type, aiQuery.data.length, 'items');
+          
+          const clubs = aiQuery.data.map((club: any) => ({
+            id: club._id,
+            name: club.name,
+            description: club.clubDescription,
+            type: club.typeOfVenue,
+            city: club.city,
+            address: club.address,
+            phone: club.phone,
+            rating: club.rating,
+            photos: club.photos,
+            operatingDays: club.operatingDays,
+            eventsCount: club.events?.length || 0
+          }));
+          
+          console.log('✅ Final clubs for AI:', clubs.length);
+          
+          response = await openRouterService.generateClubRecommendations(
+            message,
+            clubs,
+            preferences,
+            conversationHistory,
+            intent.extractedInfo
+          );
+          
+        } catch (error) {
+          console.error('❌ AI query failed, using fallback:', error);
+          // Fallback to existing method
+          const clubs = await searchClubsForChatbot(
+            intent.query || message,
+            effectiveCity,
+            preferences,
+            intent.extractedInfo,
+            userLocation
+          );
+          response = await openRouterService.generateClubRecommendations(
+            message,
+            clubs,
+            preferences,
+            conversationHistory,
+            intent.extractedInfo
+          );
+        }
+        break;
+
+      case 'event_question':
+        responseType = 1; // Return 1 for event questions
+        let eventDetails = null;
+        
+        if (eventId) {
+          eventDetails = await getEventDetails(eventId);
+        } else {
+          eventDetails = await findEventFromQuery(intent, effectiveCity);
+        }
+
+        response = await openRouterService.answerEventQuestion(
+          message,
+          eventDetails,
+          { city: effectiveCity, userId, intent, conversationHistory, userLocation }
+        );
+        break;
+
+      case 'club_question':
+        responseType = 4; // Return 4 for club questions
+        const clubDetails = await findClubFromQuery(intent, effectiveCity);
+        response = await openRouterService.answerClubQuestion(
+          message,
+          clubDetails,
+          { city: effectiveCity, userId, intent, conversationHistory, userLocation }
+        );
+        break;
+
+      case 'booking_help':
+        responseType = 5; // Return 5 for booking help
+        response = await openRouterService.handleBookingHelp(
+          message,
+          conversationHistory,
+          { city: effectiveCity, userId }
+        );
+        break;
+
+      case 'directions':
+        responseType = 6; // Return 6 for directions
+        response = await openRouterService.handleDirections(
+          message,
+          intent.extractedInfo,
+          { city: effectiveCity, userLocation, conversationHistory }
+        );
+        break;
+
+      default:
+        responseType = 0; // General conversation
+        response = await openRouterService.handleGeneralConversation(message, conversationHistory);
+        break;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        response,
+        type: responseType,
+        intent: intent.type,
+        confidence: intent.confidence
+      }
+    });
+    return;
+  } catch (error) {
+    console.error('Chatbot error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Sorry, I encountered an error while processing your request.'
+    });
+    return;
+  }
+};
+
+async function executeAIGeneratedQuery(
+  userMessage: string,
+  intent: any,
+  city: string
+): Promise<{ data: any[]; type: string }> {
+  try {
+    console.log('🤖 Using AI to generate database query...');
+    
+    // Get database schema for AI
+    const schema = getSchemaForAI();
+    
+    // Generate query using AI
+    const queryConfig = await openRouterService.generateDatabaseQuery(userMessage, intent, schema);
+    console.log('🔍 AI generated query config:', JSON.stringify(queryConfig, null, 2));
+    
+    let results = [];
+    
+    // Execute the query based on model
+    switch (queryConfig.model) {
+      case 'Club':
+        if (queryConfig.populate) {
+          results = await clubModel.find(queryConfig.query).populate(queryConfig.populate);
+        } else {
+          results = await clubModel.find(queryConfig.query);
+        }
+        break;
+        
+      case 'Event':
+        if (queryConfig.populate) {
+          results = await eventModel.find(queryConfig.query).populate(queryConfig.populate);
+        } else {
+          results = await eventModel.find(queryConfig.query);
+        }
+        break;
+        
+      default:
+        // Fallback to club search
+        results = await clubModel.find({ 
+          city: { $regex: new RegExp(`^${city}$`, 'i') }, 
+          isApproved: true 
+        });
+        break;
+    }
+    
+    console.log(`🎯 AI query found ${results.length} results`);
+    
+    return {
+      data: results,
+      type: queryConfig.model
+    };
+    
+  } catch (error) {
+    console.error('❌ Error executing AI generated query:', error);
+    // Fallback to simple query
+    const fallbackResults = await clubModel.find({ 
+      city: { $regex: new RegExp(`^${city}$`, 'i') }, 
+      isApproved: true 
+    });
+    return {
+      data: fallbackResults,
+      type: 'Club'
+    };
+  }
+}
+
+async function findEventFromQuery(intent: any, city: string): Promise<any> {
+  try {
+    const { extractedInfo, eventName } = intent;
+    
+    // First, find clubs in the specified city
+    const clubsInCity = await clubModel.find({
+      city: { $regex: city, $options: 'i' },
+      isApproved: true
+    }).select('_id name city address phone email').lean();
+
+    if (clubsInCity.length === 0) {
+      return null;
+    }
+
+    const clubIds = clubsInCity.map(club => club._id);
+    
+    // Build search criteria based on extracted information
+    const searchCriteria: any = {
+      status: 'active'
+    };
+
+    // Array to store OR conditions for flexible matching
+    const orConditions = [];
+
+    // If we have a specific event name, search for it
+    if (eventName || extractedInfo?.eventName) {
+      const nameToSearch = eventName || extractedInfo.eventName;
+      orConditions.push({ name: { $regex: nameToSearch, $options: 'i' } });
+    }
+
+    // If we have keywords, search across multiple fields
+    if (extractedInfo?.keywords && extractedInfo.keywords.length > 0) {
+      extractedInfo.keywords.forEach((keyword: string) => {
+        orConditions.push(
+          { name: { $regex: keyword, $options: 'i' } },
+          { description: { $regex: keyword, $options: 'i' } },
+          { djArtists: { $regex: keyword, $options: 'i' } }
+        );
+      });
+    }
+
+    // If we have venue name, we'll filter by club after the query
+    let venueFilter = null;
+    if (extractedInfo?.venueName) {
+      venueFilter = extractedInfo.venueName;
+    }
+
+    // Add OR conditions if we have any
+    if (orConditions.length > 0) {
+      searchCriteria.$or = orConditions;
+    }
+
+    // Find events
+    const events = await eventModel.find(searchCriteria)
+      .populate('tickets')
+      .sort({ isFeatured: -1, featuredNumber: -1, createdAt: -1 })
+      .limit(10)
+      .lean();
+
+    // Find clubs that have these events and match our criteria
+    let bestMatch = null;
+    let bestScore = 0;
+
+    for (const event of events) {
+      // Find the club that has this event
+      const club = await clubModel.findOne({
+        events: event._id,
+        _id: { $in: clubIds }
+      }).select('name city address phone email').lean();
+
+      if (!club) continue;
+
+      // Calculate match score
+      let score = 0;
+
+      // Exact name match gets highest score
+      if (eventName && event.name && event.name.toLowerCase().includes(eventName.toLowerCase())) {
+        score += 10;
+      }
+      if (extractedInfo?.eventName && event.name && event.name.toLowerCase().includes(extractedInfo.eventName.toLowerCase())) {
+        score += 10;
+      }
+
+      // Venue name match
+      if (venueFilter && club.name.toLowerCase().includes(venueFilter.toLowerCase())) {
+        score += 8;
+      }
+
+      // Keyword matches in description or DJ artists
+      if (extractedInfo?.keywords) {
+        extractedInfo.keywords.forEach((keyword: string) => {
+          if (event.description?.toLowerCase().includes(keyword.toLowerCase())) score += 3;
+          if (event.djArtists?.toLowerCase().includes(keyword.toLowerCase())) score += 3;
+          if (event.name?.toLowerCase().includes(keyword.toLowerCase())) score += 5;
+        });
+      }
+
+      // Featured events get slight boost
+      if (event.isFeatured) score += 1;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = {
+          ...event,
+          club
+        };
+      }
+    }
+
+    if (bestMatch && bestScore > 0) {
+      // Format the event details
+      return {
+        id: bestMatch._id,
+        name: bestMatch.name,
+        description: bestMatch.description,
+        date: bestMatch.date,
+        time: bestMatch.time,
+        venue: bestMatch.club?.name,
+        city: bestMatch.club?.city,
+        address: bestMatch.club?.address,
+        contact: {
+          phone: bestMatch.club?.phone,
+          email: bestMatch.club?.email
+        },
+        djArtists: bestMatch.djArtists,
+        guestExperience: bestMatch.guestExperience,
+        ticketTypes: bestMatch.tickets?.map((ticket: any) => ({
+          name: ticket.name,
+          price: ticket.price,
+          description: ticket.description,
+          available: ticket.quantityAvailable > ticket.quantitySold,
+          quantityAvailable: ticket.quantityAvailable,
+          quantitySold: ticket.quantitySold
+        })),
+        coverImage: bestMatch.coverImage,
+        galleryPhotos: bestMatch.galleryPhotos,
+        promoVideos: bestMatch.promoVideos,
+        isFeatured: bestMatch.isFeatured,
+        status: bestMatch.status,
+        happyHourTimings: bestMatch.happyHourTimings,
+        matchScore: bestScore
+      };
+    }
+
+    return null;
+
+  } catch (error) {
+    console.error('Error finding event from query:', error);
+    return null;
+  }
+}
+
+async function searchEventsForChatbot(
+  query: string, 
+  city: string, 
+  preferences?: any,
+  extractedInfo?: any,
+  userLocation?: { latitude: number; longitude: number }
+): Promise<any[]> {
+  try {
+    console.log(`🔍 Searching events for query: "${query}" in city: "${city}"`);
+    console.log('📍 Extracted info:', extractedInfo);
+    
+    // Use the same approach as getNearbyEvents - find clubs with events
+    const clubQuery: any = { 
+      events: { $exists: true, $not: { $size: 0 } },
+      isApproved: true
+    };
+    
+    if (city && typeof city === 'string') {
+      console.log('🔧 Creating regex for city:', city);
+      const regex = new RegExp(`^${city}$`, "i");
+      console.log('🔧 Regex created:', regex);
+      clubQuery.city = { $regex: regex };
+    }
+
+    console.log('🏢 Club query:', JSON.stringify(clubQuery, null, 2));
+    console.log('📊 EXACT DB QUERY:', clubQuery);
+    console.log('📊 City value:', city);
+    console.log('📊 City type:', typeof city);
+
+    const clubs = await clubModel.find(clubQuery).populate({
+      path: "events",
+      match: { status: "active" },
+      populate: [
+        { path: "tickets" },
+        { path: "menuItems" }
+      ]
+    });
+
+    console.log(`🏢 Found ${clubs.length} clubs with events in ${city}`);
+    
+    // Debug: log club events
+    clubs.forEach((club: any, index: number) => {
+      console.log(`Club ${index + 1}: ${club.name} has ${club.events?.length || 0} events`);
+    });
+
+    // Extract all events from all clubs (same as getNearbyEvents)
+    const allEvents: any[] = [];
+    
+    clubs.forEach((club: any) => {
+      if (club.events && Array.isArray(club.events)) {
+        club.events.forEach((event: any) => {
+          if (event && event._id) {
+            // Add text search filter if specified
+            let includeEvent = true;
+            
+            // Only filter events if we have specific keywords from intent analysis
+            if (extractedInfo?.keywords && extractedInfo.keywords.length > 0) {
+              extractedInfo.keywords.forEach((keyword: string) => {
+                if (event.name?.toLowerCase().includes(keyword.toLowerCase()) ||
+                    event.description?.toLowerCase().includes(keyword.toLowerCase()) ||
+                    event.djArtists?.toLowerCase().includes(keyword.toLowerCase())) {
+                  includeEvent = true;
+                  console.log(`🔍 Event "${event.name}" matches keyword "${keyword}"`);
+                }
+              });
+            } else {
+              // No specific keywords - include all events
+              console.log(`🔍 No keywords - including event: "${event.name}"`);
+            }
+
+            if (includeEvent) {
+              allEvents.push({
+                _id: event._id,
+                name: event.name,
+                description: event.description,
+                date: event.date,
+                time: event.time,
+                djArtists: event.djArtists,
+                coverImage: event.coverImage,
+                isFeatured: event.isFeatured,
+                featuredNumber: event.featuredNumber,
+                status: event.status,
+                guestExperience: event.guestExperience,
+                tickets: event.tickets,
+                club: {
+                  id: club._id,
+                  name: club.name,
+                  city: club.city,
+                  address: club.address,
+                  phone: club.phone,
+                  email: club.email
+                }
+              });
+            }
+          }
+        });
+      }
+    });
+
+    console.log(`🎉 Found ${allEvents.length} total events matching criteria`);
+
+    // Sort events by featured status and date
+    allEvents.sort((a, b) => {
+      if (a.isFeatured !== b.isFeatured) {
+        return b.isFeatured ? 1 : -1; // Featured events first
+      }
+      return b.featuredNumber - a.featuredNumber; // Higher featured number first
+    });
+
+    // Limit to 5 events
+    const limitedEvents = allEvents.slice(0, 5);
+
+    // Format events for AI response
+    return limitedEvents.map(event => ({
+      id: event._id,
+      name: event.name,
+      description: event.description,
+      date: event.date,
+      time: event.time,
+      venue: event.club?.name,
+      city: event.club?.city,
+      address: event.club?.address,
+      djArtists: event.djArtists,
+      ticketTypes: event.tickets?.map((ticket: any) => ({
+        name: ticket.name,
+        price: ticket.price,
+        description: ticket.description,
+        available: ticket.quantityAvailable > ticket.quantitySold,
+        quantityAvailable: ticket.quantityAvailable,
+        quantitySold: ticket.quantitySold
+      })),
+      coverImage: event.coverImage,
+      isFeatured: event.isFeatured,
+      featuredNumber: event.featuredNumber,
+      status: event.status,
+      guestExperience: event.guestExperience
+    }));
+
+  } catch (error) {
+    console.error('Error searching events for chatbot:', error);
+    return [];
+  }
+}
+
+async function getEventDetails(eventId: string): Promise<any> {
+  try {
+    const event = await eventModel.findById(eventId)
+      .populate('tickets')
+      .lean();
+
+    if (!event) {
+      return null;
+    }
+
+    // Find the club that has this event
+    const club = await clubModel.findOne({
+      events: eventId
+    }).select('name city address phone email').lean();
+
+    return {
+      id: event._id,
+      name: event.name,
+      description: event.description,
+      date: event.date,
+      time: event.time,
+      venue: club?.name,
+      city: club?.city,
+      address: club?.address,
+      contact: {
+        phone: club?.phone,
+        email: club?.email
+      },
+      djArtists: event.djArtists,
+      guestExperience: event.guestExperience,
+      ticketTypes: event.tickets?.map((ticket: any) => ({
+        name: ticket.name,
+        price: ticket.price,
+        description: ticket.description,
+        available: ticket.quantityAvailable > ticket.quantitySold,
+        quantityAvailable: ticket.quantityAvailable,
+        quantitySold: ticket.quantitySold
+      })),
+      coverImage: event.coverImage,
+      galleryPhotos: event.galleryPhotos,
+      promoVideos: event.promoVideos,
+      isFeatured: event.isFeatured,
+      featuredNumber: event.featuredNumber,
+      status: event.status,
+      happyHourTimings: event.happyHourTimings
+    };
+
+  } catch (error) {
+    console.error('Error getting event details:', error);
+    return null;
+  }
+}
+
+async function searchClubsForChatbot(
+  query: string,
+  city: string,
+  preferences?: any,
+  extractedInfo?: any,
+  userLocation?: { latitude: number; longitude: number }
+): Promise<any[]> {
+  try {
+    console.log(`🔍 Searching clubs for query: "${query}" in city: "${city}"`);
+    console.log('📍 Extracted info:', extractedInfo);
+    
+    // Build search criteria for clubs (show all clubs, even without events)
+    const searchCriteria: any = {
+      isApproved: true
+    };
+    
+    if (city && typeof city === 'string') {
+      console.log('🔧 Creating regex for city:', city);
+      const regex = new RegExp(`^${city}$`, "i");
+      console.log('🔧 Regex created:', regex);
+      searchCriteria.city = { $regex: regex };
+    }
+    
+    console.log('🏢 Club search query:', JSON.stringify(searchCriteria, null, 2));
+    console.log('📊 EXACT DB QUERY FOR CLUBS:', searchCriteria);
+    console.log('📊 City value:', city);
+    console.log('📊 City type:', typeof city);
+
+    // DEBUG: Check what's actually in the database
+    const allClubs = await clubModel.find({}).select('name city isApproved').limit(10);
+    console.log('🔍 DEBUG - Sample clubs in DB:');
+    allClubs.forEach(club => {
+      console.log(`   - ${club.name}: city="${club.city}", approved=${club.isApproved}`);
+    });
+
+    // Only add text search if we have specific keywords in extractedInfo
+    if (extractedInfo?.keywords && extractedInfo.keywords.length > 0) {
+      console.log('🔍 Adding text search for specific keywords:', extractedInfo.keywords);
+      searchCriteria.$or = [];
+      extractedInfo.keywords.forEach((keyword: string) => {
+        searchCriteria.$or.push(
+          { name: { $regex: keyword, $options: 'i' } },
+          { clubDescription: { $regex: keyword, $options: 'i' } },
+          { typeOfVenue: { $regex: keyword, $options: 'i' } }
+        );
+      });
+    } else {
+      console.log('🔍 No specific keywords - showing all clubs in city');
+    }
+
+    // Apply filters from extracted info
+    if (extractedInfo?.filters?.clubType) {
+      searchCriteria.typeOfVenue = { $in: extractedInfo.filters.clubType };
+    }
+
+    const clubs = await clubModel.find(searchCriteria)
+      .populate('events')
+      .sort({ rating: -1, createdAt: -1 })
+      .limit(5)
+      .lean();
+      
+    console.log(`🏢 Found ${clubs.length} clubs total`);
+
+    // Format clubs for AI response
+    return clubs.map(club => ({
+      id: club._id,
+      name: club.name,
+      description: club.clubDescription,
+      type: club.typeOfVenue,
+      city: club.city,
+      address: club.address,
+      phone: club.phone,
+      rating: club.rating,
+      photos: club.photos,
+      operatingDays: club.operatingDays,
+      eventsCount: club.events?.length || 0,
+      mapLink: club.mapLink
+    }));
+
+  } catch (error) {
+    console.error('Error searching clubs for chatbot:', error);
+    return [];
+  }
+}
+
+async function findClubFromQuery(intent: any, city: string): Promise<any> {
+  try {
+    const { extractedInfo, clubName } = intent;
+    
+    const searchCriteria: any = {
+      isApproved: true,
+      city: { $regex: city, $options: 'i' }
+    };
+
+    // Array to store OR conditions for flexible matching
+    const orConditions = [];
+
+    // If we have a specific club name, search for it
+    if (clubName || extractedInfo?.clubName || extractedInfo?.venueName) {
+      const nameToSearch = clubName || extractedInfo.clubName || extractedInfo.venueName;
+      orConditions.push({ name: { $regex: nameToSearch, $options: 'i' } });
+    }
+
+    // If we have keywords, search across multiple fields
+    if (extractedInfo?.keywords && extractedInfo.keywords.length > 0) {
+      extractedInfo.keywords.forEach((keyword: string) => {
+        orConditions.push(
+          { name: { $regex: keyword, $options: 'i' } },
+          { clubDescription: { $regex: keyword, $options: 'i' } },
+          { typeOfVenue: { $regex: keyword, $options: 'i' } }
+        );
+      });
+    }
+
+    // Add OR conditions if we have any
+    if (orConditions.length > 0) {
+      searchCriteria.$or = orConditions;
+    }
+
+    const club = await clubModel.findOne(searchCriteria)
+      .populate('events')
+      .lean();
+
+    if (club) {
+      return {
+        id: club._id,
+        name: club.name,
+        description: club.clubDescription,
+        type: club.typeOfVenue,
+        city: club.city,
+        address: club.address,
+        phone: club.phone,
+        rating: club.rating,
+        photos: club.photos,
+        operatingDays: club.operatingDays,
+        events: club.events,
+        mapLink: club.mapLink
+      };
+    }
+
+    return null;
+
+  } catch (error) {
+    console.error('Error finding club from query:', error);
+    return null;
+  }
+}
+
+export const getChatbotSuggestions = async (req: Request, res: Response) => {
+  try {
+    const { city = 'Dubai' } = req.query;
+    const cityString = typeof city === 'string' ? city : 'Dubai';
+
+    // Use the same pattern as other controllers
+    const clubQuery: any = { 
+      events: { $exists: true, $not: { $size: 0 } },
+      isApproved: true
+    };
+    
+    if (cityString) {
+      clubQuery.city = { $regex: new RegExp(`^${cityString}$`, "i") };
+    }
+
+    const clubsInCity = await clubModel.find(clubQuery).select('_id name events').lean();
+
+    if (clubsInCity.length === 0) {
+       res.json({
+        success: true,
+        data: {
+          suggestions: [
+            "What events are happening tonight?",
+            "Find me some parties",
+            "Show me events under AED 100",
+            "What's the best club in the city?",
+            "What events are this weekend?"
+          ],
+          popularEvents: []
+        }
+      });
+      return;
+    }
+
+    // Get all event IDs from these clubs
+    const eventIds: any[] = [];
+    clubsInCity.forEach(club => {
+      if (club.events) {
+        eventIds.push(...club.events);
+      }
+    });
+
+    // Get popular events
+    const popularEvents = await eventModel.find({ 
+      _id: { $in: eventIds },
+      status: 'active'
+    })
+      .sort({ isFeatured: -1, featuredNumber: -1, createdAt: -1 })
+      .limit(3)
+      .lean();
+
+    const suggestions = [
+      "Find events near me",
+      "Show me clubs in Dubai", 
+      "Events this weekend",
+      "How do I book tickets?",
+      popularEvents.length > 0 ? `Tell me about ${popularEvents[0]?.name || 'upcoming events'}` : "What events are happening today?"
+    ];
+
+    // Find club names for the events
+    const eventsWithClubs = [];
+    for (const event of popularEvents) {
+      const club = clubsInCity.find(c => c.events?.includes(event._id));
+      eventsWithClubs.push({
+        id: event._id,
+        name: event.name,
+        venue: club?.name || 'Unknown Venue',
+        date: event.date
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        suggestions,
+        popularEvents: eventsWithClubs
+      }
+    });
+    return;
+
+  } catch (error) {
+    console.error('Error getting chatbot suggestions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get suggestions'
+    });
+  }
+};
