@@ -1,8 +1,13 @@
 import React from 'react';
+import { View } from 'react-native';
 import UserHomeScreen from '@/components/screens/userHomeScreen';
+import FloatingChatButton from '@/components/ui/FloatingChatButton';
 
 export default function HomeScreen() {
   return (
-   <UserHomeScreen />   
+    <View style={{ flex: 1 }}>
+      <UserHomeScreen />
+      <FloatingChatButton />
+    </View>
   )
 }
