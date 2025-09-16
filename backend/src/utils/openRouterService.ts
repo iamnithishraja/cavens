@@ -492,6 +492,7 @@ Based on the user's message and intent, generate the optimal MongoDB query.
 
 User message: "${userMessage}"
 Intent: ${JSON.stringify(intent, null, 2)}
+Current date: "${new Date().toISOString().split('T')[0]}" (use this for filtering upcoming events)
 
 Respond with ONLY a JSON object in this format:
 {
@@ -506,9 +507,11 @@ Examples:
 - "Rooftop venues" → {"model": "Club", "query": {"typeOfVenue": {"$regex": "rooftop", "$options": "i"}, "isApproved": true}}
 
 IMPORTANT: 
+- For upcoming events, filter by date: {"date": {"$gte": "2024-01-01"}} (use current date provided above)
 - Do NOT use JavaScript functions like new Date() in queries
-- Use simple string values for dates
+- Use simple string values for dates in YYYY-MM-DD format
 - Keep all values as basic JSON types (string, number, boolean, object, array)
+- Always filter events by status: "active" and upcoming dates
 
 RESPOND WITH ONLY JSON - NO OTHER TEXT.`;
 

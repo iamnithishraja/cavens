@@ -129,11 +129,18 @@ export const DATABASE_SCHEMA = {
   
   queryPatterns: {
     findClubsInCity: 'Club.find({ city: { $regex: new RegExp(`^${city}$`, "i") }, isApproved: true })',
-    findEventsInCity: 'Club.find({ city: city_regex, isApproved: true, events: { $exists: true, $not: { $size: 0 } } }).populate("events", { match: { status: "active" } })',
+    findUpcomingEventsInCity: 'Club.find({ city: city_regex, isApproved: true, events: { $exists: true, $not: { $size: 0 } } }).populate("events", { match: { status: "active", date: { $gte: "current_date" } } })',
     findEventsByKeyword: 'Use text search across event.name, event.description, event.djArtists',
     findClubsByType: 'Club.find({ typeOfVenue: { $regex: type, $options: "i" }, isApproved: true })',
     getEventDetails: 'Event.findById(id).populate("tickets")',
     getClubDetails: 'Club.findById(id).populate("events")'
+  },
+  
+  importantNotes: {
+    eventDates: 'Events should be filtered by date to show only upcoming events. Use date: { $gte: current_date_string }',
+    eventStatus: 'Only show events with status: "active"',
+    clubApproval: 'Only show clubs with isApproved: true',
+    relationships: 'Events belong to Clubs (Club.events array), not the other way around'
   },
   
   commonCities: ['Dubai', 'Abu Dhabi', 'Sharjah'],
