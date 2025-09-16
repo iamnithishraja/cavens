@@ -1,4 +1,5 @@
-import messaging from '@react-native-firebase/messaging';
+import { getMessaging, getToken, requestPermission, hasPermission, AuthorizationStatus } from '@react-native-firebase/messaging';
+import { getApp } from '@react-native-firebase/app';
 import { store } from './index';
 
 export class FCMService {
@@ -17,11 +18,13 @@ export class FCMService {
    */
   async getToken(): Promise<string | null> {
     try {
-      const token = await messaging().getToken();
+      const app = getApp();
+      const messaging = getMessaging(app);
+      const token = await getToken(messaging);
       this.fcmToken = token;
       return token;
     } catch (error) {
-      console.error('Error getting FCM token:', error);
+      console.error('FCM: Error getting token:', error);
       return null;
     }
   }
@@ -34,7 +37,7 @@ export class FCMService {
       await store.set('fcm_token', token);
       this.fcmToken = token;
     } catch (error) {
-      console.error('Error saving FCM token:', error);
+      console.error('FCM: Error saving token to storage:', error);
     }
   }
 
@@ -46,18 +49,23 @@ export class FCMService {
       const token = await store.get('fcm_token');
       return token;
     } catch (error) {
-      console.error('Error getting FCM token from storage:', error);
+      console.error('FCM: Error getting token from storage:', error);
       return null;
     }
   }
 
   /**
-   * Send FCM token to your backend server (implement when needed)
+   * Send FCM token to backend server
    */
   async sendTokenToServer(token: string, userId?: string): Promise<boolean> {
-    // TODO: Implement when you need to send tokens to your backend
-    console.log('FCM token ready for backend:', token);
-    return true;
+    try {
+      // TODO: Implement API call to send token to your backend
+      console.log('FCM: Token ready for backend integration:', { token: token.substring(0, 20) + '...', userId });
+      return true;
+    } catch (error) {
+      console.error('FCM: Error sending token to server:', error);
+      return false;
+    }
   }
 
   /**
@@ -65,14 +73,16 @@ export class FCMService {
    */
   async requestPermission(): Promise<boolean> {
     try {
-      const authStatus = await messaging().requestPermission();
+      const app = getApp();
+      const messaging = getMessaging(app);
+      const authStatus = await requestPermission(messaging);
       const enabled =
-        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+        authStatus === AuthorizationStatus.AUTHORIZED ||
+        authStatus === AuthorizationStatus.PROVISIONAL;
 
       return enabled;
     } catch (error) {
-      console.error('Error requesting notification permission:', error);
+      console.error('FCM: Error requesting permission:', error);
       return false;
     }
   }
@@ -82,28 +92,14 @@ export class FCMService {
    */
   async isNotificationEnabled(): Promise<boolean> {
     try {
-      const authStatus = await messaging().hasPermission();
-      return authStatus === messaging.AuthorizationStatus.AUTHORIZED;
+      const app = getApp();
+      const messaging = getMessaging(app);
+      const authStatus = await hasPermission(messaging);
+      return authStatus === AuthorizationStatus.AUTHORIZED;
     } catch (error) {
-      console.error('Error checking notification permission:', error);
+      console.error('FCM: Error checking permission:', error);
       return false;
     }
-  }
-
-  /**
-   * Subscribe to a topic (implement when needed)
-   */
-  async subscribeToTopic(topic: string): Promise<void> {
-    // TODO: Implement when you need topic subscriptions
-    console.log(`Topic subscription ready: ${topic}`);
-  }
-
-  /**
-   * Unsubscribe from a topic (implement when needed)
-   */
-  async unsubscribeFromTopic(topic: string): Promise<void> {
-    // TODO: Implement when you need topic subscriptions
-    console.log(`Topic unsubscription ready: ${topic}`);
   }
 
   /**
@@ -111,21 +107,28 @@ export class FCMService {
    */
   async initialize(): Promise<void> {
     try {
+      console.log('FCM: Initializing service...');
+      
       // Request permission
       const hasPermission = await this.requestPermission();
       
       if (hasPermission) {
+        console.log('FCM: Permission granted');
+        
         // Get and save token
         const token = await this.getToken();
         if (token) {
           await this.saveTokenToStorage(token);
-          console.log('FCM initialized successfully with token:', token);
+          console.log('FCM: Service initialized successfully');
+          console.log('FCM: Token available for backend integration');
+        } else {
+          console.warn('FCM: Failed to get token after permission granted');
         }
       } else {
-        console.log('Notification permission denied');
+        console.log('FCM: Permission denied');
       }
     } catch (error) {
-      console.error('Error initializing FCM:', error);
+      console.error('FCM: Error initializing service:', error);
     }
   }
 }

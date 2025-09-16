@@ -269,7 +269,7 @@ export default function AnalyticsScreen() {
                 <Ionicons name="analytics-outline" size={80} color={Colors.textMuted} />
                 <Text style={styles.emptyTitle}>No Events for Analytics</Text>
                 <Text style={styles.emptySubtitle}>
-                  You haven't created any events yet. Create events to view their analytics!
+                  You haven&apos;t created any events yet. Create events to view their analytics!
                 </Text>
               </View>
             </View>

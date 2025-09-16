@@ -48,6 +48,9 @@ class MainApplication : Application(), ReactApplication {
       load()
     }
     ApplicationLifecycleDispatcher.onApplicationCreate(this)
+    
+    // Initialize notification channels for heads-up notifications
+    NotificationChannelSetup.createNotificationChannels(this)
   }
 
   override fun onConfigurationChanged(newConfig: Configuration) {

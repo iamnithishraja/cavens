@@ -2,9 +2,11 @@ import Expo
 import React
 import ReactAppDependencyProvider
 import GoogleMaps
+import UserNotifications
+import Firebase
 
 @UIApplicationMain
-public class AppDelegate: ExpoAppDelegate {
+public class AppDelegate: ExpoAppDelegate, UNUserNotificationCenterDelegate {
   var window: UIWindow?
 
   var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
@@ -14,7 +16,15 @@ public class AppDelegate: ExpoAppDelegate {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
+    // Configure Firebase
+    FirebaseApp.configure()
+    
+    // Configure Google Maps
     GMSServices.provideAPIKey("AIzaSyBhL-5U2VTUF21t8-Otm1ZFzK5a71scFuA")
+    
+    // Configure push notifications
+    UNUserNotificationCenter.current().delegate = self
+    
     let delegate = ReactNativeDelegate()
     let factory = ExpoReactNativeFactory(delegate: delegate)
     delegate.dependencyProvider = RCTAppDependencyProvider()
@@ -51,6 +61,28 @@ public class AppDelegate: ExpoAppDelegate {
   ) -> Bool {
     let result = RCTLinkingManager.application(application, continue: userActivity, restorationHandler: restorationHandler)
     return super.application(application, continue: userActivity, restorationHandler: restorationHandler) || result
+  }
+  
+  // MARK: - Push Notification Delegate Methods
+  
+  // Handle notification when app is in foreground
+  public func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    willPresent notification: UNNotification,
+    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+  ) {
+    // Show notification even when app is in foreground
+    completionHandler([.alert, .badge, .sound])
+  }
+  
+  // Handle notification tap
+  public func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
+    // Handle notification tap
+    completionHandler()
   }
 }
 

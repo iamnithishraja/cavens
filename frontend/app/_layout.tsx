@@ -8,6 +8,9 @@ import Background from "@/components/common/Background";
 import NotificationService from "@/components/common/NotificationService";
 import { toastConfig } from "@/components/common/CustomToastConfig";
 
+// Import firebase-messaging.js to register background message handler
+import '../firebase-messaging';
+
 // Global callback to allow other screens to request a user re-check
 let externalCheckUserRef: null | (() => void) = null;
 export const triggerUserRoleCheck = () => {
