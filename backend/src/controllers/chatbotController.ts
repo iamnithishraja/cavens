@@ -23,6 +23,8 @@ interface ChatbotRequest extends Request {
       longitude: number;
     };
     conversationHistory?: ChatbotMessage[];
+    screen?: 'HOME' | 'MAP' | 'BOOKINGS' | 'PROFILE' | 'GENERAL';
+    hasBookings?: boolean;
     preferences?: {
       musicGenres?: string[];
       priceRange?: { min: number; max: number };
@@ -34,7 +36,7 @@ interface ChatbotRequest extends Request {
 
 export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
   try {
-    const { message, userId, eventId, city = 'Dubai', userLocation, preferences, conversationHistory = [] } = req.body;
+    const { message, userId, eventId, city = 'Dubai', userLocation, preferences, conversationHistory = [], screen = 'GENERAL', hasBookings = false } = req.body;
     
     // Ensure city is a string
     const cityString = typeof city === 'string' ? city : 'Dubai';
@@ -215,7 +217,7 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
         response = await openRouterService.handleBookingHelp(
           message,
           conversationHistory,
-          { city: effectiveCity, userId }
+          { city: effectiveCity, userId, screen, hasBookings }
         );
         break;
 
@@ -224,13 +226,13 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
         response = await openRouterService.handleDirections(
           message,
           intent.extractedInfo,
-          { city: effectiveCity, userLocation, conversationHistory }
+          { city: effectiveCity, userLocation, conversationHistory, screen }
         );
         break;
 
       default:
         responseType = 0; // General conversation
-        response = await openRouterService.handleGeneralConversation(message, conversationHistory);
+        response = await openRouterService.handleGeneralConversation(message, conversationHistory, { screen, hasBookings, city: effectiveCity });
         break;
     }
 
@@ -499,12 +501,21 @@ export const getChatbotSuggestions = async (req: Request, res: Response) => {
     const screenType = typeof screen === 'string' ? screen.toUpperCase() as ScreenType : 'GENERAL';
     const userHasBookings = hasBookings === 'true';
 
+    console.log('🎯 Backend Suggestions Request:', {
+      originalQuery: req.query,
+      cityString,
+      screenType,
+      userHasBookings
+    });
+
     // Get contextual suggestions based on screen and user context
     const contextualSuggestions = getContextualSuggestions(
       screenType,
       cityString,
       userHasBookings
     );
+
+    console.log('📝 Generated contextual suggestions:', contextualSuggestions);
 
     // Use the same pattern as other controllers
     const clubQuery: any = { 

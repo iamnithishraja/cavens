@@ -300,14 +300,18 @@ Use a friendly, apologetic but helpful tone with appropriate emojis.`;
     return this.generateResponse(question, { eventDetails, additionalContext }, systemPrompt);
   }
 
-  async handleGeneralConversation(message: string, conversationHistory: any[] = []): Promise<string> {
+  async handleGeneralConversation(message: string, conversationHistory: any[] = [], screenContext?: any): Promise<string> {
     const conversationContext = conversationHistory.length > 0 
       ? `\nConversation History:\n${conversationHistory.slice(-4).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
       : '';
 
+    // Add screen-specific context
+    const screenContextInfo = this.getScreenContextInfo(screenContext);
+
     const systemPrompt = `You are Cavens AI, a friendly assistant for a nightlife events app called Cavens.
 
 ${conversationContext}
+${screenContextInfo}
 
 Cavens helps users discover amazing nightlife events, parties, and club experiences. You can help users:
 - Find events based on their preferences
@@ -315,11 +319,30 @@ Cavens helps users discover amazing nightlife events, parties, and club experien
 - Provide information about venues and clubs
 - Help with booking and tickets
 
-Based on the conversation history, respond to the user in a friendly, helpful way. Reference previous conversation naturally when relevant. If they're not asking about events specifically, engage in light conversation but try to naturally guide them toward discovering events on the app.
+Based on the conversation history and current screen context, respond to the user in a friendly, helpful way. Reference previous conversation naturally when relevant. If they're not asking about events specifically, engage in light conversation but try to naturally guide them toward discovering events on the app.
 
 Keep responses concise and use appropriate emojis.`;
 
-    return this.generateResponse(message, { conversationHistory }, systemPrompt);
+    return this.generateResponse(message, { conversationHistory, screenContext }, systemPrompt);
+  }
+
+  private getScreenContextInfo(screenContext?: any): string {
+    if (!screenContext) return '';
+
+    const { screen, hasBookings, city } = screenContext;
+    
+    switch (screen) {
+      case 'HOME':
+        return `The user is currently on the home screen where they can discover featured events and popular venues. They can see trending events and get personalized recommendations.`;
+      case 'MAP':
+        return `The user is currently on the map screen where they can view clubs and venues on a map. They can see locations, get directions, and find nearby venues. Consider suggesting location-based help like "Show me clubs near me" or "Get directions to the nearest club".`;
+      case 'BOOKINGS':
+        return `The user is currently on the bookings screen ${hasBookings ? 'and has active bookings' : 'but has no current bookings'}. ${hasBookings ? 'They can manage their existing bookings, view ticket details, and get help with their reservations.' : 'You can help them find events to book or explain how the booking process works.'}`;
+      case 'PROFILE':
+        return `The user is currently on their profile screen where they can manage their account settings, view booking history, and access account-related features. Consider helping with profile management, account settings, or booking history questions.`;
+      default:
+        return '';
+    }
   }
 
   async generateClubRecommendations(
@@ -418,11 +441,15 @@ Use a friendly, apologetic but helpful tone with appropriate emojis.`;
       ? `\nConversation History:\n${conversationHistory.slice(-4).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
       : '';
 
+    // Add screen-specific context for booking help
+    const screenContextInfo = this.getScreenContextInfo(context);
+
     const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
 
 ${conversationContext}
+${screenContextInfo}
 
-The user needs help with booking, tickets, or payments. Based on the conversation history, provide helpful guidance about:
+The user needs help with booking, tickets, or payments. Based on the conversation history and current screen context, provide helpful guidance about:
 
 1. How to book tickets for events
 2. Payment methods and security
@@ -430,6 +457,8 @@ The user needs help with booking, tickets, or payments. Based on the conversatio
 4. Refund and cancellation policies
 5. Group bookings and special offers
 6. Troubleshooting booking issues
+
+${context?.hasBookings ? 'The user has existing bookings, so you can also help with managing current reservations, viewing ticket details, or answering questions about their upcoming events.' : 'The user doesn\'t have current bookings, so focus on helping them find events to book or explaining the booking process.'}
 
 Be helpful, reassuring, and guide them through the process step by step. If they need specific technical support, suggest they contact customer service.
 
@@ -443,7 +472,7 @@ Use a friendly, supportive tone with appropriate emojis.`;
     extractedInfo: any,
     context?: any
   ): Promise<string> {
-    const { conversationHistory = [], userLocation } = context || {};
+    const { conversationHistory = [], userLocation, screen } = context || {};
     const conversationContext = conversationHistory.length > 0 
       ? `\nConversation History:\n${conversationHistory.slice(-4).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
       : '';
@@ -452,10 +481,14 @@ Use a friendly, supportive tone with appropriate emojis.`;
       ? `User's current location: ${userLocation.latitude}, ${userLocation.longitude}`
       : 'User location not available';
 
+    // Add screen-specific context for directions
+    const screenContextInfo = this.getScreenContextInfo(context);
+
     const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
 
 ${conversationContext}
 ${locationContext}
+${screenContextInfo}
 
 The user is asking for directions or location information. Based on the extracted info:
 ${JSON.stringify(extractedInfo || {}, null, 2)}
@@ -467,7 +500,7 @@ Provide helpful information about:
 4. Nearby landmarks or references
 5. Estimated travel time if possible
 
-If you have specific venue information from previous conversation, reference it. Otherwise, provide general guidance and suggest they use the map link in the app.
+${screen === 'MAP' ? 'Since the user is on the map screen, they can easily see venue locations and get directions directly from the map interface. Suggest they use the map features for the most accurate directions.' : 'If you have specific venue information from previous conversation, reference it. Otherwise, provide general guidance and suggest they use the map link in the app.'}
 
 Use a helpful, practical tone with appropriate emojis.`;
 
