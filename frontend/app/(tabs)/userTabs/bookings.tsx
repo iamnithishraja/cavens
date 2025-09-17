@@ -10,8 +10,10 @@ import {
   StatusBar 
 } from "react-native";
 import { useFocusEffect } from '@react-navigation/native';
+import { router } from 'expo-router';
 import { Colors } from "@/constants/Colors";
 import BookingCard from "@/components/ui/BookingCard";
+import FloatingChatButton from "@/components/ui/FloatingChatButton";
 import type { Order } from "@/types/order";
 import { useBookingsPolling } from "@/hooks/useBookingsPolling";
 
@@ -50,6 +52,15 @@ export default function BookingsScreen() {
   const handleBookingPress = (booking: Order) => {
     // TODO: Navigate to booking details or event details
     console.log("Booking pressed:", booking._id);
+  };
+
+  const handleChatButtonPress = () => {
+    // Navigate to chatbot route with bookings screen context
+    const hasBookingsParam = bookings.length > 0 ? 'true' : 'false';
+    const url = `/chatbot?city=Dubai&screen=BOOKINGS&hasBookings=${hasBookingsParam}` as const;
+    
+    console.log('🎫 Bookings Screen Navigation URL:', url);
+    router.push(url);
   };
 
   const renderBookingCard = ({ item }: { item: Order }) => (
@@ -129,6 +140,8 @@ export default function BookingsScreen() {
           ListEmptyComponent={renderEmptyState}
         />
       )}
+
+      <FloatingChatButton onPress={handleChatButtonPress} />
     </SafeAreaView>
   );
 }

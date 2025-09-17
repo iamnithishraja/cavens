@@ -34,6 +34,8 @@ interface ChatbotProps {
     longitude: number;
   };
   city?: string;
+  screen?: 'HOME' | 'MAP' | 'BOOKINGS' | 'PROFILE' | 'GENERAL';
+  hasBookings?: boolean;
 }
 
 const { width, height } = Dimensions.get('window');
@@ -44,7 +46,9 @@ const Chatbot: React.FC<ChatbotProps> = ({
   initialMessage,
   eventId,
   userLocation,
-  city = 'Dubai'
+  city = 'Dubai',
+  screen = 'GENERAL',
+  hasBookings = false
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');

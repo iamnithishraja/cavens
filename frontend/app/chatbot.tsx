@@ -7,14 +7,21 @@ import {
   TouchableOpacity,
   Text
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
 import Chatbot from '@/components/ui/Chatbot';
 
 export default function ChatbotScreen() {
   const [isChatbotVisible, setIsChatbotVisible] = useState(true);
-
+  
+  
+  const params = useLocalSearchParams();
+  console.log('params is ',params);
+  const screen = (params.screen as string) || 'GENERAL';
+  const city = (params.city as string) || 'Dubai';
+  const hasBookings = params.hasBookings === 'true';
+ console.log('screen is ',screen);
   const handleClose = () => {
     setIsChatbotVisible(false);
     router.back();
@@ -30,6 +37,9 @@ export default function ChatbotScreen() {
         <Chatbot
           isVisible={isChatbotVisible}
           onClose={handleClose}
+          city={city}
+          screen={screen as 'HOME' | 'MAP' | 'BOOKINGS' | 'PROFILE' | 'GENERAL'}
+          hasBookings={hasBookings}
         />
       </LinearGradient>
     </SafeAreaView>
