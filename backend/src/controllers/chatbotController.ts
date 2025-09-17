@@ -3,6 +3,7 @@ import openRouterService from '../utils/openRouterService';
 import eventModel from '../models/eventModel';
 import clubModel from '../models/clubModel';
 import { getSchemaForAI } from '../utils/databaseSchema';
+import { getContextualSuggestions, type ScreenType } from '../constants/chatbotSuggestions';
 
 interface ChatbotMessage {
   role: 'user' | 'assistant';
@@ -488,8 +489,22 @@ async function findClubFromQuery(intent: any, city: string): Promise<any> {
 
 export const getChatbotSuggestions = async (req: Request, res: Response) => {
   try {
-    const { city = 'Dubai' } = req.query;
+    const { 
+      city = 'Dubai', 
+      screen = 'GENERAL',
+      hasBookings = false
+    } = req.query;
+    
     const cityString = typeof city === 'string' ? city : 'Dubai';
+    const screenType = typeof screen === 'string' ? screen.toUpperCase() as ScreenType : 'GENERAL';
+    const userHasBookings = hasBookings === 'true';
+
+    // Get contextual suggestions based on screen and user context
+    const contextualSuggestions = getContextualSuggestions(
+      screenType,
+      cityString,
+      userHasBookings
+    );
 
     // Use the same pattern as other controllers
     const clubQuery: any = { 
@@ -503,18 +518,16 @@ export const getChatbotSuggestions = async (req: Request, res: Response) => {
 
     const clubsInCity = await clubModel.find(clubQuery).select('_id name events').lean();
 
+    let popularEvents: any[] = [];
+
     if (clubsInCity.length === 0) {
        res.json({
         success: true,
         data: {
-          suggestions: [
-            "What events are happening tonight?",
-            "Find me some parties",
-            "Show me events under AED 100",
-            "What's the best club in the city?",
-            "What events are this weekend?"
-          ],
-          popularEvents: []
+          suggestions: contextualSuggestions.map(s => s.text),
+          popularEvents: [],
+          screen: screenType,
+          city: cityString
         }
       });
       return;
@@ -529,7 +542,7 @@ export const getChatbotSuggestions = async (req: Request, res: Response) => {
     });
 
     // Get popular events
-    const popularEvents = await eventModel.find({ 
+    const events = await eventModel.find({ 
       _id: { $in: eventIds },
       status: 'active'
     })
@@ -537,31 +550,32 @@ export const getChatbotSuggestions = async (req: Request, res: Response) => {
       .limit(3)
       .lean();
 
-    const suggestions = [
-      "Find events near me",
-      "Show me clubs in Dubai", 
-      "Events this weekend",
-      "How do I book tickets?",
-      popularEvents.length > 0 ? `Tell me about ${popularEvents[0]?.name || 'upcoming events'}` : "What events are happening today?"
-    ];
-
     // Find club names for the events
-    const eventsWithClubs = [];
-    for (const event of popularEvents) {
+    popularEvents = events.map(event => {
       const club = clubsInCity.find(c => c.events?.includes(event._id));
-      eventsWithClubs.push({
+      return {
         id: event._id,
         name: event.name,
         venue: club?.name || 'Unknown Venue',
         date: event.date
+      };
+    });
+
+    // Add popular event suggestion if available and relevant to screen
+    if (popularEvents.length > 0 && ['HOME', 'EVENTS', 'GENERAL'].includes(screenType)) {
+      contextualSuggestions.push({
+        text: `Tell me about ${popularEvents[0].name}`,
+        category: 'events'
       });
     }
 
     res.json({
       success: true,
       data: {
-        suggestions,
-        popularEvents: eventsWithClubs
+        suggestions: contextualSuggestions.map(s => s.text),
+        popularEvents,
+        screen: screenType,
+        city: cityString
       }
     });
     return;
