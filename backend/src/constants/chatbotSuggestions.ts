@@ -64,10 +64,9 @@ export const getScreenSuggestions = (screen: ScreenType = 'GENERAL'): ChatbotSug
 // Dynamic suggestions based on user context
 export const getContextualSuggestions = (
   screen: ScreenType,
-  city?: string,
-  hasBookings?: boolean
+  city?: string
 ): ChatbotSuggestion[] => {
-  console.log('🔧 getContextualSuggestions called with:', { screen, city, hasBookings });
+  console.log('🔧 getContextualSuggestions called with:', { screen, city });
   
   let suggestions = [...getScreenSuggestions(screen)];
   
@@ -82,14 +81,6 @@ export const getContextualSuggestions = (
     suggestions.unshift({ 
       text: `Show me clubs in ${city}`, 
       category: 'clubs' as const 
-    });
-  }
-  
-  // Add booking-specific suggestions
-  if (hasBookings && screen === 'BOOKINGS') {
-    suggestions.unshift({ 
-      text: "Show my recent bookings", 
-      category: 'bookings' as const 
     });
   }
   

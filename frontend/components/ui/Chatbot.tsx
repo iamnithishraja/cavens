@@ -35,7 +35,6 @@ interface ChatbotProps {
   };
   city?: string;
   screen?: 'HOME' | 'MAP' | 'BOOKINGS' | 'PROFILE' | 'GENERAL';
-  hasBookings?: boolean;
 }
 
 const { width, height } = Dimensions.get('window');
@@ -47,8 +46,7 @@ const Chatbot: React.FC<ChatbotProps> = ({
   eventId,
   userLocation,
   city = 'Dubai',
-  screen = 'GENERAL',
-  hasBookings = false
+  screen = 'GENERAL'
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -88,13 +86,25 @@ const Chatbot: React.FC<ChatbotProps> = ({
         useNativeDriver: true,
       }).start();
     }
-  }, [isVisible, initialMessage]);
+  }, [isVisible, initialMessage, screen, city]);
 
   const loadSuggestions = async () => {
     try {
       const cityName = typeof city === 'string' ? city : city || 'Dubai';
-      const response = await apiClient.get(`/api/chatbot/suggestions?city=${cityName}`);
+      const apiUrl = `/api/chatbot/suggestions?city=${cityName}&screen=${screen}`;
+      
+      console.log('🔍 Loading suggestions with:', {
+        screen,
+        city: cityName,
+        apiUrl
+      });
+      
+      const response = await apiClient.get(apiUrl);
+      
+      console.log('📋 Suggestions response:', response.data);
+      
       if (response.data.success) {
+        console.log('✅ Setting suggestions:', response.data.data.suggestions);
         setSuggestions(response.data.data.suggestions);
       }
     } catch (error) {
@@ -131,6 +141,7 @@ const Chatbot: React.FC<ChatbotProps> = ({
         city: typeof city === 'string' ? city : city || 'Dubai',
         userLocation,
         conversationHistory,
+        screen,
         preferences: {
           // Add user preferences here if available
         }

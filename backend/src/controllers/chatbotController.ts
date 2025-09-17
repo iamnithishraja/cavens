@@ -493,26 +493,19 @@ export const getChatbotSuggestions = async (req: Request, res: Response) => {
   try {
     const { 
       city = 'Dubai', 
-      screen = 'GENERAL',
-      hasBookings = false
+      screen = 'GENERAL'
     } = req.query;
+    console.log('req.query is ',req.query);
     
     const cityString = typeof city === 'string' ? city : 'Dubai';
     const screenType = typeof screen === 'string' ? screen.toUpperCase() as ScreenType : 'GENERAL';
-    const userHasBookings = hasBookings === 'true';
 
-    console.log('🎯 Backend Suggestions Request:', {
-      originalQuery: req.query,
-      cityString,
-      screenType,
-      userHasBookings
-    });
+    console.log('screen is ',screenType);
 
     // Get contextual suggestions based on screen and user context
     const contextualSuggestions = getContextualSuggestions(
       screenType,
-      cityString,
-      userHasBookings
+      cityString
     );
 
     console.log('📝 Generated contextual suggestions:', contextualSuggestions);

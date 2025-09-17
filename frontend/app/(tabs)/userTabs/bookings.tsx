@@ -16,6 +16,7 @@ import BookingCard from "@/components/ui/BookingCard";
 import FloatingChatButton from "@/components/ui/FloatingChatButton";
 import type { Order } from "@/types/order";
 import { useBookingsPolling } from "@/hooks/useBookingsPolling";
+import { store } from '@/utils';
 
 export default function BookingsScreen() {
   const [isScreenFocused, setIsScreenFocused] = useState(false);
@@ -54,13 +55,21 @@ export default function BookingsScreen() {
     console.log("Booking pressed:", booking._id);
   };
 
-  const handleChatButtonPress = () => {
-    // Navigate to chatbot route with bookings screen context
-    const hasBookingsParam = bookings.length > 0 ? 'true' : 'false';
-    const url = `/chatbot?city=Dubai&screen=BOOKINGS&hasBookings=${hasBookingsParam}` as const;
+  const handleChatButtonPress = async () => {
+    console.log('🎫 Bookings Screen Navigation');
     
-    console.log('🎫 Bookings Screen Navigation URL:', url);
-    router.push(url);
+    // Get the selected city from store, default to Dubai
+    const selectedCity = await store.get('selectedCity') || 'Dubai';
+    
+    router.push({
+      pathname: '/chatbot',
+      params:{
+        Screen:'BOOKINGS',
+        city: selectedCity,
+        hasBookings: bookings.length > 0 ? 'true' : 'false'
+      }
+    }
+    )
   };
 
   const renderBookingCard = ({ item }: { item: Order }) => (

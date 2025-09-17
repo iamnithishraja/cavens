@@ -13,6 +13,7 @@ import type { EventItem } from '@/components/event/types';
 import { Colors } from '@/constants/Colors';
 import apiClient from '@/app/api/client';
 import CityPickerModal, { CITIES, type City } from '@/components/ui/CityPickerModal';
+import { store } from '@/utils';
 import TimelineFilterTabs, { type TimelineTab, getDateRange } from '@/components/event/TimelineFilterTabs';
 import LocationHeader from '@/components/event/LocationHeader';
 import FilterModal from '@/components/Models/filterModel';
@@ -82,6 +83,11 @@ const UserHomeScreen = () => {
   // Fallback coordinates for Dubai (if location access fails)
   const FALLBACK_LATITUDE = 25.2048;
   const FALLBACK_LONGITUDE = 55.2708;
+
+  // Initialize selected city in store
+  useEffect(() => {
+    store.set('selectedCity', selectedCity.name);
+  }, []);
 
   // Get user's current location
   useEffect(() => {
@@ -281,6 +287,8 @@ const UserHomeScreen = () => {
   const handleCitySelect = (city: City) => {
     setSelectedCity(city);
     setCityPickerVisible(false);
+    // Save selected city to store for other screens
+    store.set('selectedCity', city.name);
   };
 
   // Event handlers
