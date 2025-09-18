@@ -28,6 +28,8 @@ interface ChatbotIntent {
   eventId?: string;
   eventName?: string;
   clubName?: string;
+  showCards?: boolean; // NEW: Whether to show cards or just text
+  cardType?: 'events' | 'clubs' | 'mixed'; // NEW: Type of cards to show
   extractedInfo?: {
     eventName?: string;
     venueName?: string;
@@ -63,25 +65,49 @@ class OpenRouterService {
       const messages: OpenRouterMessage[] = [
         {
           role: 'system',
-          content: `You are an AI assistant for a nightlife events app called Cavens. Analyze user messages and determine their intent.
+          content: `You are an AI assistant for a nightlife events app called Cavens. Analyze user messages and determine their intent and whether to show cards or text responses.
 
 CRITICAL: Respond ONLY with valid JSON. Do not include any explanatory text before or after the JSON.
 
-Analyze the user's message and determine the intent type:
-1. **find_events** - Finding/searching for events
-2. **find_clubs** - Finding/searching for clubs/venues  
-3. **event_question** - Questions about specific events
-4. **club_question** - Questions about specific clubs/venues
-5. **general** - General conversation
+Analyze the user's message and determine:
+1. **Intent type**: find_events, find_clubs, event_question, club_question, general, etc.
+2. **showCards**: true if user wants to see actual event/club cards, false for text-only responses
+3. **cardType**: "events", "clubs", or "mixed" when showCards is true
+
+**CARD DETECTION RULES:**
+- Show cards for: "show me events", "find clubs", "what events are happening", "list venues", "recommend events"
+- Show text for: "what time does it start", "how much does it cost", "tell me about this event", general questions
+
+**EVENT NAME EXTRACTION:**
+- Extract event names, DJ names, venue names from questions
+- Look for specific event references in conversation history
+- Identify when user is asking about a specific event vs general events
 
 Respond with ONLY this JSON format:
-{"type": "intent_type", "confidence": 0.9, "query": "search terms", "extractedInfo": {"location": "city"}}
+{
+  "type": "intent_type", 
+  "confidence": 0.9, 
+  "showCards": true/false,
+  "cardType": "events/clubs/mixed",
+  "query": "search terms", 
+  "extractedInfo": {
+    "location": "city",
+    "eventName": "specific event name",
+    "venueName": "venue name",
+    "djName": "DJ name",
+    "nearMe": true/false
+  }
+}
 
 Examples:
-"Find events near me" -> {"type": "find_events", "confidence": 0.9, "extractedInfo": {"nearMe": true}}
-"Show me clubs in Dubai" -> {"type": "find_clubs", "confidence": 0.9, "extractedInfo": {"location": "Dubai"}}
-"What time does the party start?" -> {"type": "event_question", "confidence": 0.8}
-"Hello" -> {"type": "general", "confidence": 0.9}
+"Find events near me" -> {"type": "find_events", "confidence": 0.9, "showCards": true, "cardType": "events", "extractedInfo": {"nearMe": true}}
+"Show me clubs in Dubai" -> {"type": "find_clubs", "confidence": 0.9, "showCards": true, "cardType": "clubs", "extractedInfo": {"location": "Dubai"}}
+"What time does the party start?" -> {"type": "event_question", "confidence": 0.8, "showCards": false}
+"What's the cover charge?" -> {"type": "event_question", "confidence": 0.8, "showCards": false}
+"Tell me about the Tech House Night at XYZ Club" -> {"type": "event_question", "confidence": 0.9, "showCards": false, "extractedInfo": {"eventName": "Tech House Night", "venueName": "XYZ Club"}}
+"What time does DJ John's set start?" -> {"type": "event_question", "confidence": 0.9, "showCards": false, "extractedInfo": {"djName": "DJ John"}}
+"Hello" -> {"type": "general", "confidence": 0.9, "showCards": false}
+"Recommend some events" -> {"type": "find_events", "confidence": 0.9, "showCards": true, "cardType": "events"}
 
 RESPOND WITH ONLY JSON - NO OTHER TEXT.`
         }
@@ -89,12 +115,17 @@ RESPOND WITH ONLY JSON - NO OTHER TEXT.`
 
       // Add conversation history (last 6 messages for context)
       const recentHistory = conversationHistory.slice(-6);
-      recentHistory.forEach((msg: any) => {
+      if (recentHistory.length > 0) {
         messages.push({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
+          role: 'system',
+          content: `CONVERSATION HISTORY for context:
+${recentHistory.map((msg: any, index: number) => 
+  `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
+).join('\n')}
+
+Use this conversation history to understand context. If the user is asking about a specific event/venue mentioned in previous messages, extract that information.`
         });
-      });
+      }
 
       // Add current user message
       messages.push({
@@ -270,7 +301,14 @@ ${JSON.stringify(eventDetails, null, 2)}
 
 Additional context: ${JSON.stringify(additionalContext || {}, null, 2)}
 
-Based on the conversation history and ONLY the event data provided above, answer the user's question. If the specific information they're asking for is not in the event data, honestly say you don't have that information and suggest they contact the venue.
+Based on the conversation history and ONLY the event data provided above, provide a comprehensive and detailed answer to the user's question. Include:
+
+1. **Event Overview**: Name, date, time, venue
+2. **Specific Details**: Answer their specific question (time, price, location, etc.)
+3. **Additional Info**: DJ/artists, description, ticket types, contact info if relevant
+4. **Next Steps**: Suggest booking tickets or contacting the venue
+
+Be enthusiastic and helpful. If the specific information they're asking for is not in the event data, honestly say you don't have that information and suggest they contact the venue directly.
 
 NEVER make up event details. Only use the actual data provided.`;
     } else {

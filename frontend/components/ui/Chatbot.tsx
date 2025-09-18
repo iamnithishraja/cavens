@@ -15,6 +15,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
 import apiClient from '@/app/api/client';
+import ChatbotCardsContainer from '@/components/chatbot/ChatbotCardsContainer';
 
 interface Message {
   id: string;
@@ -22,6 +23,9 @@ interface Message {
   isUser: boolean;
   type?: number; // 0: general, 1: event question, 2: find events
   timestamp: Date;
+  showCards?: boolean;
+  cardType?: 'events' | 'clubs' | 'mixed';
+  cards?: any[];
 }
 
 interface ChatbotProps {
@@ -147,19 +151,28 @@ const Chatbot: React.FC<ChatbotProps> = ({
         }
       });
 
-      if (response.data.success) {
-        const botMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          text: response.data.data.response,
-          isUser: false,
-          type: response.data.data.type,
-          timestamp: new Date()
-        };
+          if (response.data.success) {
+            const botMessage: Message = {
+              id: (Date.now() + 1).toString(),
+              text: response.data.data.response,
+              isUser: false,
+              type: response.data.data.type,
+              timestamp: new Date(),
+              showCards: response.data.data.showCards || false,
+              cardType: response.data.data.cardType || null,
+              cards: response.data.data.cards || null
+            };
 
-        setMessages(prev => [...prev, botMessage]);
-      } else {
-        throw new Error('Failed to get response');
-      }
+            console.log('🤖 Bot message with cards:', {
+              showCards: botMessage.showCards,
+              cardType: botMessage.cardType,
+              cardsCount: botMessage.cards?.length || 0
+            });
+
+            setMessages(prev => [...prev, botMessage]);
+          } else {
+            throw new Error('Failed to get response');
+          }
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage: Message = {
@@ -227,57 +240,65 @@ const Chatbot: React.FC<ChatbotProps> = ({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-            {messages.map((message) => (
-              <View key={message.id} style={styles.messageWrapper}>
-                <View style={[
-                  styles.messageBubble,
-                  message.isUser ? styles.userMessage : styles.botMessage
-                ]}>
-                  {!message.isUser && (
-                    <View style={styles.messageHeader}>
-                      <Text style={styles.senderName}>Cavens AI</Text>
-                      {message.type !== undefined && (
-                        <View style={[
-                          styles.typeIndicator,
-                          message.type === 2 ? styles.typeFind : 
-                          message.type === 3 ? styles.typeClubs :
-                          message.type === 1 ? styles.typeQuestion : 
-                          message.type === 4 ? styles.typeClubQuestion :
-                          message.type === 5 ? styles.typeBooking :
-                          message.type === 6 ? styles.typeDirections :
-                          styles.typeGeneral
-                        ]}>
-                          <Text style={styles.typeText}>
-                            {message.type === 2 ? 'Events' : 
-                             message.type === 3 ? 'Clubs' :
-                             message.type === 1 ? 'Event Q&A' : 
-                             message.type === 4 ? 'Club Q&A' :
-                             message.type === 5 ? 'Booking' :
-                             message.type === 6 ? 'Directions' :
-                             'Chat'}
-                          </Text>
+                {messages.map((message) => (
+                  <View key={message.id} style={styles.messageWrapper}>
+                    <View style={[
+                      styles.messageBubble,
+                      message.isUser ? styles.userMessage : styles.botMessage
+                    ]}>
+                      {!message.isUser && (
+                        <View style={styles.messageHeader}>
+                          <Text style={styles.senderName}>Cavens AI</Text>
+                          {message.type !== undefined && (
+                            <View style={[
+                              styles.typeIndicator,
+                              message.type === 2 ? styles.typeFind :
+                              message.type === 3 ? styles.typeClubs :
+                              message.type === 1 ? styles.typeQuestion :
+                              message.type === 4 ? styles.typeClubQuestion :
+                              message.type === 5 ? styles.typeBooking :
+                              message.type === 6 ? styles.typeDirections :
+                              styles.typeGeneral
+                            ]}>
+                              <Text style={styles.typeText}>
+                                {message.type === 2 ? 'Events' :
+                                 message.type === 3 ? 'Clubs' :
+                                 message.type === 1 ? 'Event Q&A' :
+                                 message.type === 4 ? 'Club Q&A' :
+                                 message.type === 5 ? 'Booking' :
+                                 message.type === 6 ? 'Directions' :
+                                 'Chat'}
+                              </Text>
+                            </View>
+                          )}
                         </View>
                       )}
+                      <Text style={[
+                        styles.messageText,
+                        message.isUser ? styles.userMessageText : styles.botMessageText
+                      ]}>
+                        {message.text}
+                      </Text>
+                      <Text style={[
+                        styles.timestamp,
+                        message.isUser ? styles.userTimestamp : styles.botTimestamp
+                      ]}>
+                        {message.timestamp.toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </Text>
                     </View>
-                  )}
-                  <Text style={[
-                    styles.messageText,
-                    message.isUser ? styles.userMessageText : styles.botMessageText
-                  ]}>
-                    {message.text}
-                  </Text>
-                  <Text style={[
-                    styles.timestamp,
-                    message.isUser ? styles.userTimestamp : styles.botTimestamp
-                  ]}>
-                    {message.timestamp.toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </Text>
-                </View>
-              </View>
-            ))}
+                    
+                    {/* Render cards if available */}
+                    {!message.isUser && message.showCards && message.cards && message.cards.length > 0 && (
+                      <ChatbotCardsContainer
+                        cards={message.cards}
+                        cardType={message.cardType || 'events'}
+                      />
+                    )}
+                  </View>
+                ))}
 
             {isLoading && (
               <View style={styles.messageWrapper}>

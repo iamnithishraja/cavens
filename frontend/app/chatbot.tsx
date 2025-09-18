@@ -4,8 +4,6 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
-  TouchableOpacity,
-  Text
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,7 +12,6 @@ import Chatbot from '@/components/ui/Chatbot';
 
 export default function ChatbotScreen() {
   const [isChatbotVisible, setIsChatbotVisible] = useState(true);
-  
   
   const params = useLocalSearchParams();
   console.log('params is ',params);

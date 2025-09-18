@@ -189,10 +189,30 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
         responseType = 1; // Return 1 for event questions
         let eventDetails = null;
         
+        console.log('🎯 Processing event question:', {
+          message,
+          intent: intent.type,
+          extractedInfo: intent.extractedInfo,
+          eventId,
+          effectiveCity
+        });
+        
         if (eventId) {
+          console.log('🔍 Getting event details by ID:', eventId);
           eventDetails = await getEventDetails(eventId);
         } else {
+          console.log('🔍 Finding event from query...');
           eventDetails = await findEventFromQuery(intent, effectiveCity);
+        }
+
+        console.log('📋 Event details found:', eventDetails ? 'YES' : 'NO');
+        if (eventDetails) {
+          console.log('✅ Event details:', {
+            name: eventDetails.name,
+            venue: eventDetails.venue,
+            date: eventDetails.date,
+            time: eventDetails.time
+          });
         }
 
         response = await openRouterService.answerEventQuestion(
@@ -242,7 +262,10 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
         response,
         type: responseType,
         intent: intent.type,
-        confidence: intent.confidence
+        confidence: intent.confidence,
+        showCards: intent.showCards || false,
+        cardType: intent.cardType || null,
+        cards: intent.showCards ? await getCardData(intent, effectiveCity) : null
       }
     });
     return;
@@ -317,25 +340,98 @@ async function executeAIGeneratedQuery(
   }
 }
 
-// Simplified event finder using AI queries
+// Enhanced event finder using AI queries and conversation context
 async function findEventFromQuery(intent: any, city: string): Promise<any> {
   try {
-    const aiQuery = await executeAIGeneratedQuery(`Find event: ${intent.eventName || intent.extractedInfo?.eventName || 'event details'}`, intent, city);
+    const { extractedInfo } = intent;
     
-    if (aiQuery.data.length > 0) {
-      const result = aiQuery.data[0];
-      return {
-        id: result._id,
-        name: result.name,
-        description: result.description,
-        date: result.date,
-        time: result.time,
-        djArtists: result.djArtists,
-        guestExperience: result.guestExperience,
-        tickets: result.tickets
-      };
+    // Try multiple search strategies
+    let searchQuery = '';
+    let searchClubs = [];
+    
+    // Strategy 1: Search by event name
+    if (extractedInfo?.eventName) {
+      searchQuery = extractedInfo.eventName;
+      searchClubs = await clubModel.find({
+        city: { $regex: new RegExp(`^${city}$`, 'i') },
+        isApproved: true,
+        'events.name': { $regex: new RegExp(extractedInfo.eventName, 'i') }
+      }).populate({
+        path: 'events',
+        match: { 
+          name: { $regex: new RegExp(extractedInfo.eventName, 'i') },
+          status: 'active'
+        }
+      });
     }
     
+    // Strategy 2: Search by venue name
+    if (searchClubs.length === 0 && extractedInfo?.venueName) {
+      searchQuery = extractedInfo.venueName;
+      searchClubs = await clubModel.find({
+        city: { $regex: new RegExp(`^${city}$`, 'i') },
+        isApproved: true,
+        name: { $regex: new RegExp(extractedInfo.venueName, 'i') }
+      }).populate({
+        path: 'events',
+        match: { status: 'active' }
+      });
+    }
+    
+    // Strategy 3: Search by DJ name
+    if (searchClubs.length === 0 && extractedInfo?.djName) {
+      searchQuery = extractedInfo.djName;
+      searchClubs = await clubModel.find({
+        city: { $regex: new RegExp(`^${city}$`, 'i') },
+        isApproved: true,
+        'events.djArtists': { $regex: new RegExp(extractedInfo.djName, 'i') }
+      }).populate({
+        path: 'events',
+        match: { 
+          djArtists: { $regex: new RegExp(extractedInfo.djName, 'i') },
+          status: 'active'
+        }
+      });
+    }
+    
+    // Strategy 4: Use AI query as fallback
+    if (searchClubs.length === 0) {
+      console.log('🔍 Using AI query fallback for event search');
+      const aiQuery = await executeAIGeneratedQuery(`Find event: ${extractedInfo?.eventName || extractedInfo?.venueName || 'event details'}`, intent, city);
+      
+      if (aiQuery.type === 'Club' && aiQuery.data.length > 0) {
+        searchClubs = aiQuery.data;
+      }
+    }
+    
+    // Extract events from found clubs
+    for (const club of searchClubs) {
+      if (club.events && club.events.length > 0) {
+        const event = club.events[0]; // Take the first matching event
+        return {
+          id: event._id,
+          name: event.name,
+          description: event.description,
+          date: event.date,
+          time: event.time,
+          venue: club.name,
+          city: club.city,
+          address: club.address,
+          djArtists: event.djArtists,
+          guestExperience: event.guestExperience,
+          tickets: event.tickets,
+          coverImage: event.coverImage,
+          galleryPhotos: event.galleryPhotos,
+          promoVideos: event.promoVideos,
+          contact: {
+            phone: club.phone,
+            email: club.email
+          }
+        };
+      }
+    }
+    
+    console.log('❌ No event found for query:', searchQuery);
     return null;
   } catch (error) {
     console.error('Error finding event from query:', error);
@@ -489,6 +585,88 @@ async function findClubFromQuery(intent: any, city: string): Promise<any> {
   }
 }
 
+// Function to get card data based on intent
+async function getCardData(intent: any, city: string): Promise<any[]> {
+  try {
+    const { type, cardType } = intent;
+    
+    if (type === 'find_events' || type === 'filter_events' || (cardType === 'events')) {
+      // Get events data
+      const aiQuery = await executeAIGeneratedQuery('find events', intent, city);
+      let events: any[] = [];
+
+      if (aiQuery.type === 'Club') {
+        // Extract events from clubs
+        aiQuery.data.forEach((club: any) => {
+          if (club.events && Array.isArray(club.events)) {
+            club.events.forEach((event: any) => {
+              if (event && event._id) {
+                events.push({
+                  id: event._id,
+                  name: event.name,
+                  description: event.description,
+                  date: event.date,
+                  time: event.time,
+                  venue: club.name,
+                  city: club.city,
+                  djArtists: event.djArtists,
+                  tickets: event.tickets,
+                  guestExperience: event.guestExperience,
+                  coverImage: event.coverImage,
+                  isFeatured: event.isFeatured
+                });
+              }
+            });
+          }
+        });
+      } else {
+        // Direct event results
+        events = aiQuery.data.map((event: any) => ({
+          id: event._id,
+          name: event.name,
+          description: event.description,
+          date: event.date,
+          time: event.time,
+          djArtists: event.djArtists,
+          tickets: event.tickets,
+          guestExperience: event.guestExperience,
+          coverImage: event.coverImage,
+          isFeatured: event.isFeatured
+        }));
+      }
+
+      return events.slice(0, 6); // Limit to 6 events
+    }
+    
+    if (type === 'find_clubs' || type === 'filter_clubs' || (cardType === 'clubs')) {
+      // Get clubs data
+      const aiQuery = await executeAIGeneratedQuery('find clubs', intent, city);
+      
+      const clubs = aiQuery.data.map((club: any) => ({
+        id: club._id,
+        name: club.name,
+        description: club.clubDescription,
+        type: club.typeOfVenue,
+        city: club.city,
+        address: club.address,
+        phone: club.phone,
+        rating: club.rating,
+        photos: club.photos,
+        operatingDays: club.operatingDays,
+        eventsCount: club.events?.length || 0,
+        coverImage: club.photos?.[0]
+      }));
+
+      return clubs.slice(0, 6); // Limit to 6 clubs
+    }
+
+    return [];
+  } catch (error) {
+    console.error('Error getting card data:', error);
+    return [];
+  }
+}
+
 export const getChatbotSuggestions = async (req: Request, res: Response) => {
   try {
     const { 
@@ -499,8 +677,6 @@ export const getChatbotSuggestions = async (req: Request, res: Response) => {
     
     const cityString = typeof city === 'string' ? city : 'Dubai';
     const screenType = typeof screen === 'string' ? screen.toUpperCase() as ScreenType : 'GENERAL';
-
-    console.log('screen is ',screenType);
 
     // Get contextual suggestions based on screen and user context
     const contextualSuggestions = getContextualSuggestions(
