@@ -20,4 +20,31 @@ apiClient.interceptors.request.use(async (config) => {
     return config;
 });
 
+// City update function for geofencing
+export const sendCityUpdateToBackend = async (data: {
+  city: string;
+  latitude?: number;
+  longitude?: number;
+  timestamp: string;
+  eventType: 'enter' | 'exit';
+}) => {
+  try {
+    console.log('📱 Sending city update to backend:', data);
+    
+    const response = await apiClient.post('/api/user/city-update', {
+      city: data.city,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      timestamp: data.timestamp,
+      eventType: data.eventType,
+    });
+    
+    console.log('✅ City update sent successfully:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Failed to send city update:', error);
+    throw error;
+  }
+};
+
 export default apiClient;

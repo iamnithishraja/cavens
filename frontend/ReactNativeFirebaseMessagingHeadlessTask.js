@@ -1,48 +1,39 @@
-// ReactNativeFirebaseMessagingHeadlessTask.js
-// This file is automatically detected by React Native Firebase
+
+import { AppRegistry } from 'react-native';
 import { getMessaging, setBackgroundMessageHandler } from '@react-native-firebase/messaging';
 import { getApp } from '@react-native-firebase/app';
-import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Initialize Firebase
 const app = getApp();
 const messaging = getMessaging(app);
 
-// Register the background message handler
-setBackgroundMessageHandler(messaging, async remoteMessage => {
-  console.log('🔔 Background notification received');
+// Background message handler function
+const backgroundMessageHandler = async (remoteMessage) => {
+  console.log('🔔 Background notification received:', remoteMessage);
+
+  // For background notifications, we should NOT interfere with the automatic display
+  // The system will automatically show the notification when app is closed
+  // We only store data for additional processing when app becomes active
   
-  try {
-    // Store notification data for when app reopens
-    if (remoteMessage.data) {
-      const notificationData = {
-        ...remoteMessage.data,
-        timestamp: new Date().toISOString(),
-        title: remoteMessage.notification?.title,
-        body: remoteMessage.notification?.body,
-        fromBackground: true,
-      };
-      
-      // Store in SecureStore for when app reopens
-      await SecureStore.setItemAsync('last_notification', JSON.stringify(notificationData));
-      
-      // Also store in a list of recent notifications
-      try {
-        const existingNotifications = await SecureStore.getItemAsync('recent_notifications');
-        const notifications = existingNotifications ? JSON.parse(existingNotifications) : [];
-        
-        // Add new notification to the beginning of the array
-        notifications.unshift(notificationData);
-        
-        // Keep only the last 10 notifications
-        const recentNotifications = notifications.slice(0, 10);
-        
-        await SecureStore.setItemAsync('recent_notifications', JSON.stringify(recentNotifications));
-      } catch (listError) {
-        console.error('🔔 Error updating notifications list:', listError);
-      }
+  if (remoteMessage.data && Object.keys(remoteMessage.data).length > 0) {
+    try {
+      await AsyncStorage.setItem('last_notification', JSON.stringify(remoteMessage.data));
+      console.log('🔔 Background notification data stored for processing');
+    } catch (error) {
+      console.error('🔔 Error storing background notification:', error);
     }
-  } catch (error) {
-    console.error('🔔 Error storing notification:', error);
   }
+  
+  // Return void to allow Firebase to handle the notification display automatically
+  return Promise.resolve();
+};
+
+// Register the headless task
+AppRegistry.registerHeadlessTask('ReactNativeFirebaseMessagingHeadlessTask', () => {
+  console.log('🔔 Headless task registered successfully');
+  console.log('🔔 Task name: ReactNativeFirebaseMessagingHeadlessTask');
+  return backgroundMessageHandler;
 });
+
+// Set the background message handler
+setBackgroundMessageHandler(messaging, backgroundMessageHandler);

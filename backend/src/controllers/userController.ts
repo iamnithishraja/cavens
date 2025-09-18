@@ -633,4 +633,63 @@ const getBookings = async (req: CustomRequest, res: Response) => {
   }
 }
 
-export { onboarding, verifyOtp, completeProfile, switchToClub, getNearbyEvents, getPublicEventDetails, purchaseTicket, getBookings };
+// Handle city updates from geofencing
+const updateCityLocation = async (req: CustomRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "User not authenticated" });
+      return;
+    }
+
+    const { city, latitude, longitude, timestamp, eventType } = req.body;
+
+    if (!city || !timestamp || !eventType) {
+      res.status(400).json({ 
+        success: false, 
+        message: "City, timestamp, and eventType are required" 
+      });
+      return;
+    }
+
+    console.log(`🏙️ City update received: ${eventType} ${city} at ${timestamp}`);
+
+    // Update user's current city in database
+    await User.findByIdAndUpdate(req.user._id, {
+      currentCity: city,
+      lastCityUpdate: new Date(timestamp),
+      lastLocation: latitude && longitude ? {
+        type: 'Point',
+        coordinates: [longitude, latitude]
+      } : undefined
+    });
+
+    // Log the city change for analytics
+    console.log(`✅ User ${req.user._id} ${eventType} ${city}`);
+
+    // Here you can add additional logic like:
+    // - Send notifications about city-specific events
+    // - Update user preferences based on city
+    // - Trigger location-based marketing campaigns
+    // - Update analytics for city-based insights
+
+    res.json({
+      success: true,
+      message: `City update recorded: ${eventType} ${city}`,
+      data: {
+        city,
+        eventType,
+        timestamp,
+        coordinates: latitude && longitude ? { latitude, longitude } : undefined
+      }
+    });
+
+  } catch (error) {
+    console.error('Error updating city location:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Internal server error" 
+    });
+  }
+};
+
+export { onboarding, verifyOtp, completeProfile, switchToClub, getNearbyEvents, getPublicEventDetails, purchaseTicket, getBookings, updateCityLocation };

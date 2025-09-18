@@ -1,5 +1,5 @@
 import express from 'express';
-import { onboarding, verifyOtp, completeProfile, getUserProfile, switchToClub, getNearbyEvents, getPublicEventDetails, purchaseTicket , getBookings} from '../controllers/userController';
+import { onboarding, verifyOtp, completeProfile, getUserProfile, switchToClub, getNearbyEvents, getPublicEventDetails, purchaseTicket , getBookings, updateCityLocation} from '../controllers/userController';
 import { isAuthenticated, isProfileCompleted } from '../middleware/auth';
 
 const userRoute = express.Router();
@@ -18,5 +18,8 @@ userRoute.get('/event/:eventId', isAuthenticated, isProfileCompleted, getPublicE
 userRoute.post('/purchase-ticket', isAuthenticated, isProfileCompleted, purchaseTicket);
 
 userRoute.get('/bookings/:status', isAuthenticated, isProfileCompleted, getBookings);
+
+// Route for geofencing city updates
+userRoute.post('/city-update', isAuthenticated, isProfileCompleted, updateCityLocation);
 
 export default userRoute;

@@ -7,7 +7,6 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
-import EventDetailsScreen from './EventDetailsScreen';
 import { SAMPLE_EVENTS } from '@/components/event/data';
 import type { EventItem } from '@/components/event/types';
 import { Colors } from '@/constants/Colors';
@@ -21,6 +20,7 @@ import EventsList from '@/components/event/EventsList';
 import SearchSection from '@/components/event/SearchSection';
 import { LoadingState, ErrorState } from '@/components/event/LoadingStates';
 import { router } from 'expo-router';
+import { geofencingService } from '@/utils/geofencing';
 
 // Types for API responses
 type ClubWithEvents = {
@@ -83,36 +83,64 @@ const UserHomeScreen = () => {
   const FALLBACK_LATITUDE = 25.2048;
   const FALLBACK_LONGITUDE = 55.2708;
 
-  // Get user's current location
+  // Get user's current location and start geofencing
   useEffect(() => {
-    const getCurrentLocation = async () => {
+    const initializeLocationAndGeofencing = async () => {
       try {
-        console.log("Requesting location permissions...");
-        const { status } = await Location.requestForegroundPermissionsAsync();
+        console.log("🚀 Initializing location and geofencing...");
         
-        if (status !== 'granted') {
-          console.log("Location permission denied, using fallback coordinates");
+        // Check geofencing status first
+        const status = await geofencingService.checkGeofencingStatus();
+        console.log("🔍 Current geofencing status:", status);
+        
+        // Start geofencing if not running or needs restart
+        let geofencingStarted = false;
+        if (!status.isRunning || status.needsRestart) {
+          console.log("🔔 Starting geofencing service...");
+          geofencingStarted = await geofencingService.startGeofencing();
+        } else {
+          console.log("🔄 Geofencing already running, skipping start...");
+          geofencingStarted = true; // Already running
+        }
+        
+        if (geofencingStarted) {
+          console.log("✅ Geofencing started successfully");
+          
+          // Try to get current location for the UI
+          try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status === 'granted') {
+              const location = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced,
+              });
+              console.log("📍 Current location:", location.coords.latitude, location.coords.longitude);
+              setUserLocation({
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude
+              });
+            } else {
+              console.log("📍 Location permission denied, using fallback coordinates");
+              setUserLocation({
+                latitude: FALLBACK_LATITUDE,
+                longitude: FALLBACK_LONGITUDE
+              });
+            }
+          } catch (error) {
+            console.log("📍 Error getting location, using fallback coordinates:", error);
+            setUserLocation({
+              latitude: FALLBACK_LATITUDE,
+              longitude: FALLBACK_LONGITUDE
+            });
+          }
+        } else {
+          console.log("⚠️ Geofencing could not be started");
           setUserLocation({
             latitude: FALLBACK_LATITUDE,
             longitude: FALLBACK_LONGITUDE
           });
-          setLocationLoading(false);
-          return;
         }
-
-        console.log("Getting current location...");
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        
-        console.log("Current location:", location.coords.latitude, location.coords.longitude);
-        setUserLocation({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude
-        });
       } catch (error) {
-        console.error("Error getting location:", error);
-        // Use fallback coordinates
+        console.error("❌ Error initializing location and geofencing:", error);
         setUserLocation({
           latitude: FALLBACK_LATITUDE,
           longitude: FALLBACK_LONGITUDE
@@ -122,7 +150,7 @@ const UserHomeScreen = () => {
       }
     };
 
-    getCurrentLocation();
+    initializeLocationAndGeofencing();
   }, []);
 
   // Fetch events data when location or city changes

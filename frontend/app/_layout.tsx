@@ -11,6 +11,10 @@ import { toastConfig } from "@/components/common/CustomToastConfig";
 // Import firebase-messaging.js to register background message handler
 import '../firebase-messaging';
 
+// Import and register the headless task for background notifications
+import '../ReactNativeFirebaseMessagingHeadlessTask';
+console.log('🔔 Headless task imported successfully');
+
 // Global callback to allow other screens to request a user re-check
 let externalCheckUserRef: null | (() => void) = null;
 export const triggerUserRoleCheck = () => {
@@ -52,6 +56,10 @@ export default function RootLayout() {
     checkUser();
     // Expose checkUser globally for external triggers
     externalCheckUserRef = checkUser;
+    
+    // Note: Geofencing will be started in userHomeScreen.tsx when user is authenticated
+    // We don't start it here to avoid duplicate initialization
+    
     return () => {
       if (externalCheckUserRef === checkUser) externalCheckUserRef = null;
     };

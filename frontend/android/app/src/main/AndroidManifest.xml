@@ -48,6 +48,12 @@
         android:exported="true"
         tools:replace="android:exported" />
 
+    <!-- Headless task service for background notifications -->
+    <service
+        android:name="io.invertase.firebase.messaging.ReactNativeFirebaseMessagingHeadlessService"
+        android:exported="false"
+        android:stopWithTask="false" />
+
     <!-- Notification Channel for Heads-up Notifications -->
     <meta-data
         android:name="com.google.firebase.messaging.default_notification_channel_id"

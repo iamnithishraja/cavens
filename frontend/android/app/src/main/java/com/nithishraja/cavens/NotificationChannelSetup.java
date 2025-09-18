@@ -37,6 +37,25 @@ public class NotificationChannelSetup {
             
             notificationManager.createNotificationChannel(highImportanceChannel);
             
+            // Club notifications channel (for backend compatibility)
+            NotificationChannel clubChannel = new NotificationChannel(
+                "club_notifications",
+                "Club Notifications",
+                NotificationManager.IMPORTANCE_HIGH
+            );
+            
+            clubChannel.setShowBadge(true);
+            clubChannel.enableLights(true);
+            clubChannel.enableVibration(true);
+            clubChannel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+            clubChannel.setLightColor(android.graphics.Color.parseColor("#FF6B35"));
+            clubChannel.setSound(
+                android.provider.Settings.System.DEFAULT_NOTIFICATION_URI,
+                null
+            );
+            
+            notificationManager.createNotificationChannel(clubChannel);
+            
             // Default channel for regular notifications
             NotificationChannel defaultChannel = new NotificationChannel(
                 "default_channel",
