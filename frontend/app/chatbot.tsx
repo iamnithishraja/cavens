@@ -18,7 +18,7 @@ export default function ChatbotScreen() {
   
   const params = useLocalSearchParams();
   console.log('params is ',params);
-  const screen = (params.screen as string) || 'GENERAL';
+  const screen = (params.Screen as string) || 'GENERAL';
   const city = (params.city as string) || 'Dubai';
   const hasBookings = params.hasBookings === 'true';
  console.log('screen is ',screen);
@@ -39,7 +39,6 @@ export default function ChatbotScreen() {
           onClose={handleClose}
           city={city}
           screen={screen as 'HOME' | 'MAP' | 'BOOKINGS' | 'PROFILE' | 'GENERAL'}
-          hasBookings={hasBookings}
         />
       </LinearGradient>
     </SafeAreaView>

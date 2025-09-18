@@ -28,7 +28,6 @@ export const CHATBOT_SUGGESTIONS = {
   BOOKINGS: [
     { text: "Show my upcoming events", category: 'bookings' as const },
     { text: "How do I cancel a booking?", category: 'help' as const },
-    { text: "When does my ticket expire?", category: 'bookings' as const },
     { text: "Can I transfer my ticket?", category: 'help' as const },
     { text: "What's the refund policy?", category: 'help' as const },
     { text: "How to show my QR code?", category: 'help' as const },
