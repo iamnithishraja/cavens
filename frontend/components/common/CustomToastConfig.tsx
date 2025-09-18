@@ -1,25 +1,88 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import React, { useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Animated, Dimensions } from 'react-native';
+import { PanGestureHandler } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { LinearGradient } from 'expo-linear-gradient';
 
-export const toastConfig = {
-  custom_notification: ({ text1, text2, props, hide }: any) => {
-    // Extract image URL from notification data
-    const imageUrl = props?.data?.image || 
-                    props?.data?.imageUrl || 
-                    props?.data?.picture;
-    
-    return (
-      <View style={styles.container}>
+// Enhanced Toast Component with Swipe-to-Dismiss
+const SwipeableToast = ({ text1, text2, props, hide }: any) => {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
+  const { width: screenWidth } = Dimensions.get('window');
+  
+  // Extract image URL from notification data
+  const imageUrl = props?.data?.image || 
+                  props?.data?.imageUrl || 
+                  props?.data?.picture;
+
+  const handlePanGestureEvent = Animated.event(
+    [{ nativeEvent: { translationX: translateX } }],
+    { useNativeDriver: true }
+  );
+
+  const handlePanStateChange = (event: any) => {
+    if (event.nativeEvent.state === 5) { // END state
+      const { translationX, velocityX } = event.nativeEvent;
+      
+      // If swiped more than 100px or with high velocity, dismiss
+      if (Math.abs(translationX) > 100 || Math.abs(velocityX) > 500) {
+        // Animate out
+        Animated.parallel([
+          Animated.timing(translateX, {
+            toValue: translationX > 0 ? screenWidth : -screenWidth,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          hide();
+        });
+      } else {
+        // Snap back to original position
+        Animated.parallel([
+          Animated.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 8,
+          }),
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+    }
+  };
+
+  return (
+    <PanGestureHandler
+      onGestureEvent={handlePanGestureEvent}
+      onHandlerStateChange={handlePanStateChange}
+      activeOffsetX={[-10, 10]}
+    >
+      <Animated.View 
+        style={[
+          styles.container,
+          {
+            transform: [{ translateX }],
+            opacity,
+          }
+        ]}
+      >
         <LinearGradient
-          colors={['rgba(0,0,0,0.95)', 'rgba(20,20,30,0.98)']}
+          colors={[Colors.background, Colors.backgroundSecondary]}
           style={styles.notificationCard}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
-          {/* Animated border glow */}
+          {/* Enhanced border glow with theme colors */}
           <View style={styles.borderGlow} />
           
           {/* Main content */}
@@ -38,12 +101,12 @@ export const toastConfig = {
               ) : (
                 <View style={styles.iconContainer}>
                   <LinearGradient
-                    colors={[Colors.primary, '#8B5CF6']}
+                    colors={[Colors.primary, Colors.primaryDark]}
                     style={styles.iconGradient}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                   >
-                    <Ionicons name="notifications" size={20} color="white" />
+                    <Ionicons name="notifications" size={20} color={Colors.button.text} />
                   </LinearGradient>
                   <View style={styles.statusDot} />
                 </View>
@@ -52,10 +115,10 @@ export const toastConfig = {
 
             {/* Center - Text content */}
             <View style={styles.textSection}>
-              <Text style={styles.title} numberOfLines={1}>
+              <Text style={styles.title} numberOfLines={2}>
                 {text1}
               </Text>
-              <Text style={styles.message} numberOfLines={3}>
+              <Text style={styles.message} numberOfLines={4}>
                 {text2}
               </Text>
               
@@ -83,15 +146,44 @@ export const toastConfig = {
             </TouchableOpacity>
           </View>
 
-          {/* Decorative elements */}
+          {/* Enhanced decorative elements */}
           <View style={styles.decorativeElements}>
-            <View style={[styles.decorativeDot, { top: 10, right: 20 }]} />
-            <View style={[styles.decorativeDot, { bottom: 15, left: 30 }]} />
+            <View style={[styles.decorativeDot, { top: 10, right: 20, backgroundColor: Colors.primary }]} />
+            <View style={[styles.decorativeDot, { bottom: 15, left: 30, backgroundColor: Colors.blueAccent }]} />
           </View>
         </LinearGradient>
+      </Animated.View>
+    </PanGestureHandler>
+  );
+};
+
+export const toastConfig = {
+  custom_notification: SwipeableToast,
+  // Fallback configurations for other toast types
+  success: ({ text1, text2, hide }: any) => (
+    <View style={styles.fallbackContainer}>
+      <View style={[styles.fallbackToast, { backgroundColor: Colors.success }]}>
+        <Text style={styles.fallbackText}>{text1}</Text>
+        {text2 && <Text style={styles.fallbackSubtext}>{text2}</Text>}
       </View>
-    );
-  },
+    </View>
+  ),
+  error: ({ text1, text2, hide }: any) => (
+    <View style={styles.fallbackContainer}>
+      <View style={[styles.fallbackToast, { backgroundColor: Colors.error }]}>
+        <Text style={styles.fallbackText}>{text1}</Text>
+        {text2 && <Text style={styles.fallbackSubtext}>{text2}</Text>}
+      </View>
+    </View>
+  ),
+  info: ({ text1, text2, hide }: any) => (
+    <View style={styles.fallbackContainer}>
+      <View style={[styles.fallbackToast, { backgroundColor: Colors.info }]}>
+        <Text style={styles.fallbackText}>{text1}</Text>
+        {text2 && <Text style={styles.fallbackSubtext}>{text2}</Text>}
+      </View>
+    </View>
+  ),
 };
 
 const styles = StyleSheet.create({
@@ -103,19 +195,19 @@ const styles = StyleSheet.create({
   notificationCard: {
     borderRadius: 20,
     marginHorizontal: 12,
-    shadowColor: '#000',
+    shadowColor: Colors.shadow,
     shadowOffset: {
       width: 0,
       height: 8,
     },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: Colors.withOpacity.white10,
     position: 'relative',
     overflow: 'hidden',
-    minHeight: 100,
+    minHeight: 110,
   },
   borderGlow: {
     position: 'absolute',
@@ -125,7 +217,7 @@ const styles = StyleSheet.create({
     bottom: -2,
     borderRadius: 22,
     borderWidth: 2,
-    borderColor: 'rgba(139, 92, 246, 0.3)',
+    borderColor: Colors.withOpacity.primary30,
     zIndex: -1,
   },
   contentContainer: {
@@ -142,9 +234,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
-    shadowColor: '#000',
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 6,
   },
@@ -158,16 +250,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.1)',
+    backgroundColor: Colors.withOpacity.black30,
   },
   iconContainer: {
     width: 60,
     height: 60,
     borderRadius: 16,
     position: 'relative',
-    shadowColor: '#000',
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 6,
   },
@@ -185,9 +277,9 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#10B981',
+    backgroundColor: Colors.success,
     borderWidth: 2,
-    borderColor: 'rgba(0,0,0,0.9)',
+    borderColor: Colors.background,
   },
   textSection: {
     flex: 1,
@@ -196,7 +288,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.textPrimary,
     marginBottom: 4,
     letterSpacing: 0.2,
     lineHeight: 20,
@@ -204,7 +296,7 @@ const styles = StyleSheet.create({
   message: {
     fontSize: 14,
     fontWeight: '400',
-    color: 'rgba(255,255,255,0.8)',
+    color: Colors.textSecondary,
     lineHeight: 18,
     letterSpacing: 0.1,
     marginBottom: 8,
@@ -221,33 +313,33 @@ const styles = StyleSheet.create({
   timestamp: {
     fontSize: 11,
     fontWeight: '500',
-    color: 'rgba(255,255,255,0.6)',
+    color: Colors.textMuted,
     marginLeft: 4,
     letterSpacing: 0.3,
   },
   appBadge: {
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.backgroundTertiary,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: Colors.withOpacity.white30,
   },
   appName: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: Colors.textPrimary,
     letterSpacing: 0.5,
   },
   closeButton: {
     width: 24,
     height: 24,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: Colors.withOpacity.white10,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: Colors.withOpacity.white10,
   },
   decorativeElements: {
     position: 'absolute',
@@ -262,6 +354,32 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: Colors.withOpacity.white30,
+  },
+  // Fallback toast styles
+  fallbackContainer: {
+    paddingHorizontal: 12,
+    paddingTop: 8,
+  },
+  fallbackToast: {
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 12,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  fallbackText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: 4,
+  },
+  fallbackSubtext: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: Colors.textSecondary,
   },
 });

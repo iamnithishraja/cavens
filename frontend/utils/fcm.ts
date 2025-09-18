@@ -35,7 +35,7 @@ export class FCMService {
    */
   async saveTokenToStorage(token: string): Promise<void> {
     try {
-      await store.set('fcm_token', token);
+      await store.set('fcmToken', token);
       this.fcmToken = token;
     } catch (error) {
       console.error('FCM: Error saving token to storage:', error);
@@ -47,7 +47,17 @@ export class FCMService {
    */
   async getTokenFromStorage(): Promise<string | null> {
     try {
-      const token = await store.get('fcm_token');
+      // Try both keys for compatibility
+      let token = await store.get('fcmToken');
+      if (!token) {
+        token = await store.get('fcm_token');
+      }
+      if (!token) {
+        token = await store.get('fcmToken');
+      }
+      if (!token) {
+        token = await store.get('fcm_token');
+      }
       return token;
     } catch (error) {
       console.error('FCM: Error getting token from storage:', error);
@@ -60,14 +70,12 @@ export class FCMService {
    */
   async sendTokenToServer(token: string, userId?: string): Promise<boolean> {
     try {
-      console.log('🔔 FCM Token:', token);
       
       const response = await apiClient.post('/api/notifications/fcm-token', {
         fcmToken: token,
       });
 
       if (response.data.success) {
-        console.log('🔔 FCM token registered successfully');
         return true;
       } else {
         console.error('🔔 Token registration failed:', response.data.message);
@@ -148,7 +156,6 @@ export class FCMService {
    */
   async refreshToken(): Promise<boolean> {
     try {
-      console.log('FCM: Refreshing token...');
       
       const token = await this.getToken();
       if (token) {
@@ -156,7 +163,6 @@ export class FCMService {
         const sentToServer = await this.sendTokenToServer(token);
         
         if (sentToServer) {
-          console.log('FCM: Token refreshed and sent to backend successfully');
           return true;
         } else {
           console.warn('FCM: Failed to send refreshed token to backend');

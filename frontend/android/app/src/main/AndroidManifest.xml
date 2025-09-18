@@ -8,6 +8,18 @@
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
   <uses-permission android:name="android.permission.WAKE_LOCK" />
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  
+  <!-- Location permissions for geofencing -->
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+  <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+  
+  <!-- Foreground service permissions -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+  
+  <!-- Battery optimization -->
+  <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
   <queries>
     <intent>
       <action android:name="android.intent.action.VIEW"/>
@@ -60,6 +72,17 @@
         android:value="high_importance_channel"
         tools:replace="android:value" />
 
+    <!-- Notification Channel Configuration -->
+    <meta-data
+        android:name="com.google.firebase.messaging.default_notification_icon"
+        android:resource="@mipmap/ic_launcher"
+        tools:replace="android:resource" />
+    
+    <meta-data
+        android:name="com.google.firebase.messaging.default_notification_color"
+        android:resource="@android:color/black"
+        tools:replace="android:resource" />
+
     <!-- Boot completed receiver to restart FCM service -->
     <receiver android:name="io.invertase.firebase.messaging.ReactNativeFirebaseMessagingReceiver"
         android:exported="true"
@@ -71,5 +94,13 @@
             <data android:scheme="package" />
         </intent-filter>
     </receiver>
+
+    <!-- Foreground service for location tracking -->
+    <service
+        android:name="expo.modules.location.LocationTaskService"
+        android:foregroundServiceType="location"
+        android:exported="false"
+        android:stopWithTask="false"
+        android:enabled="true" />
   </application>
 </manifest>

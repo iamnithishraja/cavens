@@ -1,7 +1,5 @@
 import * as Location from 'expo-location';
-import * as TaskManager from 'expo-task-manager';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { sendCityUpdateToBackend } from '@/app/api/client';
+import { store } from '@/utils';
 
 const GEOFENCING_TASK = 'city-geofencing-task';
 
@@ -11,61 +9,7 @@ const UAE_CITIES = [
   { identifier: 'abu-dhabi', latitude: 24.4539, longitude: 54.3773, radius: 20000 },
 ];
 
-// Define geofencing task
-TaskManager.defineTask(GEOFENCING_TASK, async ({ data, error }: any) => {
-  console.log('🔔 Geofencing task triggered:', { data, error });
-
-  if (error) {
-    console.error('Geofencing error:', error);
-    return;
-  }
-
-  if (!data) return;
-
-  const { eventType, region } = data;
-
-  if (!eventType || !region) return;
-
-  try {
-    const currentCity = await AsyncStorage.getItem('currentCity');
-
-    if (eventType === Location.GeofencingEventType.Enter) {
-      console.log('🏙️ Entered city:', region.identifier);
-
-      if (currentCity !== region.identifier) {
-        await AsyncStorage.setItem('currentCity', region.identifier);
-        await AsyncStorage.setItem('lastCityChangeTime', new Date().toISOString());
-
-        try {
-          await sendCityUpdateToBackend({
-            city: region.identifier,
-            latitude: region.latitude,
-            longitude: region.longitude,
-            timestamp: new Date().toISOString(),
-            eventType: 'enter',
-          });
-          console.log('✅ City enter notification sent');
-        } catch (backendError) {
-          console.error('❌ Failed to send city enter notification:', backendError);
-        }
-      }
-    } else if (eventType === Location.GeofencingEventType.Exit) {
-      console.log('🚪 Exited city:', region.identifier);
-
-      try {
-        await sendCityUpdateToBackend({
-          city: region.identifier,
-          eventType: 'exit',
-          timestamp: new Date().toISOString(),
-        });
-      } catch (backendError) {
-        console.error('❌ Failed to send city exit notification:', backendError);
-      }
-    }
-  } catch (err) {
-    console.error('❌ Error in geofencing task:', err);
-  }
-});
+// Task definition moved to app/_layout.tsx for startup registration
 
 class GeofencingService {
   private static instance: GeofencingService;
@@ -80,33 +24,39 @@ class GeofencingService {
 
   async initialize(): Promise<boolean> {
     try {
+
+      // Request basic location permissions
       const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
       if (fgStatus !== 'granted') {
-        console.error('Foreground location permission not granted');
+        console.error('❌ Foreground location permission not granted');
         return false;
       }
 
+      // Request background permissions
       const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
       if (bgStatus !== 'granted') {
-        console.error('Background location permission not granted');
+        console.error('❌ Background location permission not granted');
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error('Error requesting permissions:', error);
+      console.error('❌ Error initializing geofencing service:', error);
       return false;
     }
+  }
+
+  async initializeWithoutPermissions(): Promise<boolean> {
+    // No-op initialization without permissions
+    return true;
   }
 
   async startGeofencing(): Promise<boolean> {
     // Check if already started in this session
     if (this.isStarted) {
-      console.log('🔄 Geofencing already started in this session, skipping...');
       return true;
     }
 
-    console.log('🚀 Starting geofencing for UAE cities...');
     
     const permissionsGranted = await this.initialize();
     if (!permissionsGranted) {
@@ -120,25 +70,30 @@ class GeofencingService {
         console.log('🔄 No existing geofencing tasks to stop');
       });
 
-      // Start geofencing with proper configuration
-      await Location.startGeofencingAsync(GEOFENCING_TASK, UAE_CITIES.map(city => ({
+      // Configure geofence regions for native background execution
+      const geofenceRegions = UAE_CITIES.map(city => ({
         identifier: city.identifier,
         latitude: city.latitude,
         longitude: city.longitude,
         radius: city.radius,
         notifyOnEnter: true,
         notifyOnExit: true,
-      })));
+      }));
+
+
+      // Start native geofencing - this works even when app is completely closed
+      await Location.startGeofencingAsync(GEOFENCING_TASK, geofenceRegions);
 
       this.isStarted = true;
-      await AsyncStorage.setItem('geofencingEnabled', 'true');
-      await AsyncStorage.setItem('geofencingStartTime', new Date().toISOString());
-      console.log('✅ Native geofencing started successfully');
+      await store.set('geofencingEnabled', 'true');
+      await store.set('geofencingStartTime', new Date().toISOString());
+      await store.set('geofencingRegions', JSON.stringify(geofenceRegions));
+      
       return true;
     } catch (error) {
       console.error('❌ Error starting geofencing:', error);
       this.isStarted = false;
-      await AsyncStorage.setItem('geofencingEnabled', 'false');
+      await store.set('geofencingEnabled', 'false');
       return false;
     }
   }
@@ -147,7 +102,7 @@ class GeofencingService {
     try {
       await Location.stopGeofencingAsync(GEOFENCING_TASK);
       this.isStarted = false;
-      await AsyncStorage.setItem('geofencingEnabled', 'false');
+      await store.set('geofencingEnabled', 'false');
       console.log('🛑 Geofencing stopped');
     } catch (error) {
       console.error('Error stopping geofencing:', error);
@@ -156,7 +111,7 @@ class GeofencingService {
 
   async getCurrentCity(): Promise<string | null> {
     try {
-      return await AsyncStorage.getItem('currentCity');
+      return await store.get('currentCity');
     } catch (error) {
       console.error('Error getting current city:', error);
       return null;
@@ -165,7 +120,7 @@ class GeofencingService {
 
   async isGeofencingEnabled(): Promise<boolean> {
     try {
-      const enabled = await AsyncStorage.getItem('geofencingEnabled');
+      const enabled = await store.get('geofencingEnabled');
       return enabled === 'true';
     } catch {
       return false;
@@ -193,15 +148,77 @@ class GeofencingService {
     try {
       console.log('🔄 Resetting geofencing state...');
       await this.stopGeofencing();
-      await AsyncStorage.removeItem('geofencingEnabled');
-      await AsyncStorage.removeItem('geofencingStartTime');
-      await AsyncStorage.removeItem('currentCity');
-      await AsyncStorage.removeItem('lastCityChangeTime');
+      await store.delete('geofencingEnabled');
+      await store.delete('geofencingStartTime');
+      await store.delete('geofencingRegions');
+      await store.delete('currentCity');
+      await store.delete('lastCityChangeTime');
       console.log('✅ Geofencing state reset successfully');
     } catch (error) {
       console.error('Error resetting geofencing state:', error);
     }
   }
+
+  /**
+   * Get comprehensive geofencing status
+   */
+  async getGeofencingStatus(): Promise<{
+    isRunning: boolean;
+    isEnabled: boolean;
+    needsRestart: boolean;
+    permissions: any;
+    regions: any[];
+    lastStartTime?: string;
+    currentCity?: string;
+  }> {
+    try {
+      const isEnabled = await this.isGeofencingEnabled();
+      const isRunning = this.isStarted;
+      const needsRestart = isEnabled && !isRunning;
+      
+      const regions = await this.getGeofenceRegions();
+      const lastStartTime = await store.get('geofencingStartTime') || undefined;
+      const currentCity = await this.getCurrentCity() || undefined;
+      
+      return {
+        isRunning,
+        isEnabled,
+        needsRestart,
+        permissions: { foreground: false, background: false },
+        regions,
+        lastStartTime,
+        currentCity,
+      };
+    } catch (error) {
+      console.error('Error getting geofencing status:', error);
+      return {
+        isRunning: false,
+        isEnabled: false,
+        needsRestart: false,
+        permissions: { foreground: false, background: false },
+        regions: [],
+      };
+    }
+  }
+
+  /**
+   * Get configured geofence regions
+   */
+  async getGeofenceRegions(): Promise<any[]> {
+    try {
+      const stored = await store.get('geofencingRegions');
+      return stored ? JSON.parse(stored) : UAE_CITIES;
+    } catch (error) {
+      console.error('Error getting geofence regions:', error);
+      return UAE_CITIES;
+    }
+  }
+
+  /**
+   * Process pending city updates (when app becomes active)
+   */
+  async processPendingCityUpdates(): Promise<void> { /* disabled - no storage */ }
+
 }
 
 export const geofencingService = GeofencingService.getInstance();

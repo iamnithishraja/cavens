@@ -1,6 +1,7 @@
 import admin from '../config/firebase.js';
 import User from '../models/userModel.js';
 import Club from '../models/clubModel.js';
+import { cityEventService } from './cityEventService.js';
 
 export interface NotificationPayload {
   title: string;
@@ -19,6 +20,7 @@ export interface ClubApprovalNotificationData {
 
 export class NotificationService {
   private static instance: NotificationService;
+  private failedNotifications: Array<{userId: string, payload: NotificationPayload, timestamp: Date, retryCount: number}> = [];
 
   static getInstance(): NotificationService {
     if (!NotificationService.instance) {
@@ -26,6 +28,8 @@ export class NotificationService {
     }
     return NotificationService.instance;
   }
+
+  // Rate limiting functions removed - notifications sent for every city change
 
   /**
    * Send push notification to a specific user by user ID
@@ -35,73 +39,119 @@ export class NotificationService {
     payload: NotificationPayload
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
+      console.log(`🔔 Starting notification send for user: ${userId}`);
+      console.log(`📱 Payload:`, payload);
+      
       // Get user's FCM token
       const user = await User.findById(userId);
       if (!user) {
+        console.log(`❌ User not found: ${userId}`);
         return { success: false, error: 'User not found' };
       }
 
       if (!user.fcmToken) {
+        console.log(`❌ User has no FCM token: ${userId}`);
         return { success: false, error: 'User has no FCM token' };
       }
 
-      // Send notification
+       console.log(`✅ User found with FCM token: ${user.fcmToken.substring(0, 20)}...`);
+       
+       // Validate and clean the payload
+       const cleanPayload = {
+         title: payload.title || 'Notification',
+         body: payload.body || 'You have a new notification',
+         data: payload.data || {}
+       };
+
+       console.log(`📱 Notification payload:`, {
+         title: cleanPayload.title,
+         body: cleanPayload.body,
+         data: cleanPayload.data
+       });
+
+      // Send notification with proper configuration for background delivery
       const message = {
         token: user.fcmToken,
         notification: {
-          title: payload.title,
-          body: payload.body,
+          title: cleanPayload.title,
+          body: cleanPayload.body,
           imageUrl: payload.imageUrl,
         },
-        data: payload.data || {},
-        android: {
-          notification: {
-            icon: 'ic_notification',
-            color: '#FF6B35',
-            sound: 'default',
-            channelId: 'club_notifications',
-            priority: 'high' as const,
-            defaultSound: true,
-            defaultVibrateTimings: true,
-            defaultLightSettings: true,
-          },
-          priority: 'high' as const,
+        data: {
+          // Convert all data values to strings (Firebase requirement)
+          ...Object.fromEntries(
+            Object.entries(cleanPayload.data || {}).map(([key, value]) => [
+              key, 
+              value !== null && value !== undefined ? String(value) : ''
+            ])
+          ),
+          // Add timestamp to ensure uniqueness
+          timestamp: Date.now().toString(),
+          // Ensure data is present for background handling
+          clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+          // Add message type for better handling
+          messageType: 'city_notification',
         },
+         android: {
+           notification: {
+             channelId: 'high_importance_channel',
+             icon: 'ic_launcher',
+             color: '#0B1120',
+             sound: 'default',
+             priority: 'high' as const,
+             defaultSound: true,
+             defaultVibrateTimings: true,
+             defaultLightSettings: true,
+             visibility: 'public' as const,
+             notificationPriority: 'PRIORITY_HIGH' as const,
+             tag: `city_event_${Date.now()}`,
+             sticky: false,
+             clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+             localOnly: false,
+             notificationCount: 1,
+           },
+           priority: 'high' as const,
+           ttl: 86400000, // 24 hours
+           collapseKey: `city_notification_${Date.now()}`,
+         },
         apns: {
           payload: {
             aps: {
               sound: 'default',
               badge: 1,
-              alert: {
-                title: payload.title,
-                body: payload.body,
-              },
-              contentAvailable: true,
-              mutableContent: true,
+               alert: {
+                 title: cleanPayload.title,
+                 body: cleanPayload.body,
+               },
+              // Critical for background notifications
+              contentAvailable: 1,
+              mutableContent: 1,
+              // Ensure notification shows when app is closed
+              category: 'CITY_EVENT_NOTIFICATION',
             },
           },
           headers: {
             'apns-priority': '10',
-          },
-        },
-        // Ensure notification is shown even when app is closed
-        webpush: {
-          notification: {
-            title: payload.title,
-            body: payload.body,
-            icon: '/icon-192x192.png',
-            badge: '/badge-72x72.png',
-            requireInteraction: true,
+            'apns-push-type': 'alert',
           },
         },
       };
 
+      console.log(`🚀 Sending FCM message:`, {
+        token: user.fcmToken.substring(0, 20) + '...',
+        title: cleanPayload.title,
+        body: cleanPayload.body,
+        channelId: 'high_importance_channel',
+        hasNotification: !!message.notification,
+        hasData: !!message.data
+      });
+      
       const response = await admin.messaging().send(message as any);
-      console.log('Successfully sent message:', response);
+      console.log(`✅ FCM message sent successfully: ${response}`);
 
       return { success: true, messageId: response };
     } catch (error: any) {
-      console.error('Error sending notification:', error);
+      console.error(`❌ FCM error:`, error.message);
       
       // Handle specific Firebase errors
       if (error.code === 'messaging/invalid-registration-token' || 
@@ -198,24 +248,187 @@ export class NotificationService {
 
 
   /**
-   * Update user's FCM token
+   * Send city-based event recommendation notification with retry logic
    */
-  async updateUserFCMToken(userId: string, fcmToken: string): Promise<{ success: boolean; error?: string }> {
-    try {
-      // Update user's FCM token
-      await User.findByIdAndUpdate(userId, { 
-        fcmToken,
-        updatedAt: new Date(),
-      });
+  async sendCityEventNotification(
+    userId: string,
+    city: string,
+    retryCount: number = 0
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const maxRetries = 3;
+    const retryDelays = [5000, 15000, 45000]; // 5s, 15s, 45s
 
-      console.log(`FCM token updated for user ${userId}`);
-      return { success: true };
+    try {
+      console.log(`🔔 Sending notification for ${city}`);
+      const topEventData = await cityEventService.getTopEventByCity(city);
+      
+      if (!topEventData) {
+        console.log(`🔔 Sending welcome notification for ${city}`);
+         
+         // Create modern, professional welcome message
+         const cityName = city.charAt(0).toUpperCase() + city.slice(1);
+         // const cityEmoji = city.toLowerCase() === 'dubai' ? '🏙️' : '🌆';
+         const welcomeNotification = {
+           title: ` Welcome to ${cityName}`,
+           body: "🎯 Premium events & exclusive venues await • Discover curated experiences • Tap to explore your city's nightlife",
+           data: {
+             type: 'city_welcome',
+             city: city,
+             timestamp: new Date().toISOString()
+           }
+         };
+        
+        const result = await this.sendNotificationToUser(userId, welcomeNotification);
+        if (result.success) {
+          console.log(`✅ Welcome notification sent`);
+        }
+        return result;
+      }
+
+      // Format the notification
+      const notificationContent = cityEventService.formatEventForNotification(topEventData);
+
+      // Send the notification
+      const result = await this.sendNotificationToUser(userId, notificationContent);
+      
+      if (result.success) {
+        console.log(`✅ Event notification sent`);
+        return result;
+      } else {
+        console.log(`❌ Event notification failed: ${result.error}`);
+        
+        // Retry logic for certain errors
+        if (retryCount < maxRetries && this.shouldRetry(result.error)) {
+          const delay = retryDelays[retryCount] || retryDelays[retryDelays.length - 1];
+          console.log(`🔄 Retrying notification...`);
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return await this.sendCityEventNotification(userId, city, retryCount + 1);
+        }
+        
+        return result;
+      }
     } catch (error) {
-      console.error('Error updating FCM token:', error);
+      console.error('Error sending city event notification:', error);
+      
+      // Retry logic for exceptions
+      if (retryCount < maxRetries) {
+        const delay = retryDelays[retryCount] || retryDelays[retryDelays.length - 1];
+        console.log(`🔄 Retrying after exception in ${delay}ms... (attempt ${retryCount + 2}/${maxRetries + 1})`);
+        
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return await this.sendCityEventNotification(userId, city, retryCount + 1);
+      }
+      
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
       };
+    }
+  }
+
+  /**
+   * Determine if a notification should be retried based on error type
+   */
+  private shouldRetry(error?: string): boolean {
+    if (!error) return false;
+    
+    // Retry for network-related errors
+    const retryableErrors = [
+      'network',
+      'timeout',
+      'connection',
+      'unavailable',
+      'quota-exceeded',
+      'device-message-rate-exceeded'
+    ];
+    
+    return retryableErrors.some(retryableError => 
+      error.toLowerCase().includes(retryableError)
+    );
+  }
+
+  /**
+   * Update user's FCM token
+   */
+  async updateUserFCMToken(userId: string, fcmToken: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log(`🔑 Updating FCM token for user ${userId}`);
+      console.log(`🔑 Token: ${fcmToken.substring(0, 20)}...`);
+      
+      // Update user's FCM token
+      const result = await User.findByIdAndUpdate(userId, { 
+        fcmToken,
+        updatedAt: new Date(),
+      }, { new: true });
+
+      if (result) {
+        console.log(`✅ FCM token updated successfully for user ${userId}`);
+        console.log(`✅ User now has token: ${result.fcmToken ? result.fcmToken.substring(0, 20) + '...' : 'NO TOKEN'}`);
+        return { success: true };
+      } else {
+        console.log(`❌ User not found: ${userId}`);
+        return { success: false, error: 'User not found' };
+      }
+    } catch (error) {
+      console.error(`❌ Error updating FCM token for user ${userId}:`, error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
+  }
+
+  /**
+   * Add failed notification to retry queue
+   */
+  private addToFailedQueue(userId: string, payload: NotificationPayload): void {
+    this.failedNotifications.push({
+      userId,
+      payload,
+      timestamp: new Date(),
+      retryCount: 0
+    });
+    console.log(`📝 Added to retry queue`);
+  }
+
+  /**
+   * Retry failed notifications
+   */
+  async retryFailedNotifications(): Promise<void> {
+    if (this.failedNotifications.length === 0) {
+      return;
+    }
+
+    console.log(`🔄 Retrying ${this.failedNotifications.length} notifications...`);
+    
+    const notificationsToRetry = [...this.failedNotifications];
+    this.failedNotifications = [];
+
+    for (const notification of notificationsToRetry) {
+      if (notification.retryCount < 3) {
+        try {
+          console.log(`🔄 Retrying notification (attempt ${notification.retryCount + 1})`);
+          const result = await this.sendNotificationToUser(notification.userId, notification.payload);
+          
+          if (!result.success) {
+            // Add back to queue with incremented retry count
+            this.failedNotifications.push({
+              ...notification,
+              retryCount: notification.retryCount + 1
+            });
+          }
+        } catch (error) {
+          console.error(`❌ Error retrying notification:`, error);
+          // Add back to queue with incremented retry count
+          this.failedNotifications.push({
+            ...notification,
+            retryCount: notification.retryCount + 1
+          });
+        }
+      } else {
+          console.log(`❌ Max retries reached, dropping notification`);
+      }
     }
   }
 }

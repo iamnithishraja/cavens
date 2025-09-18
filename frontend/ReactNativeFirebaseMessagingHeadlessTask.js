@@ -2,38 +2,42 @@
 import { AppRegistry } from 'react-native';
 import { getMessaging, setBackgroundMessageHandler } from '@react-native-firebase/messaging';
 import { getApp } from '@react-native-firebase/app';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Prevent multiple registrations using global flag
+const HEADLESS_TASK_KEY = 'ReactNativeFirebaseMessagingHeadlessTask';
+const GLOBAL_REGISTRATION_KEY = '__CAVENS_HEADLESS_TASK_REGISTERED__';
+
+// Check if already registered globally
+if (global[GLOBAL_REGISTRATION_KEY]) {
+  console.log('🔔 Headless task already registered globally, skipping...');
+} else {
 
 const app = getApp();
 const messaging = getMessaging(app);
 
 // Background message handler function
 const backgroundMessageHandler = async (remoteMessage) => {
-  console.log('🔔 Background notification received:', remoteMessage);
+  console.log('🔔 Background notification received');
 
-  // For background notifications, we should NOT interfere with the automatic display
-  // The system will automatically show the notification when app is closed
-  // We only store data for additional processing when app becomes active
-  
-  if (remoteMessage.data && Object.keys(remoteMessage.data).length > 0) {
-    try {
-      await AsyncStorage.setItem('last_notification', JSON.stringify(remoteMessage.data));
-      console.log('🔔 Background notification data stored for processing');
-    } catch (error) {
-      console.error('🔔 Error storing background notification:', error);
-    }
-  }
-  
-  // Return void to allow Firebase to handle the notification display automatically
+  // Do not store anything; let the system display the notification.
+  // Ensure we return quickly so Android can show the notification reliably.
   return Promise.resolve();
 };
 
-// Register the headless task
-AppRegistry.registerHeadlessTask('ReactNativeFirebaseMessagingHeadlessTask', () => {
-  console.log('🔔 Headless task registered successfully');
-  console.log('🔔 Task name: ReactNativeFirebaseMessagingHeadlessTask');
-  return backgroundMessageHandler;
-});
+  // Register the headless task
+  try {
+    AppRegistry.registerHeadlessTask(HEADLESS_TASK_KEY, () => {
 
-// Set the background message handler
-setBackgroundMessageHandler(messaging, backgroundMessageHandler);
+      return backgroundMessageHandler;
+    });
+    
+    // Mark as registered globally
+    global[GLOBAL_REGISTRATION_KEY] = true;
+    console.log('🔔 Headless task registration completed');
+  } catch (error) {
+    console.error('🔔 Error registering headless task:', error);
+  }
+
+  // Set the background message handler
+  setBackgroundMessageHandler(messaging, backgroundMessageHandler);
+}

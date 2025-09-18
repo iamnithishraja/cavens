@@ -20,6 +20,6 @@ userRoute.post('/purchase-ticket', isAuthenticated, isProfileCompleted, purchase
 userRoute.get('/bookings/:status', isAuthenticated, isProfileCompleted, getBookings);
 
 // Route for geofencing city updates
-userRoute.post('/city-update', isAuthenticated, isProfileCompleted, updateCityLocation);
+userRoute.post('/city-update', isAuthenticated, updateCityLocation);
 
 export default userRoute;

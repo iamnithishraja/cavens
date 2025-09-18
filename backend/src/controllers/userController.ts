@@ -18,6 +18,7 @@ import { calculateDistanceFromMapsLink } from "../utils/mapsDistanceCalculator";
 import orderModel from "../models/orderModel";
 import ticketModel from "../models/ticketModel";
 import updateExpiredEvents from "../utils/updateEvent.js";
+import { notificationService } from "../utils/notificationService.js";
 
 async function onboarding(req: Request, res: Response) {
   try {
@@ -651,26 +652,50 @@ const updateCityLocation = async (req: CustomRequest, res: Response) => {
       return;
     }
 
-    console.log(`🏙️ City update received: ${eventType} ${city} at ${timestamp}`);
-
-    // Update user's current city in database
-    await User.findByIdAndUpdate(req.user._id, {
-      currentCity: city,
-      lastCityUpdate: new Date(timestamp),
-      lastLocation: latitude && longitude ? {
-        type: 'Point',
-        coordinates: [longitude, latitude]
-      } : undefined
+    console.log(`🏙️ City update: ${eventType} ${city}`);
+    
+    // Check if user has FCM token (log only in testing)
+    const user = await User.findById(req.user._id);
+    console.log(`🔍 User lookup result:`, {
+      userId: req.user._id,
+      userFound: !!user,
+      hasFcmToken: !!(user?.fcmToken),
+      fcmTokenPreview: user?.fcmToken ? `${user.fcmToken.substring(0, 20)}...` : 'none'
     });
+    
+    if (!user || !user.fcmToken) {
+      console.log(`❌ User has no FCM token: ${req.user._id}`);
+      // In testing, do not block. In production, enforce.
+      // res.status(400).json({ success: false, message: "FCM token required" });
+      // return;
+    }
 
-    // Log the city change for analytics
-    console.log(`✅ User ${req.user._id} ${eventType} ${city}`);
-
-    // Here you can add additional logic like:
-    // - Send notifications about city-specific events
-    // - Update user preferences based on city
-    // - Trigger location-based marketing campaigns
-    // - Update analytics for city-based insights
+    // Send city event notification if user entered a new city
+    if (eventType === 'enter') {
+      try {
+        const userId = req.user._id.toString();
+        console.log(`🔔 Attempting to send notification for ${city} to user ${userId}`);
+        
+        if (!user?.fcmToken) {
+          console.log(`❌ Cannot send notification - user has no FCM token`);
+        } else {
+          console.log(`✅ User has FCM token, proceeding with notification`);
+          notificationService.sendCityEventNotification(userId, city)
+            .then(result => {
+              if (result.success) {
+                console.log(`✅ Notification sent successfully:`, result.messageId);
+              } else {
+                console.log(`❌ Notification failed: ${result.error}`);
+              }
+            })
+            .catch(error => {
+              console.error(`❌ Notification error:`, error);
+            });
+        }
+      } catch (error) {
+        console.error(`❌ Error triggering notification:`, error);
+      }
+    }
 
     res.json({
       success: true,

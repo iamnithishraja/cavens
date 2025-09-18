@@ -87,46 +87,52 @@ const UserHomeScreen = () => {
   useEffect(() => {
     const initializeLocationAndGeofencing = async () => {
       try {
-        console.log("🚀 Initializing location and geofencing...");
+        // Request location permissions first (this is where we ask for permissions)
+        console.log("📍 Requesting location permissions...");
+        const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
+        if (fgStatus !== 'granted') {
+          console.log("❌ Foreground location permission not granted");
+          setLocationLoading(false);
+          return;
+        }
+
+        const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
+        if (bgStatus !== 'granted') {
+          console.log("❌ Background location permission not granted");
+          setLocationLoading(false);
+          return;
+        }
+
+        console.log("✅ Location permissions granted");
         
-        // Check geofencing status first
-        const status = await geofencingService.checkGeofencingStatus();
-        console.log("🔍 Current geofencing status:", status);
-        
-        // Start geofencing if not running or needs restart
-        let geofencingStarted = false;
-        if (!status.isRunning || status.needsRestart) {
-          console.log("🔔 Starting geofencing service...");
-          geofencingStarted = await geofencingService.startGeofencing();
-        } else {
-          console.log("🔄 Geofencing already running, skipping start...");
-          geofencingStarted = true; // Already running
+        // Print FCM token for debugging
+        try {
+          const { fcmService } = await import('@/utils/fcm');
+          const token = await fcmService.getToken();
+          if (token) {
+            console.log('🔔 FCM Token:', token);
+          }
+        } catch (error) {
+          console.log('🔔 FCM Token not available');
         }
         
+        // Now start geofencing with permissions
+        const geofencingStarted = await geofencingService.startGeofencing();
         if (geofencingStarted) {
-          console.log("✅ Geofencing started successfully");
+          console.log("✅ Geofencing started");
           
-          // Try to get current location for the UI
+          // Get current location for the UI
           try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status === 'granted') {
-              const location = await Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.Balanced,
-              });
-              console.log("📍 Current location:", location.coords.latitude, location.coords.longitude);
-              setUserLocation({
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude
-              });
-            } else {
-              console.log("📍 Location permission denied, using fallback coordinates");
-              setUserLocation({
-                latitude: FALLBACK_LATITUDE,
-                longitude: FALLBACK_LONGITUDE
-              });
-            }
-          } catch (error) {
-            console.log("📍 Error getting location, using fallback coordinates:", error);
+            const location = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Balanced,
+            });
+            console.log("📍 Current location:", location.coords.latitude, location.coords.longitude);
+            setUserLocation({
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude
+            });
+          } catch (locationError) {
+            console.log("📍 Error getting location, using fallback coordinates:", locationError);
             setUserLocation({
               latitude: FALLBACK_LATITUDE,
               longitude: FALLBACK_LONGITUDE
