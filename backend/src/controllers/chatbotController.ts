@@ -5,6 +5,7 @@ import clubModel from '../models/clubModel';
 import { getSchemaForAI } from '../utils/databaseSchema';
 import { getContextualSuggestions, type ScreenType } from '../constants/chatbotSuggestions';
 import User from '../models/userModel';
+import { calculateDistanceFromMapsLink } from '../utils/mapsDistanceCalculator';
 
 interface ChatbotMessage {
   role: 'user' | 'assistant';
@@ -50,6 +51,14 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
       isAuthenticated: !!req.user
     });
     
+    console.log('📍 Location data received:', {
+      userLocation,
+      hasLocation: !!userLocation,
+      latitude: userLocation?.latitude,
+      longitude: userLocation?.longitude,
+      screen
+    });
+    
     // Ensure city is a string
     const cityString = typeof city === 'string' ? city : 'Dubai';
 
@@ -80,6 +89,15 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
 
         // Analyze user intent with conversation context
         const intent = await openRouterService.analyzeIntent(message, conversationHistory);
+        
+        console.log('🎯 Intent analysis result:', {
+          intent: intent.type,
+          confidence: intent.confidence,
+          showCards: intent.showCards,
+          cardType: intent.cardType,
+          extractedInfo: intent.extractedInfo,
+          nearMe: intent.extractedInfo?.nearMe
+        });
 
     let response: string;
     let responseType: number;
@@ -101,14 +119,17 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
         responseType = 2; // Return 2 for finding events
         
         try {
-          // Use AI to generate optimal database query
-          const aiQuery = await executeAIGeneratedQuery(message, intent, effectiveCity);
-          
           let events: any[] = [];
           
-          if (aiQuery.type === 'Club') {
-            // Extract events from clubs
-            aiQuery.data.forEach((club: any) => {
+          // If user has location and is asking for nearby events, use distance calculation
+          if (userLocation && intent.extractedInfo?.nearMe) {
+            console.log('🗺️ Using distance-based event search with user location:', userLocation);
+            
+            // Use the existing getNearbyEvents logic
+            const clubsWithDistance = await getClubsWithDistance(userLocation, effectiveCity);
+            
+            // Extract events from clubs with distance data
+            clubsWithDistance.forEach((club: any) => {
               if (club.events && Array.isArray(club.events)) {
                 club.events.forEach((event: any) => {
                   if (event && event._id) {
@@ -122,26 +143,56 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
                       city: club.city,
                       djArtists: event.djArtists,
                       tickets: event.tickets,
-                      guestExperience: event.guestExperience
+                      guestExperience: event.guestExperience,
+                      distanceFromUser: club.distanceFromUser // Include distance data
                     });
                   }
                 });
               }
             });
+            
+            console.log(`✅ Found ${events.length} events with distance data`);
           } else {
-            // Direct event results
-            events = aiQuery.data.map((event: any) => ({
-              id: event._id,
-              name: event.name,
-              description: event.description,
-              date: event.date,
-              time: event.time,
-              djArtists: event.djArtists,
-              tickets: event.tickets,
-              guestExperience: event.guestExperience
-            }));
+            // Use AI to generate optimal database query for regular search
+            console.log('🔍 Using regular event search without distance');
+            const aiQuery = await executeAIGeneratedQuery(message, intent, effectiveCity);
+            
+            if (aiQuery.type === 'Club') {
+              // Extract events from clubs
+              aiQuery.data.forEach((club: any) => {
+                if (club.events && Array.isArray(club.events)) {
+                  club.events.forEach((event: any) => {
+                    if (event && event._id) {
+                      events.push({
+                        id: event._id,
+                        name: event.name,
+                        description: event.description,
+                        date: event.date,
+                        time: event.time,
+                        venue: club.name,
+                        city: club.city,
+                        djArtists: event.djArtists,
+                        tickets: event.tickets,
+                        guestExperience: event.guestExperience
+                      });
+                    }
+                  });
+                }
+              });
+            } else {
+              // Direct event results
+              events = aiQuery.data.map((event: any) => ({
+                id: event._id,
+                name: event.name,
+                description: event.description,
+                date: event.date,
+                time: event.time,
+                djArtists: event.djArtists,
+                tickets: event.tickets,
+                guestExperience: event.guestExperience
+              }));
+            }
           }
-          
           
           response = await openRouterService.generateEventRecommendations(
             message,
@@ -152,6 +203,7 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
           );
           
         } catch (error) {
+          console.error('Error in event search:', error);
           // Fallback to existing method
           const events = await searchEventsForChatbot(
             intent.query || message, 
@@ -172,23 +224,36 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
         responseType = 3; // Return 3 for finding clubs
         
         try {
-          // Use AI to generate optimal database query
-          const aiQuery = await executeAIGeneratedQuery(message, intent, effectiveCity);
+          let clubs: any[] = [];
           
-          const clubs = aiQuery.data.map((club: any) => ({
-            id: club._id,
-            name: club.name,
-            description: club.clubDescription,
-            type: club.typeOfVenue,
-            city: club.city,
-            address: club.address,
-            phone: club.phone,
-            rating: club.rating,
-            photos: club.photos,
-            operatingDays: club.operatingDays,
-            eventsCount: club.events?.length || 0
-          }));
-          
+          // If user has location and is asking for nearby clubs, use distance calculation
+          if (userLocation && intent.extractedInfo?.nearMe) {
+            console.log('🗺️ Using distance-based club search with user location:', userLocation);
+            
+            // Use the existing getNearbyEvents logic but for clubs only
+            const clubsWithDistance = await getClubsWithDistance(userLocation, effectiveCity);
+            clubs = clubsWithDistance;
+            
+            console.log(`✅ Found ${clubs.length} clubs with distance data`);
+          } else {
+            // Use AI to generate optimal database query for regular search
+            console.log('🔍 Using regular club search without distance');
+            const aiQuery = await executeAIGeneratedQuery(message, intent, effectiveCity);
+            
+            clubs = aiQuery.data.map((club: any) => ({
+              id: club._id,
+              name: club.name,
+              description: club.clubDescription,
+              type: club.typeOfVenue,
+              city: club.city,
+              address: club.address,
+              phone: club.phone,
+              rating: club.rating,
+              photos: club.photos,
+              operatingDays: club.operatingDays,
+              eventsCount: club.events?.length || 0
+            }));
+          }
           
           response = await openRouterService.generateClubRecommendations(
             message,
@@ -199,6 +264,7 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
           );
           
         } catch (error) {
+          console.error('Error in club search:', error);
           // Fallback to existing method
           const clubs = await searchClubsForChatbot(
             intent.query || message,
@@ -950,6 +1016,141 @@ async function getCardData(intent: any, city: string, userId?: string): Promise<
     return [];
   }
 }
+
+// Helper function to get clubs with distance calculation (similar to getNearbyEvents)
+const getClubsWithDistance = async (
+  userLocation: { latitude: number; longitude: number }, 
+  city: string
+): Promise<any[]> => {
+  try {
+    const query: any = { events: { $exists: true, $not: { $size: 0 } } };
+    if (city) {
+      query.city = { $regex: new RegExp(`^${city}$`, "i") };
+    }
+    
+    const clubs = await clubModel.find(query).populate({
+      path: "events",
+      match: { status: "active" },
+      populate: [
+        { path: "tickets" },
+        { path: "menuItems" }
+      ]
+    });
+
+    // Calculate distances for all clubs in parallel
+    const distancePromises = clubs.map(async (club) => {
+      // If club has no map link, return with N/A distance
+      if (!club.mapLink) {
+        return {
+          id: club._id,
+          name: club.name,
+          description: club.clubDescription,
+          type: club.typeOfVenue,
+          city: club.city,
+          address: club.address,
+          phone: club.phone,
+          rating: club.rating,
+          photos: club.photos,
+          operatingDays: club.operatingDays,
+          eventsCount: club.events?.length || 0,
+          distanceFromUser: {
+            text: "N/A",
+            value: Number.MAX_VALUE,
+            km: Number.MAX_VALUE
+          }
+        };
+      }
+
+      try {
+        const distanceResult = await calculateDistanceFromMapsLink(
+          userLocation.latitude,
+          userLocation.longitude,
+          club.mapLink,
+          process.env.GOOGLE_MAPS_API_KEY || "",
+          "driving",
+          true // use fallback
+        );
+
+        // Check if it's a Google Maps result or Haversine fallback
+        if ('duration' in distanceResult.distance) {
+          // Google Maps API result
+          return {
+            id: club._id,
+            name: club.name,
+            description: club.clubDescription,
+            type: club.typeOfVenue,
+            city: club.city,
+            address: club.address,
+            phone: club.phone,
+            rating: club.rating,
+            photos: club.photos,
+            operatingDays: club.operatingDays,
+            eventsCount: club.events?.length || 0,
+            distanceFromUser: {
+              text: distanceResult.distance.distance.text,
+              value: distanceResult.distance.distance.value,
+              km: Math.round((distanceResult.distance.distance.value / 1000) * 100) / 100
+            }
+          };
+        } else {
+          // Haversine fallback result
+          return {
+            id: club._id,
+            name: club.name,
+            description: club.clubDescription,
+            type: club.typeOfVenue,
+            city: club.city,
+            address: club.address,
+            phone: club.phone,
+            rating: club.rating,
+            photos: club.photos,
+            operatingDays: club.operatingDays,
+            eventsCount: club.events?.length || 0,
+            distanceFromUser: {
+              text: distanceResult.distance.distance.text,
+              value: distanceResult.distance.distance.value,
+              km: Math.round((distanceResult.distance.distance.value / 1000) * 100) / 100
+            }
+          };
+        }
+      } catch (error) {
+        console.warn(`⚠️ Failed to calculate distance for club "${club.name}":`, error);
+        // Return with N/A distance
+        return {
+          id: club._id,
+          name: club.name,
+          description: club.clubDescription,
+          type: club.typeOfVenue,
+          city: club.city,
+          address: club.address,
+          phone: club.phone,
+          rating: club.rating,
+          photos: club.photos,
+          operatingDays: club.operatingDays,
+          eventsCount: club.events?.length || 0,
+          distanceFromUser: {
+            text: "N/A",
+            value: Number.MAX_VALUE,
+            km: Number.MAX_VALUE
+          }
+        };
+      }
+    });
+
+    // Wait for all distance calculations to complete
+    const results = await Promise.all(distancePromises);
+    
+    // Sort by distance (closest first)
+    results.sort((a, b) => a.distanceFromUser.value - b.distanceFromUser.value);
+    
+    console.log(`📊 Distance calculation results: ${results.filter(r => r.distanceFromUser.text !== "N/A").length} clubs with distance, ${results.filter(r => r.distanceFromUser.text === "N/A").length} clubs with N/A distance`);
+    
+    return results;
+  } catch (error) {
+    console.error('Error in getClubsWithDistance:', error);
+    return [];
+  }
+};
 
 export const getChatbotSuggestions = async (req: Request, res: Response) => {
   try {

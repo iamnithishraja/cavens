@@ -290,6 +290,8 @@ ${events.length === 0 ?
   `- Recommend the best 1-3 events from the list above
 - Explain why these events match their request
 - Include key details like date, time, venue, and price from the provided data
+- IMPORTANT: If an event has distanceFromUser data (distance.km or distance.text), mention the distance from the user's location
+- Example: "Tech House Night at XYZ Club is only 2.1 km away from you" or "DJ Party at ABC Venue is just 1.5 km from your location"
 - Use a friendly, enthusiastic tone
 - Encourage them to book tickets`
 }
