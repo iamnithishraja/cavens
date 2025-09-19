@@ -325,6 +325,33 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
         );
         break;
 
+      case 'refund_policy':
+        responseType = 11; // Return 11 for refund policy
+        response = await openRouterService.handleRefundPolicy(
+          message,
+          conversationHistory,
+          { city: effectiveCity, userId, screen }
+        );
+        break;
+
+      case 'cancellation_policy':
+        responseType = 12; // Return 12 for cancellation policy
+        response = await openRouterService.handleCancellationPolicy(
+          message,
+          conversationHistory,
+          { city: effectiveCity, userId, screen }
+        );
+        break;
+
+      case 'booking_policies':
+        responseType = 13; // Return 13 for booking policies
+        response = await openRouterService.handleBookingPolicies(
+          message,
+          conversationHistory,
+          { city: effectiveCity, userId, screen }
+        );
+        break;
+
       case 'booking_help':
         responseType = 5; // Return 5 for booking help
         response = await openRouterService.handleBookingHelp(
