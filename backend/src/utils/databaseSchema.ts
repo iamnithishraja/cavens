@@ -1,5 +1,29 @@
 export const DATABASE_SCHEMA = {
   models: {
+    User: {
+      collection: 'users',
+      fields: {
+        _id: 'ObjectId (auto-generated)',
+        email: 'String (unique, sparse, default: undefined) - User email',
+        name: 'String - User name',
+        phone: 'String (unique) - Phone number',
+        isPhoneVerified: 'Boolean (default: false)',
+        role: 'String (enum: ["admin", "user", "club"], default: "user")',
+        otp: 'String - OTP for verification',
+        otpExpiry: 'Date - OTP expiration',
+        age: 'String (enum: ["18-30", "30-50", "50+"])',
+        gender: 'String (enum: ["male", "female", "other"])',
+        club: 'ObjectId (ref: Club) - Associated club if role is "club"',
+        orders: '[ObjectId] (ref: Order) - Array of Order references',
+        createdAt: 'Date (default: Date.now)',
+        updatedAt: 'Date (default: Date.now)'
+      },
+      relationships: {
+        club: 'Many-to-one with Club model',
+        orders: 'One-to-many with Order model'
+      }
+    },
+
     Club: {
       collection: 'clubs',
       fields: {
@@ -14,15 +38,15 @@ export const DATABASE_SCHEMA = {
         photos: '[String] - Array of photo URLs',
         clubImages: '[String] - Array of club image URLs',
         city: 'String (required) - City name like "Dubai", "Abu Dhabi"',
-        operatingDays: '[String] - Array of days: ["Monday", "Tuesday", ...]',
-        events: '[ObjectId] - Array of Event references',
+        operatingDays: '[String] (enum: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], required) - Array of operating days',
+        events: '[ObjectId] (ref: Event) - Array of Event references',
         phone: 'String (required) - Contact phone',
         rating: 'Number (default: 0) - Club rating 0-5',
         address: 'String (required) - Full address',
         mapLink: 'String (required) - Google Maps link',
         isApproved: 'Boolean (default: false) - Admin approval status',
-        createdAt: 'Date (auto)',
-        updatedAt: 'Date (auto)'
+        createdAt: 'Date (default: Date.now)',
+        updatedAt: 'Date (default: Date.now)'
       },
       relationships: {
         events: 'One-to-many with Event model',
@@ -41,8 +65,8 @@ export const DATABASE_SCHEMA = {
         description: 'String - Event description',
         coverImage: 'String - Cover image URL',
         eventMap: 'String - Event map/layout',
-        tickets: '[ObjectId] - Array of Ticket references',
-        menuItems: '[ObjectId] - Array of MenuItem references',
+        tickets: '[ObjectId] (ref: Ticket, required) - Array of Ticket references',
+        menuItems: '[ObjectId] (ref: MenuItem, required) - Array of MenuItem references',
         guestExperience: {
           dressCode: 'String - Dress code requirements',
           entryRules: 'String - Entry rules',
@@ -55,7 +79,7 @@ export const DATABASE_SCHEMA = {
         happyHourTimings: 'String - Happy hour details',
         isFeatured: 'Boolean (default: false) - Featured status',
         featuredNumber: 'Number (default: 0) - Featured priority',
-        status: 'String - "active" or "done"'
+        status: 'String (enum: ["active", "done"], default: "active") - Event status'
       },
       relationships: {
         tickets: 'One-to-many with Ticket model',
@@ -73,33 +97,27 @@ export const DATABASE_SCHEMA = {
         description: 'String (required) - Ticket description',
         quantityAvailable: 'Number (required) - Total tickets available',
         quantitySold: 'Number (default: 0) - Tickets sold',
-        createdAt: 'Date (auto)',
-        updatedAt: 'Date (auto)'
+        createdAt: 'Date (default: Date.now)',
+        updatedAt: 'Date (default: Date.now)'
       },
       relationships: {
         belongsTo: 'Event (via Event.tickets array)'
       }
     },
-    
-    User: {
-      collection: 'users',
+
+    MenuItem: {
+      collection: 'menuitems',
       fields: {
         _id: 'ObjectId (auto-generated)',
-        email: 'String (unique, sparse) - User email',
-        name: 'String - User name',
-        phone: 'String (unique) - Phone number',
-        isPhoneVerified: 'Boolean (default: false)',
-        role: 'String - "admin", "user", or "club"',
-        age: 'String - "18-30", "30-50", "50+"',
-        gender: 'String - "male", "female", "other"',
-        club: 'ObjectId (ref: Club) - Associated club if role is "club"',
-        orders: '[ObjectId] - Array of Order references',
-        createdAt: 'Date (auto)',
-        updatedAt: 'Date (auto)'
+        name: 'String - Menu item name',
+        price: 'String - Menu item price',
+        itemImage: 'String - Menu item image URL',
+        description: 'String - Menu item description',
+        category: 'String - Menu category',
+        customCategory: 'String - Custom menu category'
       },
       relationships: {
-        club: 'Many-to-one with Club model',
-        orders: 'One-to-many with Order model'
+        belongsTo: 'Event (via Event.menuItems array)'
       }
     },
     
@@ -107,22 +125,21 @@ export const DATABASE_SCHEMA = {
       collection: 'orders',
       fields: {
         _id: 'ObjectId (auto-generated)',
-        user: 'ObjectId (ref: User)',
-        event: 'ObjectId (ref: Event)',
-        club: 'ObjectId (ref: Club)',
-        ticket: 'ObjectId (ref: Ticket)',
-        quantity: 'Number - Number of tickets',
-        totalAmount: 'Number - Total price',
-        transactionId: 'String - Payment transaction ID',
-        isPaid: 'Boolean - Payment status',
-        isScanned: 'Boolean - Entry scan status',
-        createdAt: 'Date (auto)'
+        event: 'ObjectId (ref: Event, required) - Event for which tickets are purchased',
+        club: 'ObjectId (ref: Club, required) - Club hosting the event',
+        ticket: 'ObjectId (ref: Ticket, required) - Selected ticket type',
+        quantity: 'Number (required) - Number of tickets',
+        status: 'String (enum: ["paid", "scanned"], default: "paid") - Order status',
+        isPaid: 'Boolean (default: false) - Payment status',
+        transactionId: 'String (required) - Payment transaction ID',
+        createdAt: 'Date (default: Date.now)',
+        updatedAt: 'Date (default: Date.now)'
       },
       relationships: {
-        user: 'Many-to-one with User model',
         event: 'Many-to-one with Event model',
         club: 'Many-to-one with Club model',
-        ticket: 'Many-to-one with Ticket model'
+        ticket: 'Many-to-one with Ticket model',
+        user: 'Many-to-one with User model (via User.orders array)'
       }
     }
   },
@@ -133,14 +150,33 @@ export const DATABASE_SCHEMA = {
     findEventsByKeyword: 'Use text search across event.name, event.description, event.djArtists',
     findClubsByType: 'Club.find({ typeOfVenue: { $regex: type, $options: "i" }, isApproved: true })',
     getEventDetails: 'Event.findById(id).populate("tickets")',
-    getClubDetails: 'Club.findById(id).populate("events")'
+    getClubDetails: 'Club.findById(id).populate("events")',
+    getUserBookings: 'User.findById(userId).populate({ path: "orders", match: { status: "paid" }, populate: [{ path: "event", populate: "tickets" }, { path: "club" }, { path: "ticket" }] })',
+    findUserOrders: 'User.findById(userId).populate("orders")'
   },
   
   importantNotes: {
     eventDates: 'Events should be filtered by date to show only upcoming events. Use date: { $gte: current_date_string }',
     eventStatus: 'Only show events with status: "active"',
     clubApproval: 'Only show clubs with isApproved: true',
-    relationships: 'Events belong to Clubs (Club.events array), not the other way around'
+    relationships: 'Events belong to Clubs (Club.events array), not the other way around',
+    
+    // CRITICAL: Order Model Structure
+    orderModel: 'Order model does NOT have userId field directly. Orders are linked to users via User.orders array',
+    userBookings: 'To get user bookings, query User.findById(userId).populate("orders") instead of Order.find({userId})',
+    orderFields: 'Order fields are: event (ref Event), club (ref Club), ticket (ref Ticket), quantity, status, isPaid, transactionId',
+    
+    // CRITICAL: Field Names - Use EXACT names from models
+    eventFields: 'Event fields: name, date, time, djArtists, description, coverImage, eventMap, tickets, menuItems, guestExperience, galleryPhotos, promoVideos, happyHourTimings, isFeatured, featuredNumber, status',
+    clubFields: 'Club fields: owner, name, logoUrl, email, clubDescription, typeOfVenue, coverBannerUrl, photos, clubImages, city, operatingDays, events, phone, rating, address, mapLink, isApproved, createdAt, updatedAt',
+    ticketFields: 'Ticket fields: name, price, description, quantityAvailable, quantitySold, createdAt, updatedAt',
+    userFields: 'User fields: email, name, phone, isPhoneVerified, role, otp, otpExpiry, age, gender, club, orders, createdAt, updatedAt',
+    
+    // CRITICAL: Reference Field Names
+    orderReferences: 'Order references: event (not eventId), club (not clubId), ticket (not ticketId)',
+    eventReferences: 'Event references: tickets (not ticketIds), menuItems (not menuItemIds)',
+    clubReferences: 'Club references: events (not eventIds), owner (not ownerId)',
+    userReferences: 'User references: orders (not orderIds), club (not clubId)'
   },
   
   commonCities: ['Dubai', 'Abu Dhabi', 'Sharjah'],

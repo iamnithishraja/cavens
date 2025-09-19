@@ -15,6 +15,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
 import apiClient from '@/app/api/client';
+import ChatbotCardsContainer from '@/components/chatbot/ChatbotCardsContainer';
+import { store } from '@/utils';
 
 interface Message {
   id: string;
@@ -22,6 +24,9 @@ interface Message {
   isUser: boolean;
   type?: number; // 0: general, 1: event question, 2: find events
   timestamp: Date;
+  showCards?: boolean;
+  cardType?: 'events' | 'clubs' | 'mixed';
+  cards?: any[];
 }
 
 interface ChatbotProps {
@@ -34,6 +39,7 @@ interface ChatbotProps {
     longitude: number;
   };
   city?: string;
+  screen?: 'HOME' | 'MAP' | 'BOOKINGS' | 'PROFILE' | 'GENERAL';
 }
 
 const { width, height } = Dimensions.get('window');
@@ -44,7 +50,8 @@ const Chatbot: React.FC<ChatbotProps> = ({
   initialMessage,
   eventId,
   userLocation,
-  city = 'Dubai'
+  city = 'Dubai',
+  screen = 'GENERAL',
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -84,12 +91,16 @@ const Chatbot: React.FC<ChatbotProps> = ({
         useNativeDriver: true,
       }).start();
     }
-  }, [isVisible, initialMessage]);
+  }, [isVisible, initialMessage, screen, city]);
 
   const loadSuggestions = async () => {
     try {
       const cityName = typeof city === 'string' ? city : city || 'Dubai';
-      const response = await apiClient.get(`/api/chatbot/suggestions?city=${cityName}`);
+      const apiUrl = `/api/chatbot/suggestions?city=${cityName}&screen=${screen}`;
+      
+      
+      const response = await apiClient.get(apiUrl);
+      
       if (response.data.success) {
         setSuggestions(response.data.data.suggestions);
       }
@@ -121,30 +132,37 @@ const Chatbot: React.FC<ChatbotProps> = ({
         type: msg.type
       }));
 
+          // Check if user is authenticated
+          const token = await store.get('token');
+
       const response = await apiClient.post('/api/chatbot/chat', {
         message: text.trim(),
         eventId,
         city: typeof city === 'string' ? city : city || 'Dubai',
         userLocation,
         conversationHistory,
+        screen,
         preferences: {
           // Add user preferences here if available
         }
       });
 
-      if (response.data.success) {
-        const botMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          text: response.data.data.response,
-          isUser: false,
-          type: response.data.data.type,
-          timestamp: new Date()
-        };
+          if (response.data.success) {
+            const botMessage: Message = {
+              id: (Date.now() + 1).toString(),
+              text: response.data.data.response,
+              isUser: false,
+              type: response.data.data.type,
+              timestamp: new Date(),
+              showCards: response.data.data.showCards || false,
+              cardType: response.data.data.cardType || null,
+              cards: response.data.data.cards || null
+            };
 
-        setMessages(prev => [...prev, botMessage]);
-      } else {
-        throw new Error('Failed to get response');
-      }
+            setMessages(prev => [...prev, botMessage]);
+          } else {
+            throw new Error('Failed to get response');
+          }
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage: Message = {
@@ -212,57 +230,76 @@ const Chatbot: React.FC<ChatbotProps> = ({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-            {messages.map((message) => (
-              <View key={message.id} style={styles.messageWrapper}>
-                <View style={[
-                  styles.messageBubble,
-                  message.isUser ? styles.userMessage : styles.botMessage
-                ]}>
-                  {!message.isUser && (
-                    <View style={styles.messageHeader}>
-                      <Text style={styles.senderName}>Cavens AI</Text>
-                      {message.type !== undefined && (
-                        <View style={[
-                          styles.typeIndicator,
-                          message.type === 2 ? styles.typeFind : 
-                          message.type === 3 ? styles.typeClubs :
-                          message.type === 1 ? styles.typeQuestion : 
-                          message.type === 4 ? styles.typeClubQuestion :
-                          message.type === 5 ? styles.typeBooking :
-                          message.type === 6 ? styles.typeDirections :
-                          styles.typeGeneral
-                        ]}>
-                          <Text style={styles.typeText}>
-                            {message.type === 2 ? 'Events' : 
-                             message.type === 3 ? 'Clubs' :
-                             message.type === 1 ? 'Event Q&A' : 
-                             message.type === 4 ? 'Club Q&A' :
-                             message.type === 5 ? 'Booking' :
-                             message.type === 6 ? 'Directions' :
-                             'Chat'}
-                          </Text>
+                {messages.map((message) => (
+                  <View key={message.id} style={styles.messageWrapper}>
+                    <View style={[
+                      styles.messageBubble,
+                      message.isUser ? styles.userMessage : styles.botMessage
+                    ]}>
+                      {!message.isUser && (
+                        <View style={styles.messageHeader}>
+                          <Text style={styles.senderName}>Cavens AI</Text>
+                          {message.type !== undefined && (
+                            <View style={[
+                              styles.typeIndicator,
+                              message.type === 2 ? styles.typeFind :
+                              message.type === 3 ? styles.typeClubs :
+                              message.type === 1 ? styles.typeQuestion :
+                              message.type === 4 ? styles.typeClubQuestion :
+                              message.type === 5 ? styles.typeBooking :
+                              message.type === 6 ? styles.typeDirections :
+                              message.type === 7 ? styles.typeMyBookings :
+                              message.type === 8 ? styles.typeBookingStatus :
+                              message.type === 9 ? styles.typeBookingDetails :
+                              message.type === 10 ? styles.typeClubRegistration :
+                              message.type === 11 ? styles.typePolicyQuery :
+                              styles.typeGeneral
+                            ]}>
+                              <Text style={styles.typeText}>
+                                {message.type === 2 ? 'Events' :
+                                 message.type === 3 ? 'Clubs' :
+                                 message.type === 1 ? 'Event Q&A' :
+                                 message.type === 4 ? 'Club Q&A' :
+                                 message.type === 5 ? 'Booking Help' :
+                                 message.type === 6 ? 'Directions' :
+                                 message.type === 7 ? 'My Bookings' :
+                                 message.type === 8 ? 'Booking Status' :
+                                 message.type === 9 ? 'Booking Details' :
+                                 message.type === 10 ? 'Club Registration' :
+                                 message.type === 11 ? 'Policies' :
+                                 'Chat'}
+                              </Text>
+                            </View>
+                          )}
                         </View>
                       )}
+                      <Text style={[
+                        styles.messageText,
+                        message.isUser ? styles.userMessageText : styles.botMessageText
+                      ]}>
+                        {message.text}
+                      </Text>
+                      <Text style={[
+                        styles.timestamp,
+                        message.isUser ? styles.userTimestamp : styles.botTimestamp
+                      ]}>
+                        {message.timestamp.toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </Text>
                     </View>
-                  )}
-                  <Text style={[
-                    styles.messageText,
-                    message.isUser ? styles.userMessageText : styles.botMessageText
-                  ]}>
-                    {message.text}
-                  </Text>
-                  <Text style={[
-                    styles.timestamp,
-                    message.isUser ? styles.userTimestamp : styles.botTimestamp
-                  ]}>
-                    {message.timestamp.toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </Text>
-                </View>
-              </View>
-            ))}
+                    
+                    {/* Render cards if available */}
+                    {!message.isUser && message.showCards && message.cards && message.cards.length > 0 && (
+                      <ChatbotCardsContainer
+                        cards={message.cards}
+                        cardType={message.cardType || 'events'}
+                      />
+                    )}
+                    
+                  </View>
+                ))}
 
             {isLoading && (
               <View style={styles.messageWrapper}>
@@ -452,6 +489,21 @@ const styles = StyleSheet.create({
   },
   typeDirections: {
     backgroundColor: 'rgba(255, 184, 0, 0.1)', // Orange for directions
+  },
+  typeMyBookings: {
+    backgroundColor: 'rgba(156, 39, 176, 0.1)', // Purple for my bookings
+  },
+  typeBookingStatus: {
+    backgroundColor: 'rgba(76, 175, 80, 0.1)', // Green for booking status
+  },
+  typeBookingDetails: {
+    backgroundColor: 'rgba(33, 150, 243, 0.1)', // Blue for booking details
+  },
+  typeClubRegistration: {
+    backgroundColor: 'rgba(156, 39, 176, 0.1)', // Purple for club registration
+  },
+  typePolicyQuery: {
+    backgroundColor: 'rgba(255, 87, 34, 0.1)', // Orange for policy queries
   },
   typeGeneral: {
     backgroundColor: Colors.withOpacity.white10,

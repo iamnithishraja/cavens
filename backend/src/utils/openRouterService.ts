@@ -22,12 +22,14 @@ interface OpenRouterResponse {
 }
 
 interface ChatbotIntent {
-  type: 'find_events' | 'find_clubs' | 'event_question' | 'club_question' | 'filter_events' | 'filter_clubs' | 'booking_help' | 'directions' | 'general';
+  type: 'find_events' | 'find_clubs' | 'event_question' | 'club_question' | 'filter_events' | 'filter_clubs' | 'booking_help' | 'booking_status' | 'booking_details' | 'my_bookings' | 'directions' | 'club_registration' | 'policy_query' | 'general';
   confidence: number;
   query?: string;
   eventId?: string;
   eventName?: string;
   clubName?: string;
+  showCards?: boolean; // NEW: Whether to show cards or just text
+  cardType?: 'events' | 'clubs' | 'mixed'; // NEW: Type of cards to show
   extractedInfo?: {
     eventName?: string;
     venueName?: string;
@@ -35,6 +37,8 @@ interface ChatbotIntent {
     date?: string;
     location?: string;
     nearMe?: boolean;
+    bookingId?: string;
+    bookingStatus?: string;
     keywords?: string[];
     filters?: {
       price?: { min?: number; max?: number };
@@ -63,38 +67,85 @@ class OpenRouterService {
       const messages: OpenRouterMessage[] = [
         {
           role: 'system',
-          content: `You are an AI assistant for a nightlife events app called Cavens. Analyze user messages and determine their intent.
+          content: `You are an AI assistant for a nightlife events app called Cavens. Analyze user messages and determine their intent and whether to show cards or text responses.
 
 CRITICAL: Respond ONLY with valid JSON. Do not include any explanatory text before or after the JSON.
 
-Analyze the user's message and determine the intent type:
-1. **find_events** - Finding/searching for events
-2. **find_clubs** - Finding/searching for clubs/venues  
-3. **event_question** - Questions about specific events
-4. **club_question** - Questions about specific clubs/venues
-5. **general** - General conversation
+Analyze the user's message and determine:
+1. **Intent type**: find_events, find_clubs, event_question, club_question, booking_help, booking_status, booking_details, my_bookings, general, etc.
+2. **showCards**: true if user wants to see actual event/club cards, false for text-only responses
+3. **cardType**: "events", "clubs", or "mixed" when showCards is true
+
+**CARD DETECTION RULES:**
+- Show cards for: "show me events", "find clubs", "what events are happening", "list venues", "recommend events"
+- Show text for: "what time does it start", "how much does it cost", "tell me about this event", general questions
+
+**BOOKING INTENT DETECTION:**
+- **my_bookings**: "show my bookings", "what are my bookings", "my tickets", "my reservations"
+- **booking_status**: "status of my booking", "is my booking confirmed", "booking status"
+- **booking_details**: "details of my booking", "booking information", "my ticket details"
+- **booking_help**: "how to book", "booking process", "how to make a booking"
+- **policy_query**: "refund policy", "cancellation policy", "booking terms", "booking conditions", "booking rules", "ticket policies", "booking guidelines", "can I get a refund", "how to cancel", "money back", "refund terms", "cancel my ticket", "cancel reservation", "booking rules", "terms and conditions"
+
+**CLUB REGISTRATION INTENT DETECTION:**
+- **club_registration**: "how to become a club", "become a club owner", "club registration", "start a club", "club application", "how to register club", "club signup", "partner with cavens", "club membership", "how to join as club"
+
+**EVENT NAME EXTRACTION:**
+- Extract event names, DJ names, venue names from questions
+- Look for specific event references in conversation history
+- Identify when user is asking about a specific event vs general events
 
 Respond with ONLY this JSON format:
-{"type": "intent_type", "confidence": 0.9, "query": "search terms", "extractedInfo": {"location": "city"}}
+{
+  "type": "intent_type", 
+  "confidence": 0.9, 
+  "showCards": true/false,
+  "cardType": "events/clubs/mixed",
+  "query": "search terms", 
+  "extractedInfo": {
+    "location": "city",
+    "eventName": "specific event name",
+    "venueName": "venue name",
+    "djName": "DJ name",
+    "nearMe": true/false
+  }
+}
 
 Examples:
-"Find events near me" -> {"type": "find_events", "confidence": 0.9, "extractedInfo": {"nearMe": true}}
-"Show me clubs in Dubai" -> {"type": "find_clubs", "confidence": 0.9, "extractedInfo": {"location": "Dubai"}}
-"What time does the party start?" -> {"type": "event_question", "confidence": 0.8}
-"Hello" -> {"type": "general", "confidence": 0.9}
+"Find events near me" -> {"type": "find_events", "confidence": 0.9, "showCards": true, "cardType": "events", "extractedInfo": {"nearMe": true}}
+"Show me clubs in Dubai" -> {"type": "find_clubs", "confidence": 0.9, "showCards": true, "cardType": "clubs", "extractedInfo": {"location": "Dubai"}}
+"What time does the party start?" -> {"type": "event_question", "confidence": 0.8, "showCards": false}
+"What's the cover charge?" -> {"type": "event_question", "confidence": 0.8, "showCards": false}
+"Tell me about the Tech House Night at XYZ Club" -> {"type": "event_question", "confidence": 0.9, "showCards": false, "extractedInfo": {"eventName": "Tech House Night", "venueName": "XYZ Club"}}
+"What time does DJ John's set start?" -> {"type": "event_question", "confidence": 0.9, "showCards": false, "extractedInfo": {"djName": "DJ John"}}
+"Show my bookings" -> {"type": "my_bookings", "confidence": 0.9, "showCards": true, "cardType": "events"}
+"What's the status of my booking?" -> {"type": "booking_status", "confidence": 0.9, "showCards": false}
+"Tell me about my ticket details" -> {"type": "booking_details", "confidence": 0.9, "showCards": false}
+"How can I become a club in Cavens?" -> {"type": "club_registration", "confidence": 0.9, "showCards": false}
+"How do I book tickets?" -> {"type": "booking_help", "confidence": 0.9, "showCards": false}
+"What's your refund policy?" -> {"type": "policy_query", "confidence": 0.9, "showCards": false}
+"How can I cancel my booking?" -> {"type": "policy_query", "confidence": 0.9, "showCards": false}
+"What are your booking terms?" -> {"type": "policy_query", "confidence": 0.9, "showCards": false}
+"Hello" -> {"type": "general", "confidence": 0.9, "showCards": false}
+"Recommend some events" -> {"type": "find_events", "confidence": 0.9, "showCards": true, "cardType": "events"}
 
 RESPOND WITH ONLY JSON - NO OTHER TEXT.`
         }
       ];
 
-      // Add conversation history (last 6 messages for context)
-      const recentHistory = conversationHistory.slice(-6);
-      recentHistory.forEach((msg: any) => {
+      // Add conversation history (last 3 messages for context - reduced for speed)
+      const recentHistory = conversationHistory.slice(-3);
+      if (recentHistory.length > 0) {
         messages.push({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
+          role: 'system',
+          content: `CONVERSATION HISTORY for context:
+${recentHistory.map((msg: any, index: number) => 
+  `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
+).join('\n')}
+
+Use this conversation history to understand context. If the user is asking about a specific event/venue mentioned in previous messages, extract that information.`
         });
-      });
+      }
 
       // Add current user message
       messages.push({
@@ -107,7 +158,7 @@ RESPOND WITH ONLY JSON - NO OTHER TEXT.`
         {
           model: 'anthropic/claude-3.5-sonnet',
           messages,
-          max_tokens: 200,
+          max_tokens: 150, // Reduced from 200
           temperature: 0.3
         },
         {
@@ -116,7 +167,8 @@ RESPOND WITH ONLY JSON - NO OTHER TEXT.`
             'Content-Type': 'application/json',
             'HTTP-Referer': 'https://cavens.app',
             'X-Title': 'Cavens AI Assistant'
-          }
+          },
+          timeout: 8000 // 8 second timeout for intent analysis
         }
       );
 
@@ -181,7 +233,7 @@ RESPOND WITH ONLY JSON - NO OTHER TEXT.`
         {
           model: 'anthropic/claude-3.5-sonnet',
           messages,
-          max_tokens: 500,
+          max_tokens: 300, // Reduced from 500
           temperature: 0.7
         },
         {
@@ -190,7 +242,8 @@ RESPOND WITH ONLY JSON - NO OTHER TEXT.`
             'Content-Type': 'application/json',
             'HTTP-Referer': 'https://cavens.app',
             'X-Title': 'Cavens AI Assistant'
-          }
+          },
+          timeout: 10000 // 10 second timeout for response generation
         }
       );
 
@@ -237,6 +290,8 @@ ${events.length === 0 ?
   `- Recommend the best 1-3 events from the list above
 - Explain why these events match their request
 - Include key details like date, time, venue, and price from the provided data
+- IMPORTANT: If an event has distanceFromUser data (distance.km or distance.text), mention the distance from the user's location
+- Example: "Tech House Night at XYZ Club is only 2.1 km away from you" or "DJ Party at ABC Venue is just 1.5 km from your location"
 - Use a friendly, enthusiastic tone
 - Encourage them to book tickets`
 }
@@ -255,7 +310,7 @@ NEVER suggest events that are not in the provided list. Only use actual database
 
     const { conversationHistory = [] } = additionalContext || {};
     const conversationContext = conversationHistory.length > 0 
-      ? `\nConversation History:\n${conversationHistory.slice(-4).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
       : '';
 
     if (eventDetails) {
@@ -270,7 +325,14 @@ ${JSON.stringify(eventDetails, null, 2)}
 
 Additional context: ${JSON.stringify(additionalContext || {}, null, 2)}
 
-Based on the conversation history and ONLY the event data provided above, answer the user's question. If the specific information they're asking for is not in the event data, honestly say you don't have that information and suggest they contact the venue.
+Based on the conversation history and ONLY the event data provided above, provide a comprehensive and detailed answer to the user's question. Include:
+
+1. **Event Overview**: Name, date, time, venue
+2. **Specific Details**: Answer their specific question (time, price, location, etc.)
+3. **Additional Info**: DJ/artists, description, ticket types, contact info if relevant
+4. **Next Steps**: Suggest booking tickets or contacting the venue
+
+Be enthusiastic and helpful. If the specific information they're asking for is not in the event data, honestly say you don't have that information and suggest they contact the venue directly.
 
 NEVER make up event details. Only use the actual data provided.`;
     } else {
@@ -300,14 +362,18 @@ Use a friendly, apologetic but helpful tone with appropriate emojis.`;
     return this.generateResponse(question, { eventDetails, additionalContext }, systemPrompt);
   }
 
-  async handleGeneralConversation(message: string, conversationHistory: any[] = []): Promise<string> {
+  async handleGeneralConversation(message: string, conversationHistory: any[] = [], screenContext?: any): Promise<string> {
     const conversationContext = conversationHistory.length > 0 
-      ? `\nConversation History:\n${conversationHistory.slice(-4).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
       : '';
+
+    // Add screen-specific context
+    const screenContextInfo = this.getScreenContextInfo(screenContext);
 
     const systemPrompt = `You are Cavens AI, a friendly assistant for a nightlife events app called Cavens.
 
 ${conversationContext}
+${screenContextInfo}
 
 Cavens helps users discover amazing nightlife events, parties, and club experiences. You can help users:
 - Find events based on their preferences
@@ -315,11 +381,30 @@ Cavens helps users discover amazing nightlife events, parties, and club experien
 - Provide information about venues and clubs
 - Help with booking and tickets
 
-Based on the conversation history, respond to the user in a friendly, helpful way. Reference previous conversation naturally when relevant. If they're not asking about events specifically, engage in light conversation but try to naturally guide them toward discovering events on the app.
+Based on the conversation history and current screen context, respond to the user in a friendly, helpful way. Reference previous conversation naturally when relevant. If they're not asking about events specifically, engage in light conversation but try to naturally guide them toward discovering events on the app.
 
 Keep responses concise and use appropriate emojis.`;
 
-    return this.generateResponse(message, { conversationHistory }, systemPrompt);
+    return this.generateResponse(message, { conversationHistory, screenContext }, systemPrompt);
+  }
+
+  private getScreenContextInfo(screenContext?: any): string {
+    if (!screenContext) return '';
+
+    const { screen, hasBookings, city } = screenContext;
+    
+    switch (screen) {
+      case 'HOME':
+        return `The user is currently on the home screen where they can discover featured events and popular venues. They can see trending events and get personalized recommendations.`;
+      case 'MAP':
+        return `The user is currently on the map screen where they can view clubs and venues on a map. They can see locations, get directions, and find nearby venues. Consider suggesting location-based help like "Show me clubs near me" or "Get directions to the nearest club".`;
+      case 'BOOKINGS':
+        return `The user is currently on the bookings screen ${hasBookings ? 'and has active bookings' : 'but has no current bookings'}. ${hasBookings ? 'They can manage their existing bookings, view ticket details, and get help with their reservations.' : 'You can help them find events to book or explain how the booking process works.'}`;
+      case 'PROFILE':
+        return `The user is currently on their profile screen where they can manage their account settings, view booking history, and access account-related features. Consider helping with profile management, account settings, or booking history questions.`;
+      default:
+        return '';
+    }
   }
 
   async generateClubRecommendations(
@@ -330,7 +415,7 @@ Keep responses concise and use appropriate emojis.`;
     extractedInfo?: any
   ): Promise<string> {
     const conversationContext = conversationHistory.length > 0 
-      ? `\nConversation History:\n${conversationHistory.slice(-4).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
       : '';
 
     const locationContext = extractedInfo?.nearMe ? 'The user is looking for clubs near their current location.' : '';
@@ -370,7 +455,7 @@ NEVER suggest clubs that are not in the provided list. Only use actual database 
   ): Promise<string> {
     const { conversationHistory = [] } = additionalContext || {};
     const conversationContext = conversationHistory.length > 0 
-      ? `\nConversation History:\n${conversationHistory.slice(-4).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
       : '';
 
     let systemPrompt = '';
@@ -415,14 +500,18 @@ Use a friendly, apologetic but helpful tone with appropriate emojis.`;
     context?: any
   ): Promise<string> {
     const conversationContext = conversationHistory.length > 0 
-      ? `\nConversation History:\n${conversationHistory.slice(-4).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
       : '';
+
+    // Add screen-specific context for booking help
+    const screenContextInfo = this.getScreenContextInfo(context);
 
     const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
 
 ${conversationContext}
+${screenContextInfo}
 
-The user needs help with booking, tickets, or payments. Based on the conversation history, provide helpful guidance about:
+The user needs help with booking, tickets, or payments. Based on the conversation history and current screen context, provide helpful guidance about:
 
 1. How to book tickets for events
 2. Payment methods and security
@@ -431,9 +520,127 @@ The user needs help with booking, tickets, or payments. Based on the conversatio
 5. Group bookings and special offers
 6. Troubleshooting booking issues
 
+${context?.hasBookings ? 'The user has existing bookings, so you can also help with managing current reservations, viewing ticket details, or answering questions about their upcoming events.' : 'The user doesn\'t have current bookings, so focus on helping them find events to book or explaining the booking process.'}
+
 Be helpful, reassuring, and guide them through the process step by step. If they need specific technical support, suggest they contact customer service.
 
 Use a friendly, supportive tone with appropriate emojis.`;
+
+    return this.generateResponse(message, { conversationHistory, context }, systemPrompt);
+  }
+
+  async handleMyBookings(
+    message: string,
+    conversationHistory: any[] = [],
+    context?: any
+  ): Promise<string> {
+    const conversationContext = conversationHistory.length > 0 
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      : '';
+
+    const screenContextInfo = this.getScreenContextInfo(context);
+
+    // Get booking data from context if available
+    const bookings = context?.bookings || [];
+    const paidBookings = bookings.filter((booking: any) => booking.bookingStatus === 'paid');
+    const scannedBookings = bookings.filter((booking: any) => booking.bookingStatus === 'scanned');
+
+    const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
+
+${conversationContext}
+${screenContextInfo}
+
+The user is asking about their bookings/tickets. Here's their booking information:
+
+**Total Bookings**: ${bookings.length}
+**Paid Bookings (Ready to Use)**: ${paidBookings.length}
+**Scanned Bookings (Already Used)**: ${scannedBookings.length}
+
+${bookings.length > 0 ? `
+**Recent Bookings**:
+${bookings.slice(0, 3).map((booking: any, index: number) => 
+  `${index + 1}. ${booking.name} at ${booking.venue} - ${booking.bookingStatus === 'paid' ? '✅ Ready' : '📱 Scanned'}`
+).join('\n')}
+` : ''}
+
+Respond based on their actual booking data:
+
+${bookings.length === 0 ? `
+The user has no bookings yet. Encourage them to:
+1. Browse available events
+2. Make their first booking
+3. Explain the booking process
+` : `
+The user has ${bookings.length} booking${bookings.length === 1 ? '' : 's'}. 
+
+${paidBookings.length > 0 ? `
+**Active Tickets (${paidBookings.length})**: These are ready to use! Mention they can:
+- View QR codes for entry
+- Get venue directions  
+- Check event details and times
+- Share tickets with friends
+` : ''}
+
+${scannedBookings.length > 0 ? `
+**Used Tickets (${scannedBookings.length})**: These have been scanned at events.
+` : ''}
+
+Guide them to manage their bookings and offer specific help.
+`}
+
+Use a friendly, helpful tone with appropriate emojis. Be specific about their actual bookings.`;
+
+    return this.generateResponse(message, { conversationHistory, context, bookings }, systemPrompt);
+  }
+
+  async handleBookingStatus(
+    message: string,
+    conversationHistory: any[] = [],
+    context?: any
+  ): Promise<string> {
+    const conversationContext = conversationHistory.length > 0 
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      : '';
+
+    const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
+
+${conversationContext}
+
+The user is asking about the status of their booking. Respond helpfully by:
+
+1. **Acknowledge their concern** about booking status
+2. **Guide them to check their bookings** in the app
+3. **Explain booking statuses** (confirmed, pending, cancelled)
+4. **Offer to help** if they need to check a specific booking
+5. **Provide reassurance** about booking security
+
+Use a helpful, reassuring tone with appropriate emojis. Keep the response concise but informative.`;
+
+    return this.generateResponse(message, { conversationHistory, context }, systemPrompt);
+  }
+
+  async handleBookingDetails(
+    message: string,
+    conversationHistory: any[] = [],
+    context?: any
+  ): Promise<string> {
+    const conversationContext = conversationHistory.length > 0 
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      : '';
+
+    const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
+
+${conversationContext}
+
+The user is asking about their booking details. Respond helpfully by:
+
+1. **Acknowledge their request** for booking details
+2. **Guide them to their bookings** to see full details
+3. **Explain what details they can see** (event info, venue, date, time, QR codes)
+4. **Offer to help** with specific booking questions
+5. **Mention important details** like arrival time, dress code, etc.
+
+Use a friendly, helpful tone with appropriate emojis. Keep the response concise but informative.`;
 
     return this.generateResponse(message, { conversationHistory, context }, systemPrompt);
   }
@@ -443,19 +650,23 @@ Use a friendly, supportive tone with appropriate emojis.`;
     extractedInfo: any,
     context?: any
   ): Promise<string> {
-    const { conversationHistory = [], userLocation } = context || {};
+    const { conversationHistory = [], userLocation, screen } = context || {};
     const conversationContext = conversationHistory.length > 0 
-      ? `\nConversation History:\n${conversationHistory.slice(-4).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
       : '';
 
     const locationContext = userLocation 
       ? `User's current location: ${userLocation.latitude}, ${userLocation.longitude}`
       : 'User location not available';
 
+    // Add screen-specific context for directions
+    const screenContextInfo = this.getScreenContextInfo(context);
+
     const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
 
 ${conversationContext}
 ${locationContext}
+${screenContextInfo}
 
 The user is asking for directions or location information. Based on the extracted info:
 ${JSON.stringify(extractedInfo || {}, null, 2)}
@@ -467,7 +678,7 @@ Provide helpful information about:
 4. Nearby landmarks or references
 5. Estimated travel time if possible
 
-If you have specific venue information from previous conversation, reference it. Otherwise, provide general guidance and suggest they use the map link in the app.
+${screen === 'MAP' ? 'Since the user is on the map screen, they can easily see venue locations and get directions directly from the map interface. Suggest they use the map features for the most accurate directions.' : 'If you have specific venue information from previous conversation, reference it. Otherwise, provide general guidance and suggest they use the map link in the app.'}
 
 Use a helpful, practical tone with appropriate emojis.`;
 
@@ -502,6 +713,10 @@ Examples:
 - "Find clubs in Dubai" → {"model": "Club", "query": {"city": {"$regex": "^Dubai$", "$options": "i"}, "isApproved": true}}
 - "Events with hip-hop" → {"model": "Club", "query": {"events": {"$exists": true}, "isApproved": true}, "populate": {"path": "events", "match": {"status": "active", "$or": [{"name": {"$regex": "hip-hop", "$options": "i"}}, {"djArtists": {"$regex": "hip-hop", "$options": "i"}}]}}}
 - "Rooftop venues" → {"model": "Club", "query": {"typeOfVenue": {"$regex": "rooftop", "$options": "i"}, "isApproved": true}}
+- "My bookings" → {"model": "User", "query": {"_id": "USER_ID"}, "populate": {"path": "orders", "populate": [{"path": "event"}, {"path": "club"}, {"path": "ticket"}]}}
+- "Show my orders" → {"model": "User", "query": {"_id": "USER_ID"}, "populate": {"path": "orders", "populate": [{"path": "event"}, {"path": "club"}, {"path": "ticket"}]}}
+- "My tickets" → {"model": "User", "query": {"_id": "USER_ID"}, "populate": {"path": "orders", "populate": [{"path": "event"}, {"path": "club"}, {"path": "ticket"}]}}
+- "Booking status" → {"model": "User", "query": {"_id": "USER_ID"}, "populate": {"path": "orders", "match": {"status": "STATUS_VALUE"}, "populate": [{"path": "event"}, {"path": "club"}, {"path": "ticket"}]}}
 
 IMPORTANT: 
 - For upcoming events, filter by date: {"date": {"$gte": "2024-01-01"}} (use current date provided above)
@@ -509,6 +724,12 @@ IMPORTANT:
 - Use simple string values for dates in YYYY-MM-DD format
 - Keep all values as basic JSON types (string, number, boolean, object, array)
 - Always filter events by status: "active" and upcoming dates
+- For user bookings: Use User model with _id query and populate orders
+- For orders: Order model does NOT have userId field - use User.orders relationship
+- Replace "USER_ID" in examples with the actual userId from intent
+- For booking queries, always populate: event, club, and ticket references
+- The chatbot uses the same query pattern as getBookings function in userController
+- Status filtering: Use {"match": {"status": "paid"}} for paid orders, {"match": {"status": "scanned"}} for scanned orders
 
 RESPOND WITH ONLY JSON - NO OTHER TEXT.`;
 
@@ -551,6 +772,252 @@ RESPOND WITH ONLY JSON - NO OTHER TEXT.`;
         query: { isApproved: true }
       };
     }
+  }
+
+  async handleClubRegistration(
+    message: string,
+    conversationHistory: any[] = [],
+    context?: any
+  ): Promise<string> {
+    const conversationContext = conversationHistory.length > 0 
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      : '';
+
+    const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
+
+${conversationContext}
+
+The user is asking about how to become a club owner/partner with Cavens. Provide accurate information about the club registration process:
+
+**CLUB REGISTRATION PROCESS:**
+
+1. **Switch to Club Mode**: 
+   - Go to your Profile tab
+   - Look for the "Switch to Club" button
+   - Tap it to start the club registration process
+
+2. **Fill Out the Registration Form**:
+   - You'll need to provide club details (name, location, type, etc.)
+   - Upload required documents and images
+   - Complete all required fields in the form
+
+3. **Admin Review Process**:
+   - Your application will be reviewed by Cavens admin team
+   - This usually takes a few business days
+   - Admin may contact you for additional information or clarification
+
+4. **Approval & Activation**:
+   - Once approved, you'll receive confirmation
+   - Your club account will be activated
+   - You can start creating and managing events
+
+**IMPORTANT NOTES:**
+- Make sure you have all required documents ready
+- Provide accurate information in the registration form
+- Be patient during the review process
+- Admin team may contact you via email or phone for verification
+
+Respond with enthusiasm and encouragement, mentioning that becoming a club partner is a great opportunity to reach more customers and grow their business. Use a friendly, professional tone with appropriate emojis.`;
+
+    return this.generateResponse(message, { conversationHistory, context }, systemPrompt);
+  }
+
+
+  // Policy knowledge base for dynamic responses
+  private getPolicyKnowledgeBase(): { [key: string]: any } {
+    return {
+      refund: {
+        title: "REFUND POLICY",
+        status: "Cavens does not currently offer refunds for event tickets.",
+        reasons: [
+          "Event tickets are non-refundable to protect venues and event organizers",
+          "This ensures fair pricing and prevents last-minute cancellations",
+          "Venues need guaranteed attendance for planning purposes"
+        ],
+        alternatives: [
+          "Transfer to Friend: You can share your ticket with friends or family",
+          "Sell to Others: You can transfer your ticket to someone else who wants to attend",
+          "Contact Support: In exceptional circumstances (event cancellation, venue issues), contact our support team",
+          "Event Rescheduling: If an event is rescheduled, your ticket remains valid for the new date"
+        ],
+        notes: [
+          "All sales are final",
+          "Tickets cannot be refunded for change of mind",
+          "This policy applies to all events on Cavens platform",
+          "Check event details before booking to avoid disappointment"
+        ]
+      },
+      cancellation: {
+        title: "CANCELLATION POLICY",
+        status: "Cavens does not currently allow ticket cancellations after purchase.",
+        reasons: [
+          "Event tickets are non-cancellable to protect venues and event organizers",
+          "This ensures fair pricing and prevents last-minute cancellations",
+          "Venues need guaranteed attendance for planning purposes"
+        ],
+        alternatives: [
+          "Transfer to Friend: You can share your ticket with friends or family",
+          "Sell to Others: You can transfer your ticket to someone else who wants to attend",
+          "Contact Support: In exceptional circumstances (event cancellation, venue issues), contact our support team",
+          "Event Rescheduling: If an event is rescheduled, your ticket remains valid for the new date"
+        ],
+        notes: [
+          "All sales are final",
+          "Tickets cannot be cancelled for change of mind",
+          "This policy applies to all events on Cavens platform",
+          "Check event details before booking to avoid disappointment"
+        ]
+      },
+      general: {
+        title: "BOOKING POLICIES & TERMS",
+        sections: [
+          {
+            title: "Ticket Sales",
+            points: [
+              "All ticket sales are final",
+              "No refunds or cancellations after purchase",
+              "Prices may vary based on demand and availability"
+            ]
+          },
+          {
+            title: "Event Attendance",
+            points: [
+              "Arrive on time for events",
+              "Bring valid ID for age verification",
+              "Follow venue dress codes and rules",
+              "Respect other attendees and venue staff"
+            ]
+          },
+          {
+            title: "Ticket Transfer",
+            points: [
+              "You can transfer tickets to friends or family",
+              "Use the share feature in your bookings",
+              "Ensure the recipient has the Cavens app"
+            ]
+          },
+          {
+            title: "Event Changes",
+            points: [
+              "If an event is rescheduled, your ticket remains valid",
+              "If an event is cancelled, contact support for assistance",
+              "Venue changes will be communicated via app notifications"
+            ]
+          },
+          {
+            title: "Age Restrictions",
+            points: [
+              "Follow venue age requirements (usually 18+ or 21+)",
+              "Bring valid government-issued ID",
+              "Underage attendees will be denied entry"
+            ]
+          },
+          {
+            title: "Dress Code",
+            points: [
+              "Check event details for specific dress codes",
+              "Smart casual is generally recommended",
+              "Some venues may have specific requirements"
+            ]
+          },
+          {
+            title: "Payment",
+            points: [
+              "Secure payment processing",
+              "All major credit cards accepted",
+              "Payment confirmation sent via email"
+            ]
+          },
+          {
+            title: "Support",
+            points: [
+              "Contact support for genuine issues",
+              "Response time: within 24 hours",
+              "Documentation may be required for claims"
+            ]
+          }
+        ]
+      }
+    };
+  }
+
+  // Extract policy type from user message
+  private extractPolicyType(message: string): string {
+    const lowerMessage = message.toLowerCase();
+    
+    if (lowerMessage.includes('refund') || lowerMessage.includes('money back')) {
+      return 'refund';
+    }
+    
+    if (lowerMessage.includes('cancel') || lowerMessage.includes('cancellation')) {
+      return 'cancellation';
+    }
+    
+    return 'general';
+  }
+
+  async handlePolicyQuery(
+    message: string,
+    conversationHistory: any[] = [],
+    context?: any
+  ): Promise<string> {
+    const conversationContext = conversationHistory.length > 0 
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      : '';
+
+    const policyType = this.extractPolicyType(message);
+    const policyData = this.getPolicyKnowledgeBase()[policyType];
+
+    let systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
+
+${conversationContext}
+
+The user is asking about booking policies. Based on their query, provide accurate information about Cavens' policies.
+
+**${policyData.title}:**
+
+`;
+
+    if (policyType === 'general') {
+      systemPrompt += `**Current Status**: Here are our comprehensive booking policies and terms.
+
+`;
+      policyData.sections.forEach((section: any) => {
+        systemPrompt += `**${section.title}:**\n`;
+        section.points.forEach((point: string) => {
+          systemPrompt += `- ${point}\n`;
+        });
+        systemPrompt += `\n`;
+      });
+      
+      systemPrompt += `**Important Reminders:**
+- Read event details carefully before booking
+- Check venue location and timing
+- Plan your transportation in advance
+- Have fun and stay safe! 🎉
+
+Respond with a helpful, comprehensive overview of the booking policies. Use a friendly, professional tone with appropriate emojis and clear structure.`;
+    } else {
+      systemPrompt += `**Current Status**: ${policyData.status}
+
+**Why This Policy?**
+${policyData.reasons.map((reason: string) => `- ${reason}`).join('\n')}
+
+**What You Can Do Instead:**
+${policyData.alternatives.map((alt: string) => `${alt}`).join('\n')}
+
+**Important Notes:**
+${policyData.notes.map((note: string) => `- ${note}`).join('\n')}
+
+**Support Contact:**
+- For genuine issues (event cancelled, venue problems), contact our support team
+- We'll review each case individually
+- Documentation may be required for exceptional circumstances
+
+Respond with empathy and understanding, but be clear about the policy. Offer alternative solutions and emphasize the importance of checking event details before booking. Use a friendly, professional tone with appropriate emojis.`;
+    }
+
+    return this.generateResponse(message, { conversationHistory, context, policyType }, systemPrompt);
   }
 }
 

@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import apiClient from '@/app/api/client';
 import { store } from '@/utils';
 import { triggerUserRoleCheck } from '@/app/_layout';
+import FloatingChatButton from '@/components/ui/FloatingChatButton';
 
 // Import modular components
 import {
@@ -51,6 +52,22 @@ export default function ProfileScreen() {
     } catch (error) {
       console.log(' Error loading stored user data:', error);
     }
+  };
+
+  const handleChatButtonPress = async () => {
+    console.log('🎫 Bookings Screen Navigation');
+    
+    // Get the selected city from store, default to Dubai
+    const selectedCity = await store.get('selectedCity') || 'Dubai';
+    
+    router.push({
+      pathname: '/chatbot',
+      params:{
+        Screen:'PROFILE',
+        city: selectedCity,
+      }
+    }
+    )
   };
 
   const fetchUserProfile = async (isInitialLoad = true) => {
@@ -425,6 +442,7 @@ export default function ProfileScreen() {
           </View>
         </View>
       </ScrollView>
+      <FloatingChatButton onPress={handleChatButtonPress} /> 
     </View>
   );
 }

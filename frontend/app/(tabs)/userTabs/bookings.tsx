@@ -10,10 +10,13 @@ import {
   StatusBar 
 } from "react-native";
 import { useFocusEffect } from '@react-navigation/native';
+import { router } from 'expo-router';
 import { Colors } from "@/constants/Colors";
 import BookingCard from "@/components/ui/BookingCard";
+import FloatingChatButton from "@/components/ui/FloatingChatButton";
 import type { Order } from "@/types/order";
 import { useBookingsPolling } from "@/hooks/useBookingsPolling";
+import { store } from '@/utils';
 
 export default function BookingsScreen() {
   const [isScreenFocused, setIsScreenFocused] = useState(false);
@@ -50,6 +53,21 @@ export default function BookingsScreen() {
   const handleBookingPress = (booking: Order) => {
     // TODO: Navigate to booking details or event details
     console.log("Booking pressed:", booking._id);
+  };
+
+  const handleChatButtonPress = async () => {
+    // Get the selected city from store, default to Dubai
+    const selectedCity = await store.get('selectedCity') || 'Dubai';
+    
+    router.push({
+      pathname: '/chatbot',
+      params:{
+        Screen:'BOOKINGS',
+        city: selectedCity,
+        hasBookings: bookings.length > 0 ? 'true' : 'false'
+      }
+    }
+    )
   };
 
   const renderBookingCard = ({ item }: { item: Order }) => (
@@ -129,6 +147,8 @@ export default function BookingsScreen() {
           ListEmptyComponent={renderEmptyState}
         />
       )}
+
+      <FloatingChatButton onPress={handleChatButtonPress} /> 
     </SafeAreaView>
   );
 }

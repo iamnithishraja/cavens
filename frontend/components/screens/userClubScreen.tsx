@@ -6,7 +6,6 @@ import {
   ScrollView
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Location from 'expo-location';
 import { Colors } from '@/constants/Colors';
 import CityPickerModal, { CITIES, type City } from '@/components/ui/CityPickerModal';
 import type { Club } from '@/components/Map/ClubCard';
@@ -18,6 +17,9 @@ import UserClubListHeader from '@/components/screens/UserClub/UserClubListHeader
 import MapViewCard from '@/components/Map/MapViewCard';
 import UserClubListItem from '@/components/screens/UserClub/UserClubListItem';
 import FilterModal from '@/components/Models/filterModel';
+import FloatingChatButton from '@/components/ui/FloatingChatButton';
+import { store } from '@/utils';
+import { useLocation } from '@/hooks/useLocation';
 
 // Placeholder: screen only shows header and search now
 
@@ -32,38 +34,10 @@ const UserClubScreen = () => {
   const router = useRouter();
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [clubFilters, setClubFilters] = useState<{ distanceKm?: number | null; hasUpcomingEvents?: boolean; mostPopular?: boolean; clubTypes?: string[] }>({ distanceKm: null, clubTypes: [] });
-  const [scrollEnabled, setScrollEnabled] = useState(true);
 
-  // Location state
-  const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
-  // const [locationLoading, setLocationLoading] = useState(true);
-  
-  // Fallback coordinates for Dubai (if location access fails)
-  const FALLBACK_LATITUDE = 25.2048;
-  const FALLBACK_LONGITUDE = 55.2708;
+  // Use location hook (same as userHomeScreen)
+  const { userLocation, locationLoading, hasLocation, isFallbackLocation } = useLocation();
 
-  // Get user's current location (mirrors userHomeScreen logic with fallback)
-  useEffect(() => {
-    let isMounted = true;
-    const getCurrentLocation = async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          if (!isMounted) return;
-          setUserLocation({ latitude: FALLBACK_LATITUDE, longitude: FALLBACK_LONGITUDE });
-          return;
-        }
-        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        if (!isMounted) return;
-        setUserLocation({ latitude: location.coords.latitude, longitude: location.coords.longitude });
-      } catch {
-        if (!isMounted) return;
-        setUserLocation({ latitude: FALLBACK_LATITUDE, longitude: FALLBACK_LONGITUDE });
-      }
-    };
-    getCurrentLocation();
-    return () => { isMounted = false; };
-  }, []);
 
   // Handle city selection
   const handleCitySelect = (city: City) => {
@@ -149,6 +123,29 @@ const UserClubScreen = () => {
     fetchClubs();
   }, [selectedCity, selectedTypes, userLocation]);
 
+  const handleChatButtonPress = async () => {
+    // Get the selected city from store, default to Dubai
+    const selectedCity = await store.get('selectedCity') || 'Dubai';
+    
+    const params: any = {
+      Screen: 'MAP',
+      city: selectedCity,
+      userLocation: userLocation,
+    };
+    
+    // Only add location if we have it and it's not fallback
+    if (hasLocation && !isFallbackLocation && userLocation) {
+      params.latitude = userLocation.latitude.toString();
+      params.longitude = userLocation.longitude.toString();
+    }
+    
+    router.push({
+      pathname: '/chatbot',
+      params
+    });
+  };
+
+
   const filteredClubs = useMemo(() => {
     const pattern = buildRegex(search);
     return clubs.filter((club) => {
@@ -197,19 +194,17 @@ const UserClubScreen = () => {
           ]}
           showsVerticalScrollIndicator={false}
           scrollIndicatorInsets={{ top: 130, bottom: insets.bottom + 80 }}
-          scrollEnabled={scrollEnabled}
+          scrollEnabled={true}
           keyboardShouldPersistTaps="handled"
           nestedScrollEnabled
         >
           {/* Map View Card */}
-          <MapViewCard 
+          <MapViewCard
             clubs={filteredClubs.length ? filteredClubs : clubs} 
             loading={clubsLoading}
             onMarkerPress={handleMapMarkerPress}
             cityName={selectedCity.name}
             height={190}
-            onMapInteractionStart={() => setScrollEnabled(false)}
-            onMapInteractionEnd={() => setScrollEnabled(true)}
           />
           
           {/* User Club List Header */}
@@ -254,6 +249,7 @@ const UserClubScreen = () => {
           onApply={({ club }) => setClubFilters(club)}
         />
       </View>
+      <FloatingChatButton onPress={handleChatButtonPress} /> 
     </SafeAreaView>
   );
 };
