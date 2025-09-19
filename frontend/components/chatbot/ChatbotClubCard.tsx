@@ -49,8 +49,8 @@ const ChatbotClubCard: React.FC<ChatbotClubCardProps> = ({ club, onPress }) => {
   };
 
   const getRatingStars = () => {
-    if (!club.rating) return '★☆☆☆☆';
-    const rating = Math.round(club.rating);
+    if (!club.rating || isNaN(club.rating)) return '★☆☆☆☆';
+    const rating = Math.round(Number(club.rating));
     return '★'.repeat(rating) + '☆'.repeat(5 - rating);
   };
 
@@ -69,9 +69,9 @@ const ChatbotClubCard: React.FC<ChatbotClubCardProps> = ({ club, onPress }) => {
           <View style={styles.typeBadge}>
             <Text style={styles.typeText}>{club.type}</Text>
           </View>
-          {club.eventsCount && club.eventsCount > 0 && (
+          {club.eventsCount && !isNaN(club.eventsCount) && club.eventsCount > 0 && (
             <View style={styles.eventsBadge}>
-              <Text style={styles.eventsText}>{club.eventsCount} events</Text>
+              <Text style={styles.eventsText}>{Number(club.eventsCount)} events</Text>
             </View>
           )}
         </View>
@@ -107,9 +107,9 @@ const ChatbotClubCard: React.FC<ChatbotClubCardProps> = ({ club, onPress }) => {
             <Text style={styles.ratingText}>
               {getRatingStars()}
             </Text>
-            {club.rating && (
+            {club.rating && !isNaN(club.rating) && (
               <Text style={styles.ratingNumber}>
-                {club.rating.toFixed(1)}
+                {Number(club.rating).toFixed(1)}
               </Text>
             )}
           </View>
@@ -130,10 +130,10 @@ const ChatbotClubCard: React.FC<ChatbotClubCardProps> = ({ club, onPress }) => {
             </View>
           </View>
 
-          {club.phone && (
+          {club.phone && club.phone.toString().trim() && (
             <View style={styles.phoneContainer}>
               <Text style={styles.phoneLabel}>📞</Text>
-              <Text style={styles.phoneText}>{club.phone}</Text>
+              <Text style={styles.phoneText}>{club.phone.toString()}</Text>
             </View>
           )}
         </View>
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   eventsBadge: {
-    backgroundColor: Colors.withOpacity.primary20,
+    backgroundColor: Colors.withOpacity.primary10,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,

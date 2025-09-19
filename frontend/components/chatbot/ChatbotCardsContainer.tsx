@@ -9,6 +9,7 @@ import {
 import { Colors } from '@/constants/Colors';
 import ChatbotEventCard from './ChatbotEventCard';
 import ChatbotClubCard from './ChatbotClubCard';
+import ChatbotBookingCard from './ChatbotBookingCard';
 
 interface ChatbotCardsContainerProps {
   cards: any[];
@@ -43,6 +44,24 @@ const ChatbotCardsContainer: React.FC<ChatbotCardsContainerProps> = ({
   };
 
   const renderCard = (item: any, index: number) => {
+    // Check if this is booking data (has bookingId, bookingStatus, etc.)
+    const isBookingData = item.bookingId || item.bookingStatus || item.transactionId;
+    
+    if (isBookingData) {
+      // This is booking data, use ChatbotBookingCard
+      return (
+        <ChatbotBookingCard
+          key={`booking-${index}`}
+          booking={item}
+          onPress={() => {
+            console.log('Booking card pressed:', item.bookingId);
+            // For booking cards, we don't navigate to event details
+            // Instead, we could show QR code or booking details
+          }}
+        />
+      );
+    }
+
     // For mixed type, determine if it's an event or club
     if (cardType === 'mixed') {
       // Check if item has event-specific properties

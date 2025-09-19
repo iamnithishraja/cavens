@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
 import apiClient from '@/app/api/client';
 import ChatbotCardsContainer from '@/components/chatbot/ChatbotCardsContainer';
+import { store } from '@/utils';
 
 interface Message {
   id: string;
@@ -139,6 +140,20 @@ const Chatbot: React.FC<ChatbotProps> = ({
         type: msg.type
       }));
 
+      // Check if user is authenticated
+      const token = await store.get('token');
+      console.log('🔐 User authentication status:', {
+        hasToken: !!token,
+        tokenLength: token?.length || 0
+      });
+
+      console.log('🚀 Sending chatbot request:', {
+        message: text.trim(),
+        screen,
+        city: typeof city === 'string' ? city : city || 'Dubai',
+        conversationHistoryLength: conversationHistory.length
+      });
+
       const response = await apiClient.post('/api/chatbot/chat', {
         message: text.trim(),
         eventId,
@@ -152,6 +167,15 @@ const Chatbot: React.FC<ChatbotProps> = ({
       });
 
           if (response.data.success) {
+            console.log('🤖 [FRONTEND DEBUG] API Response:', {
+              response: response.data.data.response,
+              type: response.data.data.type,
+              showCards: response.data.data.showCards,
+              cardType: response.data.data.cardType,
+              cardsLength: response.data.data.cards?.length || 0,
+              cards: response.data.data.cards
+            });
+            
             const botMessage: Message = {
               id: (Date.now() + 1).toString(),
               text: response.data.data.response,
@@ -258,6 +282,9 @@ const Chatbot: React.FC<ChatbotProps> = ({
                               message.type === 4 ? styles.typeClubQuestion :
                               message.type === 5 ? styles.typeBooking :
                               message.type === 6 ? styles.typeDirections :
+                              message.type === 7 ? styles.typeMyBookings :
+                              message.type === 8 ? styles.typeBookingStatus :
+                              message.type === 9 ? styles.typeBookingDetails :
                               styles.typeGeneral
                             ]}>
                               <Text style={styles.typeText}>
@@ -265,8 +292,11 @@ const Chatbot: React.FC<ChatbotProps> = ({
                                  message.type === 3 ? 'Clubs' :
                                  message.type === 1 ? 'Event Q&A' :
                                  message.type === 4 ? 'Club Q&A' :
-                                 message.type === 5 ? 'Booking' :
+                                 message.type === 5 ? 'Booking Help' :
                                  message.type === 6 ? 'Directions' :
+                                 message.type === 7 ? 'My Bookings' :
+                                 message.type === 8 ? 'Booking Status' :
+                                 message.type === 9 ? 'Booking Details' :
                                  'Chat'}
                               </Text>
                             </View>
@@ -296,6 +326,17 @@ const Chatbot: React.FC<ChatbotProps> = ({
                         cards={message.cards}
                         cardType={message.cardType || 'events'}
                       />
+                    )}
+                    
+                    {/* Debug info for cards */}
+                    {!message.isUser && (
+                      <View style={{ padding: 10, backgroundColor: 'rgba(255,255,255,0.1)', margin: 5, borderRadius: 5 }}>
+                        <Text style={{ color: 'white', fontSize: 10 }}>
+                          DEBUG: showCards={String(message.showCards)}, 
+                          cards={message.cards?.length || 0}, 
+                          cardType={message.cardType || 'none'}
+                        </Text>
+                      </View>
                     )}
                   </View>
                 ))}
@@ -488,6 +529,15 @@ const styles = StyleSheet.create({
   },
   typeDirections: {
     backgroundColor: 'rgba(255, 184, 0, 0.1)', // Orange for directions
+  },
+  typeMyBookings: {
+    backgroundColor: 'rgba(156, 39, 176, 0.1)', // Purple for my bookings
+  },
+  typeBookingStatus: {
+    backgroundColor: 'rgba(76, 175, 80, 0.1)', // Green for booking status
+  },
+  typeBookingDetails: {
+    backgroundColor: 'rgba(33, 150, 243, 0.1)', // Blue for booking details
   },
   typeGeneral: {
     backgroundColor: Colors.withOpacity.white10,
