@@ -150,7 +150,7 @@ export default function BookingsScreen() {
         />
       )}
 
-      <FloatingChatButton onPress={handleChatButtonPress} />
+      <FloatingChatButton onPress={handleChatButtonPress} /> 
     </SafeAreaView>
   );
 }

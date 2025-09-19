@@ -285,6 +285,7 @@ const Chatbot: React.FC<ChatbotProps> = ({
                               message.type === 7 ? styles.typeMyBookings :
                               message.type === 8 ? styles.typeBookingStatus :
                               message.type === 9 ? styles.typeBookingDetails :
+                              message.type === 10 ? styles.typeClubRegistration :
                               styles.typeGeneral
                             ]}>
                               <Text style={styles.typeText}>
@@ -297,6 +298,7 @@ const Chatbot: React.FC<ChatbotProps> = ({
                                  message.type === 7 ? 'My Bookings' :
                                  message.type === 8 ? 'Booking Status' :
                                  message.type === 9 ? 'Booking Details' :
+                                 message.type === 10 ? 'Club Registration' :
                                  'Chat'}
                               </Text>
                             </View>
@@ -538,6 +540,9 @@ const styles = StyleSheet.create({
   },
   typeBookingDetails: {
     backgroundColor: 'rgba(33, 150, 243, 0.1)', // Blue for booking details
+  },
+  typeClubRegistration: {
+    backgroundColor: 'rgba(156, 39, 176, 0.1)', // Purple for club registration
   },
   typeGeneral: {
     backgroundColor: Colors.withOpacity.white10,

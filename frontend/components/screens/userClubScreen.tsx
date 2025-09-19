@@ -18,6 +18,8 @@ import UserClubListHeader from '@/components/screens/UserClub/UserClubListHeader
 import MapViewCard from '@/components/Map/MapViewCard';
 import UserClubListItem from '@/components/screens/UserClub/UserClubListItem';
 import FilterModal from '@/components/Models/filterModel';
+import FloatingChatButton from '@/components/ui/FloatingChatButton';
+import { store } from '@/utils';
 
 // Placeholder: screen only shows header and search now
 
@@ -149,6 +151,23 @@ const UserClubScreen = () => {
     fetchClubs();
   }, [selectedCity, selectedTypes, userLocation]);
 
+  const handleChatButtonPress = async () => {
+    console.log('🎫 Bookings Screen Navigation');
+    
+    // Get the selected city from store, default to Dubai
+    const selectedCity = await store.get('selectedCity') || 'Dubai';
+    
+    router.push({
+      pathname: '/chatbot',
+      params:{
+        Screen:'PROFILE',
+        city: selectedCity,
+      }
+    }
+    )
+  };
+
+
   const filteredClubs = useMemo(() => {
     const pattern = buildRegex(search);
     return clubs.filter((club) => {
@@ -254,6 +273,7 @@ const UserClubScreen = () => {
           onApply={({ club }) => setClubFilters(club)}
         />
       </View>
+      <FloatingChatButton onPress={handleChatButtonPress} /> 
     </SafeAreaView>
   );
 };
