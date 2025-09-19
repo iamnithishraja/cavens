@@ -105,22 +105,11 @@ const UserHomeScreen = () => {
 
         console.log("✅ Location permissions granted");
         
-        // Print FCM token for debugging
-        try {
-          const { fcmService } = await import('@/utils/fcm');
-          const token = await fcmService.getToken();
-          if (token) {
-            console.log('🔔 FCM Token:', token);
-          }
-        } catch (error) {
-          console.log('🔔 FCM Token not available');
-        }
         
         // Now start geofencing with permissions
         const geofencingStarted = await geofencingService.startGeofencing();
+        
         if (geofencingStarted) {
-          console.log("✅ Geofencing started");
-          
           // Get current location for the UI
           try {
             const location = await Location.getCurrentPositionAsync({

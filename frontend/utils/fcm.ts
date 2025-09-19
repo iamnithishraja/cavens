@@ -125,29 +125,24 @@ export class FCMService {
    * Initialize FCM service
    */
   async initialize(): Promise<void> {
+    const globalInitKey = '__CAVENS_FCM_INITIALIZED__';
+    if ((global as any)[globalInitKey]) return;
+
     try {
-      // Request permission
       const hasPermission = await this.requestPermission();
       
       if (hasPermission) {
-        // Get and save token
         const token = await this.getToken();
         if (token) {
           await this.saveTokenToStorage(token);
-          
-          // Send token to backend
-          const sentToServer = await this.sendTokenToServer(token);
-          if (!sentToServer) {
-            console.warn('🔔 Failed to register FCM token');
-          }
-        } else {
-          console.warn('🔔 Failed to get FCM token');
+          await this.sendTokenToServer(token);
+          console.log('✅ Notifications: FCM initialized');
         }
-      } else {
-        console.log('🔔 Notification permission denied');
       }
-    } catch (error) {
-      console.error('🔔 Error initializing FCM:', error);
+      
+      (global as any)[globalInitKey] = true;
+    } catch (_error) {
+      console.error('❌ Notifications: FCM initialization failed');
     }
   }
 

@@ -39,35 +39,22 @@ export class NotificationService {
     payload: NotificationPayload
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
-      console.log(`🔔 Starting notification send for user: ${userId}`);
-      console.log(`📱 Payload:`, payload);
-      
       // Get user's FCM token
       const user = await User.findById(userId);
       if (!user) {
-        console.log(`❌ User not found: ${userId}`);
         return { success: false, error: 'User not found' };
       }
 
       if (!user.fcmToken) {
-        console.log(`❌ User has no FCM token: ${userId}`);
         return { success: false, error: 'User has no FCM token' };
       }
 
-       console.log(`✅ User found with FCM token: ${user.fcmToken.substring(0, 20)}...`);
-       
        // Validate and clean the payload
        const cleanPayload = {
          title: payload.title || 'Notification',
          body: payload.body || 'You have a new notification',
          data: payload.data || {}
        };
-
-       console.log(`📱 Notification payload:`, {
-         title: cleanPayload.title,
-         body: cleanPayload.body,
-         data: cleanPayload.data
-       });
 
       // Send notification with proper configuration for background delivery
       const message = {
@@ -137,17 +124,7 @@ export class NotificationService {
         },
       };
 
-      console.log(`🚀 Sending FCM message:`, {
-        token: user.fcmToken.substring(0, 20) + '...',
-        title: cleanPayload.title,
-        body: cleanPayload.body,
-        channelId: 'high_importance_channel',
-        hasNotification: !!message.notification,
-        hasData: !!message.data
-      });
-      
       const response = await admin.messaging().send(message as any);
-      console.log(`✅ FCM message sent successfully: ${response}`);
 
       return { success: true, messageId: response };
     } catch (error: any) {

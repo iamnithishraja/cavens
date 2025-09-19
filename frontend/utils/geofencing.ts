@@ -52,25 +52,20 @@ class GeofencingService {
   }
 
   async startGeofencing(): Promise<boolean> {
-    // Check if already started in this session
-    if (this.isStarted) {
+    if (this.isStarted) return true;
+
+    const globalStartKey = '__CAVENS_GEOFENCING_STARTED__';
+    if ((global as any)[globalStartKey]) {
+      this.isStarted = true;
       return true;
     }
 
-    
     const permissionsGranted = await this.initialize();
-    if (!permissionsGranted) {
-      console.error('❌ Location permissions not granted');
-      return false;
-    }
+    if (!permissionsGranted) return false;
 
     try {
-      // Always stop any existing geofencing tasks first (in case of app restart)
-      await Location.stopGeofencingAsync(GEOFENCING_TASK).catch(() => {
-        console.log('🔄 No existing geofencing tasks to stop');
-      });
+      await Location.stopGeofencingAsync(GEOFENCING_TASK).catch(() => {});
 
-      // Configure geofence regions for native background execution
       const geofenceRegions = UAE_CITIES.map(city => ({
         identifier: city.identifier,
         latitude: city.latitude,
@@ -80,18 +75,17 @@ class GeofencingService {
         notifyOnExit: true,
       }));
 
-
-      // Start native geofencing - this works even when app is completely closed
       await Location.startGeofencingAsync(GEOFENCING_TASK, geofenceRegions);
 
       this.isStarted = true;
+      (global as any)[globalStartKey] = true;
       await store.set('geofencingEnabled', 'true');
       await store.set('geofencingStartTime', new Date().toISOString());
       await store.set('geofencingRegions', JSON.stringify(geofenceRegions));
       
+      console.log('✅ Geofencing: Started');
       return true;
-    } catch (error) {
-      console.error('❌ Error starting geofencing:', error);
+    } catch (_error) {
       this.isStarted = false;
       await store.set('geofencingEnabled', 'false');
       return false;

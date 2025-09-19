@@ -652,48 +652,25 @@ const updateCityLocation = async (req: CustomRequest, res: Response) => {
       return;
     }
 
-    console.log(`🏙️ City update: ${eventType} ${city}`);
-    
-    // Check if user has FCM token (log only in testing)
     const user = await User.findById(req.user._id);
-    console.log(`🔍 User lookup result:`, {
-      userId: req.user._id,
-      userFound: !!user,
-      hasFcmToken: !!(user?.fcmToken),
-      fcmTokenPreview: user?.fcmToken ? `${user.fcmToken.substring(0, 20)}...` : 'none'
-    });
     
     if (!user || !user.fcmToken) {
-      console.log(`❌ User has no FCM token: ${req.user._id}`);
-      // In testing, do not block. In production, enforce.
-      // res.status(400).json({ success: false, message: "FCM token required" });
-      // return;
-    }
-
-    // Send city event notification if user entered a new city
-    if (eventType === 'enter') {
+      // User has no FCM token, skip notification
+    } else if (eventType === 'enter') {
+      // Send city event notification if user entered a new city
       try {
         const userId = req.user._id.toString();
-        console.log(`🔔 Attempting to send notification for ${city} to user ${userId}`);
-        
-        if (!user?.fcmToken) {
-          console.log(`❌ Cannot send notification - user has no FCM token`);
-        } else {
-          console.log(`✅ User has FCM token, proceeding with notification`);
-          notificationService.sendCityEventNotification(userId, city)
-            .then(result => {
-              if (result.success) {
-                console.log(`✅ Notification sent successfully:`, result.messageId);
-              } else {
-                console.log(`❌ Notification failed: ${result.error}`);
-              }
-            })
-            .catch(error => {
-              console.error(`❌ Notification error:`, error);
-            });
-        }
+        notificationService.sendCityEventNotification(userId, city)
+          .then(result => {
+            if (result.success) {
+              console.log(`✅ Notification: ${city} event sent`);
+            }
+          })
+          .catch(error => {
+            console.error(`❌ Notification: Failed to send ${city} event`);
+          });
       } catch (error) {
-        console.error(`❌ Error triggering notification:`, error);
+        console.error(`❌ Notification: Error sending ${city} event`);
       }
     }
 

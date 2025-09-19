@@ -136,27 +136,9 @@ export default function NotificationService() {
     async function setupNotifications() {
       try {
         
-        // Initialize FCM service
-        await fcmService.initialize();
-        
-        // Get the token for backend integration
-        const token = await fcmService.getToken();
-        if (!token) {
-          console.warn('Notifications: Failed to get FCM token');
-        }
-
-        // Initialize geofencing service (without requesting permissions)
-        // Permissions will be requested later on home screen
+        // FCM service is already initialized in _layout.tsx
         await geofencingService.initializeWithoutPermissions();
-
-        // Do not process pending city updates; no storage/replay
-
-        // Refresh FCM token to ensure it's up to date
-        try {
-          await fcmService.refreshToken();
-        } catch (error) {
-          console.error('🔔 Error refreshing FCM token:', error);
-        }
+        await fcmService.refreshToken();
 
         // Get messaging instance
         const app = getApp();

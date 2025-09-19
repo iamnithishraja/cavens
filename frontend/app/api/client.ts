@@ -33,13 +33,16 @@ export const sendCityUpdateToBackend = async (data: {
   eventType: 'enter' | 'exit';
 }) => {
   try {
-    console.log('📱 Sending city update to backend:', {
-      city: data.city,
-      eventType: data.eventType,
-      backendUrl: baseUrl
-    });
+    const lastUpdateKey = `lastCityUpdate_${data.city}_${data.eventType}`;
+    const lastUpdateTime = await store.get(lastUpdateKey);
+    const now = Date.now();
     
-    // Include JWT token as fallback when Authorization header is missing (background scenario)
+    if (lastUpdateTime && (now - parseInt(lastUpdateTime)) < 30000) {
+      return { success: true, message: 'Duplicate update skipped' };
+    }
+    
+    await store.set(lastUpdateKey, now.toString());
+    
     let fcmToken: string | null = null;
     try { fcmToken = await store.get('fcmToken'); } catch {}
     
@@ -52,16 +55,8 @@ export const sendCityUpdateToBackend = async (data: {
       fcmToken: fcmToken || undefined,
     });
     
-    console.log('✅ City update sent successfully:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Failed to send city update:', {
-      error: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      backendUrl: baseUrl
-    });
     throw error;
   }
 };

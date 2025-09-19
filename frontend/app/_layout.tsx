@@ -20,55 +20,47 @@ import '../firebase-messaging';
 import '../ReactNativeFirebaseMessagingHeadlessTask';
 
 // Define geofencing task IMMEDIATELY after imports (critical for background operation)
-TaskManager.defineTask('city-geofencing-task', async ({ data, error }: any) => {
-  console.log('🔔 Geofencing task triggered:', { data, error });
-  if (error) {
-    console.error('❌ Geofencing error:', error);
-    return;
-  }
-  if (!data) {
-    console.log('❌ No data in geofencing task');
-    return;
-  }
+// Prevent multiple task definitions using global flag
+const GEOFENCING_TASK_KEY = '__CAVENS_GEOFENCING_TASK_DEFINED__';
 
-  const { eventType, region } = data;
-  if (!eventType || !region) {
-    console.log('❌ Missing eventType or region:', { eventType, region });
-    return;
-  }
+// Initialize global object if it doesn't exist
+if (typeof global === 'undefined') {
+  global = globalThis;
+}
 
-  try {
+if (!(global as any)[GEOFENCING_TASK_KEY]) {
+  (global as any)[GEOFENCING_TASK_KEY] = true;
+  
+  TaskManager.defineTask('city-geofencing-task', async ({ data, error }: any) => {
+    if (error || !data || !data.eventType || !data.region) return;
+
+    const { eventType, region } = data;
     const lastTriggerKey = `lastTrigger_${region.identifier}_${eventType}`;
     const lastTriggerTime = await store.get(lastTriggerKey);
     const now = Date.now();
     
-    if (lastTriggerTime && (now - parseInt(lastTriggerTime)) < 30000) {
-      console.log(`Ignoring duplicate trigger for ${region.identifier}`);
-      return;
-    }
+    // Simple duplicate prevention - 30 seconds cooldown
+    if (lastTriggerTime && (now - parseInt(lastTriggerTime)) < 30000) return;
     
     await store.set(lastTriggerKey, now.toString());
 
     if (eventType === Location.GeofencingEventType.Enter) {
-      console.log('🏙️ Entered city:', region.identifier);
       await store.set('currentCity', region.identifier);
       await store.set('lastCityChangeTime', new Date().toISOString());
-
+      
       try {
-        console.log('📡 Sending city update to backend...');
-        const result = await sendCityUpdateToBackend({
+        await sendCityUpdateToBackend({
           city: region.identifier,
           latitude: region.latitude,
           longitude: region.longitude,
           timestamp: new Date().toISOString(),
           eventType: 'enter',
         });
-        console.log('✅ City update sent successfully:', result);
+        console.log('✅ Geofencing: Entered', region.identifier);
       } catch (err) {
-        console.error('❌ Failed to send city update:', err);
+        console.error('❌ Geofencing: Failed to send enter update');
       }
     } else if (eventType === Location.GeofencingEventType.Exit) {
-      console.log('Exited city:', region.identifier);
       try {
         await sendCityUpdateToBackend({
           city: region.identifier,
@@ -77,14 +69,14 @@ TaskManager.defineTask('city-geofencing-task', async ({ data, error }: any) => {
           timestamp: new Date().toISOString(),
           eventType: 'exit',
         });
+        console.log('✅ Geofencing: Exited', region.identifier);
       } catch (err) {
-        console.error('Failed to send city update:', err);
+        console.error('❌ Geofencing: Failed to send exit update');
       }
     }
-  } catch (err) {
-    console.error('Error in geofencing task:', err);
-  }
-});
+  });
+  
+}
 
 // Global callback to allow other screens to request a user re-check
 let externalCheckUserRef: null | (() => void) = null;
@@ -126,7 +118,16 @@ export default function RootLayout() {
   useEffect(() => {
     checkUser();
     // Initialize FCM at startup
-    fcmService.initialize().catch(console.error);
+    fcmService.initialize().then(() => {
+      // Log FCM token after initialization
+      fcmService.getToken().then(token => {
+        if (token) {
+          console.log('🔔 FCM Token:', token);
+        }
+      }).catch(() => {
+        console.log('🔔 FCM Token not available');
+      });
+    }).catch(console.error);
     externalCheckUserRef = checkUser;
     
     return () => {
