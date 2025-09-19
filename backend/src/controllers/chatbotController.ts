@@ -326,6 +326,15 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
         );
         break;
 
+      case 'club_registration':
+        responseType = 10; // Return 10 for club registration
+        response = await openRouterService.handleClubRegistration(
+          message,
+          conversationHistory,
+          { city: effectiveCity, userId, screen }
+        );
+        break;
+
       case 'booking_help':
         responseType = 5; // Return 5 for booking help
         response = await openRouterService.handleBookingHelp(

@@ -22,7 +22,7 @@ interface OpenRouterResponse {
 }
 
 interface ChatbotIntent {
-  type: 'find_events' | 'find_clubs' | 'event_question' | 'club_question' | 'filter_events' | 'filter_clubs' | 'booking_help' | 'booking_status' | 'booking_details' | 'my_bookings' | 'directions' | 'general';
+  type: 'find_events' | 'find_clubs' | 'event_question' | 'club_question' | 'filter_events' | 'filter_clubs' | 'booking_help' | 'booking_status' | 'booking_details' | 'my_bookings' | 'directions' | 'club_registration' | 'general';
   confidence: number;
   query?: string;
   eventId?: string;
@@ -86,6 +86,9 @@ Analyze the user's message and determine:
 - **booking_details**: "details of my booking", "booking information", "my ticket details"
 - **booking_help**: "how to book", "booking process", "how to cancel", "refund policy"
 
+**CLUB REGISTRATION INTENT DETECTION:**
+- **club_registration**: "how to become a club", "become a club owner", "club registration", "start a club", "club application", "how to register club", "club signup", "partner with cavens", "club membership", "how to join as club"
+
 **EVENT NAME EXTRACTION:**
 - Extract event names, DJ names, venue names from questions
 - Look for specific event references in conversation history
@@ -117,6 +120,7 @@ Examples:
 "Show my bookings" -> {"type": "my_bookings", "confidence": 0.9, "showCards": true, "cardType": "events"}
 "What's the status of my booking?" -> {"type": "booking_status", "confidence": 0.9, "showCards": false}
 "Tell me about my ticket details" -> {"type": "booking_details", "confidence": 0.9, "showCards": false}
+"How can I become a club in Cavens?" -> {"type": "club_registration", "confidence": 0.9, "showCards": false}
 "How do I book tickets?" -> {"type": "booking_help", "confidence": 0.9, "showCards": false}
 "Hello" -> {"type": "general", "confidence": 0.9, "showCards": false}
 "Recommend some events" -> {"type": "find_events", "confidence": 0.9, "showCards": true, "cardType": "events"}
@@ -762,6 +766,54 @@ RESPOND WITH ONLY JSON - NO OTHER TEXT.`;
         query: { isApproved: true }
       };
     }
+  }
+
+  async handleClubRegistration(
+    message: string,
+    conversationHistory: any[] = [],
+    context?: any
+  ): Promise<string> {
+    const conversationContext = conversationHistory.length > 0 
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      : '';
+
+    const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
+
+${conversationContext}
+
+The user is asking about how to become a club owner/partner with Cavens. Provide accurate information about the club registration process:
+
+**CLUB REGISTRATION PROCESS:**
+
+1. **Switch to Club Mode**: 
+   - Go to your Profile tab
+   - Look for the "Switch to Club" button
+   - Tap it to start the club registration process
+
+2. **Fill Out the Registration Form**:
+   - You'll need to provide club details (name, location, type, etc.)
+   - Upload required documents and images
+   - Complete all required fields in the form
+
+3. **Admin Review Process**:
+   - Your application will be reviewed by Cavens admin team
+   - This usually takes a few business days
+   - Admin may contact you for additional information or clarification
+
+4. **Approval & Activation**:
+   - Once approved, you'll receive confirmation
+   - Your club account will be activated
+   - You can start creating and managing events
+
+**IMPORTANT NOTES:**
+- Make sure you have all required documents ready
+- Provide accurate information in the registration form
+- Be patient during the review process
+- Admin team may contact you via email or phone for verification
+
+Respond with enthusiasm and encouragement, mentioning that becoming a club partner is a great opportunity to reach more customers and grow their business. Use a friendly, professional tone with appropriate emojis.`;
+
+    return this.generateResponse(message, { conversationHistory, context }, systemPrompt);
   }
 }
 
