@@ -6,7 +6,7 @@ import {
   ScrollView
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Location from 'expo-location';
+import { useLocation } from '@/hooks/useLocation';
 import EventDetailsScreen from './EventDetailsScreen';
 import { SAMPLE_EVENTS } from '@/components/event/data';
 import type { EventItem } from '@/components/event/types';
@@ -76,55 +76,14 @@ const UserHomeScreen = () => {
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [eventFilters, setEventFilters] = useState<{ maxPrice?: number; featured?: boolean; hasMenu?: boolean; ticketsAvailable?: boolean; soldOut?: boolean; mostPopular?: boolean; distanceKm?: number | null; sameCity?: boolean; walkingDistance?: boolean }>({ maxPrice: 100000, distanceKm: null });
   
-  // Location state
-  const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
-  const [locationLoading, setLocationLoading] = useState(true);
-  
-  // Fallback coordinates for Dubai (if location access fails)
-  const FALLBACK_LATITUDE = 25.2048;
-  const FALLBACK_LONGITUDE = 55.2708;
+  // Use location hook
+  const { userLocation, locationLoading, hasLocation, isFallbackLocation } = useLocation();
 
   // Initialize selected city in store
   useEffect(() => {
     store.set('selectedCity', selectedCity.name);
   }, []);
 
-  // Get user's current location
-  useEffect(() => {
-    const getCurrentLocation = async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        
-        if (status !== 'granted') {
-          setUserLocation({
-            latitude: FALLBACK_LATITUDE,
-            longitude: FALLBACK_LONGITUDE
-          });
-          setLocationLoading(false);
-          return;
-        }
-
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        
-        setUserLocation({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude
-        });
-      } catch (error) {
-        // Use fallback coordinates
-        setUserLocation({
-          latitude: FALLBACK_LATITUDE,
-          longitude: FALLBACK_LONGITUDE
-        });
-      } finally {
-        setLocationLoading(false);
-      }
-    };
-
-    getCurrentLocation();
-  }, []);
 
   // Fetch events data when location or city changes
   useEffect(() => {
