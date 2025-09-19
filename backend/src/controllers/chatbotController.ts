@@ -4,6 +4,7 @@ import eventModel from '../models/eventModel';
 import clubModel from '../models/clubModel';
 import { getSchemaForAI } from '../utils/databaseSchema';
 import { getContextualSuggestions, type ScreenType } from '../constants/chatbotSuggestions';
+import User from '../models/userModel';
 
 interface ChatbotMessage {
   role: 'user' | 'assistant';
@@ -264,10 +265,10 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
         responseType = 7; // Return 7 for my bookings
         
         // Get booking data first to pass to OpenRouter
-        let bookingData = [];
+        let bookingData: any[] = [];
         if (userId) {
           try {
-            const User = require('../models/userModel').default;
+            
             const userData = await User.findById(userId).populate({
               path: "orders",
               populate: [
@@ -718,7 +719,7 @@ async function getCardData(intent: any, city: string, userId?: string): Promise<
       
       try {
         // Import the User model and use the same logic as getBookings
-        const User = require('../models/userModel').default;
+        
         
         // Build the query based on user intent - filter by status if requested
         let statusFilter = {};
@@ -837,12 +838,6 @@ async function getCardData(intent: any, city: string, userId?: string): Promise<
       }
       
       try {
-        console.log('🎫 [BOOKINGS DEBUG] Step 1: Importing User model');
-        // Import the User model and use the same logic as getBookings
-        const User = require('../models/userModel').default;
-        console.log('🎫 [BOOKINGS DEBUG] User model imported successfully');
-        
-        console.log('🎫 [BOOKINGS DEBUG] Step 2: Building query for userId:', userId);
         // Build the query to get all orders (no status filter for chatbot)
         const userQuery = User.findById(userId).populate({
           path: "orders",
