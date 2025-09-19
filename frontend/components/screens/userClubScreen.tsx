@@ -160,7 +160,7 @@ const UserClubScreen = () => {
     router.push({
       pathname: '/chatbot',
       params:{
-        Screen:'PROFILE',
+        Screen:'MAP',
         city: selectedCity,
       }
     }
