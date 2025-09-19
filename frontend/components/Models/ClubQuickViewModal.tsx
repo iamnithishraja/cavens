@@ -59,7 +59,7 @@ const ClubQuickViewModal: React.FC<Props> = ({ visible, onClose, club, onView, i
             </View>
             <View style={styles.actionsRow}>
               <TouchableOpacity style={styles.viewBtn} onPress={() => onView && onView(club)} activeOpacity={0.9}>
-                <Text style={styles.viewBtnText}>VIEW EVENTS</Text>
+                <Text style={styles.viewBtnText}>BOOK TICKETS</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={onClose} style={styles.closeIconBtnInline} hitSlop={{ top: 8, left: 8, right: 8, bottom: 8 }}>
                 <Text style={styles.closeIconText}>✕</Text>
@@ -136,7 +136,7 @@ const ClubQuickViewModal: React.FC<Props> = ({ visible, onClose, club, onView, i
             </View>
             <View style={styles.actionsRow}>
               <TouchableOpacity style={styles.viewBtn} onPress={() => onView && onView(club)} activeOpacity={0.9}>
-                <Text style={styles.viewBtnText}>VIEW EVENTS</Text>
+                <Text style={styles.viewBtnText}>BOOK TICKETS</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={onClose} style={styles.closeIconBtnInline} hitSlop={{ top: 8, left: 8, right: 8, bottom: 8 }}>
                 <Text style={styles.closeIconText}>✕</Text>

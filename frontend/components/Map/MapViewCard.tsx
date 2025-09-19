@@ -5,7 +5,7 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { extractCoordinatesFromMapLink, calculateMapRegion } from '@/utils/mapUtils';
 import ClubMarker from '@/components/Map/ClubMarker';
 import { Colors } from '@/constants/Colors';
-import darkMapStyle from '@/utils/mapStyles';
+import { darkMapStyle } from '@/utils/mapStyles';
 import { useRouter } from 'expo-router';
 import { Maximize2 } from 'lucide-react-native';
 
@@ -27,6 +27,8 @@ type MapViewCardProps = {
   height?: number;
   onMarkerPress?: (club: any) => void;
   cityName?: string;
+  onMapInteractionStart?: () => void;
+  onMapInteractionEnd?: () => void;
 };
 
 const MapViewCard: React.FC<MapViewCardProps> = ({ 
@@ -35,6 +37,8 @@ const MapViewCard: React.FC<MapViewCardProps> = ({
   height = 190,
   onMarkerPress,
   cityName,
+  onMapInteractionStart,
+  onMapInteractionEnd,
 }) => {
   const clubsWithCoordinates = useMemo(() => {
     return (clubs || [])
@@ -129,6 +133,9 @@ const MapViewCard: React.FC<MapViewCardProps> = ({
               mapType="standard"
               moveOnMarkerPress={false}
               onMapReady={() => setMapReady(true)}
+              onRegionChange={() => { if (onMapInteractionStart) onMapInteractionStart(); }}
+              onRegionChangeComplete={() => { if (onMapInteractionEnd) onMapInteractionEnd(); }}
+              onPanDrag={() => { if (onMapInteractionStart) onMapInteractionStart(); }}
               showsMyLocationButton={false}
               showsScale={false}
               showsTraffic={false}
