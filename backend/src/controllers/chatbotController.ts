@@ -13,6 +13,7 @@ interface ChatbotMessage {
 }
 
 interface ChatbotRequest extends Request {
+  user?: any; // User object from auth middleware
   body: {
     message: string;
     userId?: string;
@@ -36,7 +37,17 @@ interface ChatbotRequest extends Request {
 
 export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
   try {
-    const { message, userId, eventId, city = 'Dubai', userLocation, preferences, conversationHistory = [], screen = 'GENERAL', hasBookings = false } = req.body;
+    const { message, eventId, city = 'Dubai', userLocation, preferences, conversationHistory = [], screen = 'GENERAL', hasBookings = false } = req.body;
+    
+    // Get userId from authenticated user
+    const userId = req.user?.id;
+    
+    console.log('🔐 User authentication:', {
+      userId,
+      userEmail: req.user?.email,
+      userName: req.user?.name,
+      isAuthenticated: !!req.user
+    });
     
     // Ensure city is a string
     const cityString = typeof city === 'string' ? city : 'Dubai';
@@ -49,8 +60,31 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
       return;
     }
 
-    // Analyze user intent with conversation context
-    const intent = await openRouterService.analyzeIntent(message, conversationHistory);
+        // Quick fallback for simple greetings
+        if (message.toLowerCase().match(/^(hi|hello|hey|good morning|good afternoon|good evening)$/)) {
+          res.json({
+            success: true,
+            data: {
+              response: "Hi! I'm Cavens AI 🎉 I can help you find amazing events and answer questions about nightlife in your city. What can I help you with?",
+              type: 0,
+              intent: 'general',
+              confidence: 1.0,
+              showCards: false,
+              cardType: null,
+              cards: null
+            }
+          });
+          return;
+        }
+
+        // Analyze user intent with conversation context
+        console.log('🤖 [CHATBOT DEBUG] Analyzing intent for message:', message);
+        const intent = await openRouterService.analyzeIntent(message, conversationHistory);
+        console.log('🤖 [CHATBOT DEBUG] Intent analysis result:', {
+          type: intent.type,
+          extractedInfo: intent.extractedInfo,
+          confidence: intent.confidence
+        });
 
     let response: string;
     let responseType: number;
@@ -232,6 +266,66 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
         );
         break;
 
+      case 'my_bookings':
+        console.log('🤖 [CHATBOT DEBUG] Processing my_bookings intent');
+        responseType = 7; // Return 7 for my bookings
+        
+        // Get booking data first to pass to OpenRouter
+        let bookingData = [];
+        if (userId) {
+          try {
+            const User = require('../models/userModel').default;
+            const userData = await User.findById(userId).populate({
+              path: "orders",
+              populate: [
+                { path: "event", model: "Event" },
+                { path: "ticket", model: "Ticket" },
+                { path: "club", model: "Club" },
+              ],
+            });
+            
+            bookingData = (userData?.orders || []).map((booking: any) => ({
+              id: booking.event?._id || booking.event,
+              name: booking.event?.name || 'Unknown Event',
+              venue: booking.club?.name || 'Unknown Venue',
+              bookingStatus: booking.status,
+              quantity: booking.quantity,
+              ticketType: booking.ticket?.name || '',
+              ticketPrice: booking.ticket?.price || 0
+            }));
+            
+            console.log('🤖 [CHATBOT DEBUG] Booking data for OpenRouter:', bookingData.length);
+          } catch (error) {
+            console.error('🤖 [CHATBOT DEBUG] Error getting booking data:', error);
+          }
+        }
+        
+        response = await openRouterService.handleMyBookings(
+          message,
+          conversationHistory,
+          { city: effectiveCity, userId, screen, bookings: bookingData }
+        );
+        console.log('🤖 [CHATBOT DEBUG] My bookings response:', response);
+        break;
+
+      case 'booking_status':
+        responseType = 8; // Return 8 for booking status
+        response = await openRouterService.handleBookingStatus(
+          message,
+          conversationHistory,
+          { city: effectiveCity, userId, screen }
+        );
+        break;
+
+      case 'booking_details':
+        responseType = 9; // Return 9 for booking details
+        response = await openRouterService.handleBookingDetails(
+          message,
+          conversationHistory,
+          { city: effectiveCity, userId, screen }
+        );
+        break;
+
       case 'booking_help':
         responseType = 5; // Return 5 for booking help
         response = await openRouterService.handleBookingHelp(
@@ -256,6 +350,16 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
         break;
     }
 
+    console.log('🤖 [CHATBOT DEBUG] Final response data:', {
+      response,
+      type: responseType,
+      intent: intent.type,
+      confidence: intent.confidence,
+      showCards: intent.showCards || false,
+      cardType: intent.cardType || null,
+      hasCards: intent.showCards
+    });
+
     res.json({
       success: true,
       data: {
@@ -265,7 +369,10 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
         confidence: intent.confidence,
         showCards: intent.showCards || false,
         cardType: intent.cardType || null,
-        cards: intent.showCards ? await getCardData(intent, effectiveCity) : null
+        cards: intent.showCards ? await Promise.race([
+          getCardData(intent, effectiveCity, userId),
+          new Promise(resolve => setTimeout(() => resolve([]), 5000)) // 5 second timeout for cards
+        ]) : null
       }
     });
     return;
@@ -290,7 +397,12 @@ async function executeAIGeneratedQuery(
     const schema = getSchemaForAI();
     
     // Generate query using AI
+    console.log('🔍 [QUERY DEBUG] Starting AI query generation');
+    console.log('🔍 [QUERY DEBUG] Input parameters:', { userMessage, intent, city });
+    console.log('🔍 [QUERY DEBUG] Schema loaded, length:', schema.length);
+    
     const queryConfig = await openRouterService.generateDatabaseQuery(userMessage, intent, schema);
+    console.log('🔍 [QUERY DEBUG] Generated query config:', queryConfig);
     
     let results = [];
     
@@ -356,12 +468,15 @@ async function findEventFromQuery(intent: any, city: string): Promise<any> {
         city: { $regex: new RegExp(`^${city}$`, 'i') },
         isApproved: true,
         'events.name': { $regex: new RegExp(extractedInfo.eventName, 'i') }
-      }).populate({
+      })
+      .limit(3) // Limit to 3 clubs for faster response
+      .populate({
         path: 'events',
         match: { 
           name: { $regex: new RegExp(extractedInfo.eventName, 'i') },
           status: 'active'
-        }
+        },
+        options: { limit: 1 } // Only get first matching event
       });
     }
     
@@ -372,9 +487,12 @@ async function findEventFromQuery(intent: any, city: string): Promise<any> {
         city: { $regex: new RegExp(`^${city}$`, 'i') },
         isApproved: true,
         name: { $regex: new RegExp(extractedInfo.venueName, 'i') }
-      }).populate({
+      })
+      .limit(2) // Limit to 2 clubs for faster response
+      .populate({
         path: 'events',
-        match: { status: 'active' }
+        match: { status: 'active' },
+        options: { limit: 1 } // Only get first event
       });
     }
     
@@ -385,12 +503,15 @@ async function findEventFromQuery(intent: any, city: string): Promise<any> {
         city: { $regex: new RegExp(`^${city}$`, 'i') },
         isApproved: true,
         'events.djArtists': { $regex: new RegExp(extractedInfo.djName, 'i') }
-      }).populate({
+      })
+      .limit(2) // Limit to 2 clubs for faster response
+      .populate({
         path: 'events',
         match: { 
           djArtists: { $regex: new RegExp(extractedInfo.djName, 'i') },
           status: 'active'
-        }
+        },
+        options: { limit: 1 } // Only get first matching event
       });
     }
     
@@ -586,9 +707,127 @@ async function findClubFromQuery(intent: any, city: string): Promise<any> {
 }
 
 // Function to get card data based on intent
-async function getCardData(intent: any, city: string): Promise<any[]> {
+async function getCardData(intent: any, city: string, userId?: string): Promise<any[]> {
   try {
+    console.log('🎯 [CARDS DEBUG] Starting getCardData');
+    console.log('🎯 [CARDS DEBUG] Input parameters:', { intent, city, userId });
+    
     const { type, cardType } = intent;
+    console.log('🎯 [CARDS DEBUG] Extracted type and cardType:', { type, cardType });
+    
+    if (type === 'my_bookings') {
+      console.log('🎫 [CARDS DEBUG] Processing my_bookings type for cards');
+      // Get user's bookings as event cards
+      if (!userId) {
+        console.log('❌ [CARDS DEBUG] No userId provided for my_bookings cards');
+        return [];
+      }
+      
+      try {
+        console.log('🎫 [CARDS DEBUG] Step 1: Importing User model for cards');
+        // Import the User model and use the same logic as getBookings
+        const User = require('../models/userModel').default;
+        console.log('🎫 [CARDS DEBUG] User model imported successfully for cards');
+        
+        console.log('🎫 [CARDS DEBUG] Step 2: Building query for userId:', userId);
+        
+        // Build the query based on user intent - filter by status if requested
+        let statusFilter = {};
+        
+        // Check if user is asking for specific status
+        if (intent?.query?.toLowerCase().includes('paid') || intent?.query?.toLowerCase().includes('ready')) {
+          statusFilter = { status: 'paid' };
+          console.log('🎫 [CARDS DEBUG] Filtering for paid bookings only');
+        } else if (intent?.query?.toLowerCase().includes('scanned') || intent?.query?.toLowerCase().includes('used')) {
+          statusFilter = { status: 'scanned' };
+          console.log('🎫 [CARDS DEBUG] Filtering for scanned bookings only');
+        } else {
+          console.log('🎫 [CARDS DEBUG] Showing all bookings (no status filter)');
+        }
+        
+        const userQuery = User.findById(userId).populate({
+          path: "orders",
+          match: Object.keys(statusFilter).length > 0 ? statusFilter : undefined,
+          populate: [
+            { path: "event", model: "Event" },
+            { path: "ticket", model: "Ticket" },
+            { path: "club", model: "Club" },
+          ],
+        });
+        console.log('🎫 [CARDS DEBUG] Query built successfully for cards');
+
+        console.log('🎫 [CARDS DEBUG] Step 3: Executing query for cards...');
+        const userData = await userQuery;
+        console.log('🎫 [CARDS DEBUG] Query executed for cards. User data:', {
+          userExists: !!userData,
+          userId: userData?._id,
+          ordersCount: userData?.orders?.length || 0
+        });
+        
+        const userBookings = userData?.orders || [];
+        console.log('🎫 [CARDS DEBUG] Step 4: Processing bookings for cards:', userBookings.length);
+
+        if (userBookings.length > 0) {
+          console.log('🎫 [CARDS DEBUG] Sample booking structure for cards:', JSON.stringify(userBookings[0], null, 2));
+        } else {
+          console.log('🎫 [CARDS DEBUG] No bookings found for user in cards');
+        }
+
+        console.log('🎫 [CARDS DEBUG] Step 5: Transforming to event cards format for cards');
+        // Transform results to event cards format
+        const bookingEvents = userBookings.map((booking: any, index: number) => {
+          console.log(`🎫 [CARDS DEBUG] Processing booking ${index + 1} for cards:`, {
+            bookingId: booking._id,
+            hasEvent: !!booking.event,
+            hasClub: !!booking.club,
+            hasTicket: !!booking.ticket,
+            eventName: booking.event?.name || 'No event name',
+            clubName: booking.club?.name || 'No club name',
+            ticketName: booking.ticket?.name || 'No ticket name'
+          });
+          
+          return {
+            id: booking.event?._id || booking.event,
+            name: booking.event?.name || 'Unknown Event',
+            description: booking.event?.description || '',
+            date: booking.event?.date || '',
+            time: booking.event?.time || '',
+            venue: booking.club?.name || 'Unknown Venue',
+            city: booking.club?.city || city,
+            djArtists: booking.event?.djArtists || '',
+            tickets: booking.event?.tickets || [],
+            guestExperience: booking.event?.guestExperience || {},
+            coverImage: booking.event?.coverImage || '',
+            isFeatured: booking.event?.isFeatured || false,
+            bookingId: booking._id,
+            bookingStatus: booking.status,
+            quantity: booking.quantity,
+            ticketType: booking.ticket?.name || '',
+            ticketPrice: booking.ticket?.price || 0,
+            transactionId: booking.transactionId,
+            isPaid: booking.isPaid,
+            createdAt: booking.createdAt,
+            updatedAt: booking.updatedAt
+          };
+        });
+
+        console.log('🎫 [CARDS DEBUG] Step 6: Final cards result:', {
+          totalEvents: bookingEvents.length,
+          sampleEvent: bookingEvents[0] ? {
+            id: bookingEvents[0].id,
+            name: bookingEvents[0].name,
+            venue: bookingEvents[0].venue,
+            bookingId: bookingEvents[0].bookingId
+          } : 'No events'
+        });
+
+        return bookingEvents;
+      } catch (error: any) {
+        console.error('🎫 [CARDS DEBUG] Error in booking fetch process for cards:', error);
+        console.error('🎫 [CARDS DEBUG] Error stack for cards:', error.stack);
+        return [];
+      }
+    }
     
     if (type === 'find_events' || type === 'filter_events' || (cardType === 'events')) {
       // Get events data
@@ -635,7 +874,108 @@ async function getCardData(intent: any, city: string): Promise<any[]> {
         }));
       }
 
-      return events.slice(0, 6); // Limit to 6 events
+      return events.slice(0, 4); // Limit to 4 events for faster response
+    }
+    
+    if (type === 'my_bookings') {
+      // Use the existing getBookings function from userController
+      console.log('🎫 [BOOKINGS DEBUG] Starting booking fetch process');
+      console.log('🎫 [BOOKINGS DEBUG] Parameters:', { userId, type, cardType, city });
+      
+      if (!userId) {
+        console.log('❌ [BOOKINGS DEBUG] No userId provided for my_bookings');
+        return [];
+      }
+      
+      try {
+        console.log('🎫 [BOOKINGS DEBUG] Step 1: Importing User model');
+        // Import the User model and use the same logic as getBookings
+        const User = require('../models/userModel').default;
+        console.log('🎫 [BOOKINGS DEBUG] User model imported successfully');
+        
+        console.log('🎫 [BOOKINGS DEBUG] Step 2: Building query for userId:', userId);
+        // Build the query to get all orders (no status filter for chatbot)
+        const userQuery = User.findById(userId).populate({
+          path: "orders",
+          populate: [
+            { path: "event", model: "Event" },
+            { path: "ticket", model: "Ticket" },
+            { path: "club", model: "Club" },
+          ],
+        });
+        console.log('🎫 [BOOKINGS DEBUG] Query built successfully');
+
+        console.log('🎫 [BOOKINGS DEBUG] Step 3: Executing query...');
+        const userData = await userQuery;
+        console.log('🎫 [BOOKINGS DEBUG] Query executed. User data:', {
+          userExists: !!userData,
+          userId: userData?._id,
+          ordersCount: userData?.orders?.length || 0
+        });
+        
+        const userBookings = userData?.orders || [];
+        console.log('🎫 [BOOKINGS DEBUG] Step 4: Processing bookings:', userBookings.length);
+
+        if (userBookings.length > 0) {
+          console.log('🎫 [BOOKINGS DEBUG] Sample booking structure:', JSON.stringify(userBookings[0], null, 2));
+        } else {
+          console.log('🎫 [BOOKINGS DEBUG] No bookings found for user');
+        }
+
+        console.log('🎫 [BOOKINGS DEBUG] Step 5: Transforming to event cards format');
+        // Transform results to event cards format
+        const bookingEvents = userBookings.map((booking: any, index: number) => {
+          console.log(`🎫 [BOOKINGS DEBUG] Processing booking ${index + 1}:`, {
+            bookingId: booking._id,
+            hasEvent: !!booking.event,
+            hasClub: !!booking.club,
+            hasTicket: !!booking.ticket,
+            eventName: booking.event?.name || 'No event name',
+            clubName: booking.club?.name || 'No club name',
+            ticketName: booking.ticket?.name || 'No ticket name'
+          });
+          
+          return {
+            id: booking.event?._id || booking.event,
+            name: booking.event?.name || 'Unknown Event',
+            description: booking.event?.description || '',
+            date: booking.event?.date || '',
+            time: booking.event?.time || '',
+            venue: booking.club?.name || 'Unknown Venue',
+            city: booking.club?.city || city,
+            djArtists: booking.event?.djArtists || '',
+            tickets: booking.event?.tickets || [],
+            guestExperience: booking.event?.guestExperience || {},
+            coverImage: booking.event?.coverImage || '',
+            isFeatured: booking.event?.isFeatured || false,
+            bookingId: booking._id,
+            bookingStatus: booking.status,
+            quantity: booking.quantity,
+            ticketType: booking.ticket?.name || '',
+            ticketPrice: booking.ticket?.price || 0,
+            transactionId: booking.transactionId,
+            isPaid: booking.isPaid,
+            createdAt: booking.createdAt,
+            updatedAt: booking.updatedAt
+          };
+        });
+
+        console.log('🎫 [BOOKINGS DEBUG] Step 6: Final result:', {
+          totalEvents: bookingEvents.length,
+          sampleEvent: bookingEvents[0] ? {
+            id: bookingEvents[0].id,
+            name: bookingEvents[0].name,
+            venue: bookingEvents[0].venue,
+            bookingId: bookingEvents[0].bookingId
+          } : 'No events'
+        });
+
+        return bookingEvents;
+      } catch (error: any) {
+        console.error('🎫 [BOOKINGS DEBUG] Error in booking fetch process:', error);
+        console.error('🎫 [BOOKINGS DEBUG] Error stack:', error.stack);
+        return [];
+      }
     }
     
     if (type === 'find_clubs' || type === 'filter_clubs' || (cardType === 'clubs')) {
@@ -657,7 +997,7 @@ async function getCardData(intent: any, city: string): Promise<any[]> {
         coverImage: club.photos?.[0]
       }));
 
-      return clubs.slice(0, 6); // Limit to 6 clubs
+      return clubs.slice(0, 4); // Limit to 4 clubs for faster response
     }
 
     return [];

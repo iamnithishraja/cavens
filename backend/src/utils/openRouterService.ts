@@ -22,7 +22,7 @@ interface OpenRouterResponse {
 }
 
 interface ChatbotIntent {
-  type: 'find_events' | 'find_clubs' | 'event_question' | 'club_question' | 'filter_events' | 'filter_clubs' | 'booking_help' | 'directions' | 'general';
+  type: 'find_events' | 'find_clubs' | 'event_question' | 'club_question' | 'filter_events' | 'filter_clubs' | 'booking_help' | 'booking_status' | 'booking_details' | 'my_bookings' | 'directions' | 'general';
   confidence: number;
   query?: string;
   eventId?: string;
@@ -37,6 +37,8 @@ interface ChatbotIntent {
     date?: string;
     location?: string;
     nearMe?: boolean;
+    bookingId?: string;
+    bookingStatus?: string;
     keywords?: string[];
     filters?: {
       price?: { min?: number; max?: number };
@@ -70,13 +72,19 @@ class OpenRouterService {
 CRITICAL: Respond ONLY with valid JSON. Do not include any explanatory text before or after the JSON.
 
 Analyze the user's message and determine:
-1. **Intent type**: find_events, find_clubs, event_question, club_question, general, etc.
+1. **Intent type**: find_events, find_clubs, event_question, club_question, booking_help, booking_status, booking_details, my_bookings, general, etc.
 2. **showCards**: true if user wants to see actual event/club cards, false for text-only responses
 3. **cardType**: "events", "clubs", or "mixed" when showCards is true
 
 **CARD DETECTION RULES:**
 - Show cards for: "show me events", "find clubs", "what events are happening", "list venues", "recommend events"
 - Show text for: "what time does it start", "how much does it cost", "tell me about this event", general questions
+
+**BOOKING INTENT DETECTION:**
+- **my_bookings**: "show my bookings", "what are my bookings", "my tickets", "my reservations"
+- **booking_status**: "status of my booking", "is my booking confirmed", "booking status"
+- **booking_details**: "details of my booking", "booking information", "my ticket details"
+- **booking_help**: "how to book", "booking process", "how to cancel", "refund policy"
 
 **EVENT NAME EXTRACTION:**
 - Extract event names, DJ names, venue names from questions
@@ -106,6 +114,10 @@ Examples:
 "What's the cover charge?" -> {"type": "event_question", "confidence": 0.8, "showCards": false}
 "Tell me about the Tech House Night at XYZ Club" -> {"type": "event_question", "confidence": 0.9, "showCards": false, "extractedInfo": {"eventName": "Tech House Night", "venueName": "XYZ Club"}}
 "What time does DJ John's set start?" -> {"type": "event_question", "confidence": 0.9, "showCards": false, "extractedInfo": {"djName": "DJ John"}}
+"Show my bookings" -> {"type": "my_bookings", "confidence": 0.9, "showCards": true, "cardType": "events"}
+"What's the status of my booking?" -> {"type": "booking_status", "confidence": 0.9, "showCards": false}
+"Tell me about my ticket details" -> {"type": "booking_details", "confidence": 0.9, "showCards": false}
+"How do I book tickets?" -> {"type": "booking_help", "confidence": 0.9, "showCards": false}
 "Hello" -> {"type": "general", "confidence": 0.9, "showCards": false}
 "Recommend some events" -> {"type": "find_events", "confidence": 0.9, "showCards": true, "cardType": "events"}
 
@@ -113,8 +125,8 @@ RESPOND WITH ONLY JSON - NO OTHER TEXT.`
         }
       ];
 
-      // Add conversation history (last 6 messages for context)
-      const recentHistory = conversationHistory.slice(-6);
+      // Add conversation history (last 3 messages for context - reduced for speed)
+      const recentHistory = conversationHistory.slice(-3);
       if (recentHistory.length > 0) {
         messages.push({
           role: 'system',
@@ -138,7 +150,7 @@ Use this conversation history to understand context. If the user is asking about
         {
           model: 'anthropic/claude-3.5-sonnet',
           messages,
-          max_tokens: 200,
+          max_tokens: 150, // Reduced from 200
           temperature: 0.3
         },
         {
@@ -147,7 +159,8 @@ Use this conversation history to understand context. If the user is asking about
             'Content-Type': 'application/json',
             'HTTP-Referer': 'https://cavens.app',
             'X-Title': 'Cavens AI Assistant'
-          }
+          },
+          timeout: 8000 // 8 second timeout for intent analysis
         }
       );
 
@@ -212,7 +225,7 @@ Use this conversation history to understand context. If the user is asking about
         {
           model: 'anthropic/claude-3.5-sonnet',
           messages,
-          max_tokens: 500,
+          max_tokens: 300, // Reduced from 500
           temperature: 0.7
         },
         {
@@ -221,7 +234,8 @@ Use this conversation history to understand context. If the user is asking about
             'Content-Type': 'application/json',
             'HTTP-Referer': 'https://cavens.app',
             'X-Title': 'Cavens AI Assistant'
-          }
+          },
+          timeout: 10000 // 10 second timeout for response generation
         }
       );
 
@@ -286,7 +300,7 @@ NEVER suggest events that are not in the provided list. Only use actual database
 
     const { conversationHistory = [] } = additionalContext || {};
     const conversationContext = conversationHistory.length > 0 
-      ? `\nConversation History:\n${conversationHistory.slice(-4).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
       : '';
 
     if (eventDetails) {
@@ -340,7 +354,7 @@ Use a friendly, apologetic but helpful tone with appropriate emojis.`;
 
   async handleGeneralConversation(message: string, conversationHistory: any[] = [], screenContext?: any): Promise<string> {
     const conversationContext = conversationHistory.length > 0 
-      ? `\nConversation History:\n${conversationHistory.slice(-4).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
       : '';
 
     // Add screen-specific context
@@ -391,7 +405,7 @@ Keep responses concise and use appropriate emojis.`;
     extractedInfo?: any
   ): Promise<string> {
     const conversationContext = conversationHistory.length > 0 
-      ? `\nConversation History:\n${conversationHistory.slice(-4).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
       : '';
 
     const locationContext = extractedInfo?.nearMe ? 'The user is looking for clubs near their current location.' : '';
@@ -431,7 +445,7 @@ NEVER suggest clubs that are not in the provided list. Only use actual database 
   ): Promise<string> {
     const { conversationHistory = [] } = additionalContext || {};
     const conversationContext = conversationHistory.length > 0 
-      ? `\nConversation History:\n${conversationHistory.slice(-4).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
       : '';
 
     let systemPrompt = '';
@@ -476,7 +490,7 @@ Use a friendly, apologetic but helpful tone with appropriate emojis.`;
     context?: any
   ): Promise<string> {
     const conversationContext = conversationHistory.length > 0 
-      ? `\nConversation History:\n${conversationHistory.slice(-4).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
       : '';
 
     // Add screen-specific context for booking help
@@ -505,6 +519,122 @@ Use a friendly, supportive tone with appropriate emojis.`;
     return this.generateResponse(message, { conversationHistory, context }, systemPrompt);
   }
 
+  async handleMyBookings(
+    message: string,
+    conversationHistory: any[] = [],
+    context?: any
+  ): Promise<string> {
+    const conversationContext = conversationHistory.length > 0 
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      : '';
+
+    const screenContextInfo = this.getScreenContextInfo(context);
+
+    // Get booking data from context if available
+    const bookings = context?.bookings || [];
+    const paidBookings = bookings.filter((booking: any) => booking.bookingStatus === 'paid');
+    const scannedBookings = bookings.filter((booking: any) => booking.bookingStatus === 'scanned');
+
+    const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
+
+${conversationContext}
+${screenContextInfo}
+
+The user is asking about their bookings/tickets. Here's their booking information:
+
+**Total Bookings**: ${bookings.length}
+**Paid Bookings (Ready to Use)**: ${paidBookings.length}
+**Scanned Bookings (Already Used)**: ${scannedBookings.length}
+
+${bookings.length > 0 ? `
+**Recent Bookings**:
+${bookings.slice(0, 3).map((booking: any, index: number) => 
+  `${index + 1}. ${booking.name} at ${booking.venue} - ${booking.bookingStatus === 'paid' ? '✅ Ready' : '📱 Scanned'}`
+).join('\n')}
+` : ''}
+
+Respond based on their actual booking data:
+
+${bookings.length === 0 ? `
+The user has no bookings yet. Encourage them to:
+1. Browse available events
+2. Make their first booking
+3. Explain the booking process
+` : `
+The user has ${bookings.length} booking${bookings.length === 1 ? '' : 's'}. 
+
+${paidBookings.length > 0 ? `
+**Active Tickets (${paidBookings.length})**: These are ready to use! Mention they can:
+- View QR codes for entry
+- Get venue directions  
+- Check event details and times
+- Share tickets with friends
+` : ''}
+
+${scannedBookings.length > 0 ? `
+**Used Tickets (${scannedBookings.length})**: These have been scanned at events.
+` : ''}
+
+Guide them to manage their bookings and offer specific help.
+`}
+
+Use a friendly, helpful tone with appropriate emojis. Be specific about their actual bookings.`;
+
+    return this.generateResponse(message, { conversationHistory, context, bookings }, systemPrompt);
+  }
+
+  async handleBookingStatus(
+    message: string,
+    conversationHistory: any[] = [],
+    context?: any
+  ): Promise<string> {
+    const conversationContext = conversationHistory.length > 0 
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      : '';
+
+    const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
+
+${conversationContext}
+
+The user is asking about the status of their booking. Respond helpfully by:
+
+1. **Acknowledge their concern** about booking status
+2. **Guide them to check their bookings** in the app
+3. **Explain booking statuses** (confirmed, pending, cancelled)
+4. **Offer to help** if they need to check a specific booking
+5. **Provide reassurance** about booking security
+
+Use a helpful, reassuring tone with appropriate emojis. Keep the response concise but informative.`;
+
+    return this.generateResponse(message, { conversationHistory, context }, systemPrompt);
+  }
+
+  async handleBookingDetails(
+    message: string,
+    conversationHistory: any[] = [],
+    context?: any
+  ): Promise<string> {
+    const conversationContext = conversationHistory.length > 0 
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      : '';
+
+    const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
+
+${conversationContext}
+
+The user is asking about their booking details. Respond helpfully by:
+
+1. **Acknowledge their request** for booking details
+2. **Guide them to their bookings** to see full details
+3. **Explain what details they can see** (event info, venue, date, time, QR codes)
+4. **Offer to help** with specific booking questions
+5. **Mention important details** like arrival time, dress code, etc.
+
+Use a friendly, helpful tone with appropriate emojis. Keep the response concise but informative.`;
+
+    return this.generateResponse(message, { conversationHistory, context }, systemPrompt);
+  }
+
   async handleDirections(
     message: string,
     extractedInfo: any,
@@ -512,7 +642,7 @@ Use a friendly, supportive tone with appropriate emojis.`;
   ): Promise<string> {
     const { conversationHistory = [], userLocation, screen } = context || {};
     const conversationContext = conversationHistory.length > 0 
-      ? `\nConversation History:\n${conversationHistory.slice(-4).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
+      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
       : '';
 
     const locationContext = userLocation 
@@ -573,6 +703,10 @@ Examples:
 - "Find clubs in Dubai" → {"model": "Club", "query": {"city": {"$regex": "^Dubai$", "$options": "i"}, "isApproved": true}}
 - "Events with hip-hop" → {"model": "Club", "query": {"events": {"$exists": true}, "isApproved": true}, "populate": {"path": "events", "match": {"status": "active", "$or": [{"name": {"$regex": "hip-hop", "$options": "i"}}, {"djArtists": {"$regex": "hip-hop", "$options": "i"}}]}}}
 - "Rooftop venues" → {"model": "Club", "query": {"typeOfVenue": {"$regex": "rooftop", "$options": "i"}, "isApproved": true}}
+- "My bookings" → {"model": "User", "query": {"_id": "USER_ID"}, "populate": {"path": "orders", "populate": [{"path": "event"}, {"path": "club"}, {"path": "ticket"}]}}
+- "Show my orders" → {"model": "User", "query": {"_id": "USER_ID"}, "populate": {"path": "orders", "populate": [{"path": "event"}, {"path": "club"}, {"path": "ticket"}]}}
+- "My tickets" → {"model": "User", "query": {"_id": "USER_ID"}, "populate": {"path": "orders", "populate": [{"path": "event"}, {"path": "club"}, {"path": "ticket"}]}}
+- "Booking status" → {"model": "User", "query": {"_id": "USER_ID"}, "populate": {"path": "orders", "match": {"status": "STATUS_VALUE"}, "populate": [{"path": "event"}, {"path": "club"}, {"path": "ticket"}]}}
 
 IMPORTANT: 
 - For upcoming events, filter by date: {"date": {"$gte": "2024-01-01"}} (use current date provided above)
@@ -580,6 +714,12 @@ IMPORTANT:
 - Use simple string values for dates in YYYY-MM-DD format
 - Keep all values as basic JSON types (string, number, boolean, object, array)
 - Always filter events by status: "active" and upcoming dates
+- For user bookings: Use User model with _id query and populate orders
+- For orders: Order model does NOT have userId field - use User.orders relationship
+- Replace "USER_ID" in examples with the actual userId from intent
+- For booking queries, always populate: event, club, and ticket references
+- The chatbot uses the same query pattern as getBookings function in userController
+- Status filtering: Use {"match": {"status": "paid"}} for paid orders, {"match": {"status": "scanned"}} for scanned orders
 
 RESPOND WITH ONLY JSON - NO OTHER TEXT.`;
 
