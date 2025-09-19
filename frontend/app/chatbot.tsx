@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
 import Chatbot from '@/components/ui/Chatbot';
 
+
 export default function ChatbotScreen() {
   const [isChatbotVisible, setIsChatbotVisible] = useState(true);
   
@@ -17,6 +18,12 @@ export default function ChatbotScreen() {
   const screen = (params.Screen as string) || 'GENERAL';
   const city = (params.city as string) || 'Dubai';
   const hasBookings = params.hasBookings === 'true';
+  
+  // Parse location data if available (only for MAP screen)
+  const userLocation = (params.latitude && params.longitude) ? {
+    latitude: parseFloat(params.latitude as string),
+    longitude: parseFloat(params.longitude as string)
+  } : undefined;
   const handleClose = () => {
     setIsChatbotVisible(false);
     router.back();
@@ -34,6 +41,7 @@ export default function ChatbotScreen() {
           onClose={handleClose}
           city={city}
           screen={screen as 'HOME' | 'MAP' | 'BOOKINGS' | 'PROFILE' | 'GENERAL'}
+          userLocation={userLocation}
         />
       </LinearGradient>
     </SafeAreaView>

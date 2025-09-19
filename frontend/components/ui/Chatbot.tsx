@@ -51,7 +51,7 @@ const Chatbot: React.FC<ChatbotProps> = ({
   eventId,
   userLocation,
   city = 'Dubai',
-  screen = 'GENERAL'
+  screen = 'GENERAL',
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
