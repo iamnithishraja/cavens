@@ -252,9 +252,7 @@ const Chatbot: React.FC<ChatbotProps> = ({
                               message.type === 8 ? styles.typeBookingStatus :
                               message.type === 9 ? styles.typeBookingDetails :
                               message.type === 10 ? styles.typeClubRegistration :
-                              message.type === 11 ? styles.typeRefundPolicy :
-                              message.type === 12 ? styles.typeCancellationPolicy :
-                              message.type === 13 ? styles.typeBookingPolicies :
+                              message.type === 11 ? styles.typePolicyQuery :
                               styles.typeGeneral
                             ]}>
                               <Text style={styles.typeText}>
@@ -268,9 +266,7 @@ const Chatbot: React.FC<ChatbotProps> = ({
                                  message.type === 8 ? 'Booking Status' :
                                  message.type === 9 ? 'Booking Details' :
                                  message.type === 10 ? 'Club Registration' :
-                                 message.type === 11 ? 'Refund Policy' :
-                                 message.type === 12 ? 'Cancellation Policy' :
-                                 message.type === 13 ? 'Booking Policies' :
+                                 message.type === 11 ? 'Policies' :
                                  'Chat'}
                               </Text>
                             </View>
@@ -506,14 +502,8 @@ const styles = StyleSheet.create({
   typeClubRegistration: {
     backgroundColor: 'rgba(156, 39, 176, 0.1)', // Purple for club registration
   },
-  typeRefundPolicy: {
-    backgroundColor: 'rgba(255, 87, 34, 0.1)', // Orange for refund policy
-  },
-  typeCancellationPolicy: {
-    backgroundColor: 'rgba(244, 67, 54, 0.1)', // Red for cancellation policy
-  },
-  typeBookingPolicies: {
-    backgroundColor: 'rgba(63, 81, 181, 0.1)', // Indigo for booking policies
+  typePolicyQuery: {
+    backgroundColor: 'rgba(255, 87, 34, 0.1)', // Orange for policy queries
   },
   typeGeneral: {
     backgroundColor: Colors.withOpacity.white10,

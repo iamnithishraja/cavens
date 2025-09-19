@@ -22,7 +22,7 @@ interface OpenRouterResponse {
 }
 
 interface ChatbotIntent {
-  type: 'find_events' | 'find_clubs' | 'event_question' | 'club_question' | 'filter_events' | 'filter_clubs' | 'booking_help' | 'booking_status' | 'booking_details' | 'my_bookings' | 'directions' | 'club_registration' | 'refund_policy' | 'cancellation_policy' | 'booking_policies' | 'general';
+  type: 'find_events' | 'find_clubs' | 'event_question' | 'club_question' | 'filter_events' | 'filter_clubs' | 'booking_help' | 'booking_status' | 'booking_details' | 'my_bookings' | 'directions' | 'club_registration' | 'policy_query' | 'general';
   confidence: number;
   query?: string;
   eventId?: string;
@@ -85,9 +85,7 @@ Analyze the user's message and determine:
 - **booking_status**: "status of my booking", "is my booking confirmed", "booking status"
 - **booking_details**: "details of my booking", "booking information", "my ticket details"
 - **booking_help**: "how to book", "booking process", "how to make a booking"
-- **refund_policy**: "refund policy", "can I get a refund", "refund process", "money back", "refund terms"
-- **cancellation_policy**: "cancel booking", "how to cancel", "cancellation policy", "cancel my ticket", "cancel reservation"
-- **booking_policies**: "booking terms", "booking conditions", "booking rules", "ticket policies", "booking guidelines"
+- **policy_query**: "refund policy", "cancellation policy", "booking terms", "booking conditions", "booking rules", "ticket policies", "booking guidelines", "can I get a refund", "how to cancel", "money back", "refund terms", "cancel my ticket", "cancel reservation", "booking rules", "terms and conditions"
 
 **CLUB REGISTRATION INTENT DETECTION:**
 - **club_registration**: "how to become a club", "become a club owner", "club registration", "start a club", "club application", "how to register club", "club signup", "partner with cavens", "club membership", "how to join as club"
@@ -125,9 +123,9 @@ Examples:
 "Tell me about my ticket details" -> {"type": "booking_details", "confidence": 0.9, "showCards": false}
 "How can I become a club in Cavens?" -> {"type": "club_registration", "confidence": 0.9, "showCards": false}
 "How do I book tickets?" -> {"type": "booking_help", "confidence": 0.9, "showCards": false}
-"What's your refund policy?" -> {"type": "refund_policy", "confidence": 0.9, "showCards": false}
-"How can I cancel my booking?" -> {"type": "cancellation_policy", "confidence": 0.9, "showCards": false}
-"What are your booking terms?" -> {"type": "booking_policies", "confidence": 0.9, "showCards": false}
+"What's your refund policy?" -> {"type": "policy_query", "confidence": 0.9, "showCards": false}
+"How can I cancel my booking?" -> {"type": "policy_query", "confidence": 0.9, "showCards": false}
+"What are your booking terms?" -> {"type": "policy_query", "confidence": 0.9, "showCards": false}
 "Hello" -> {"type": "general", "confidence": 0.9, "showCards": false}
 "Recommend some events" -> {"type": "find_events", "confidence": 0.9, "showCards": true, "cardType": "events"}
 
@@ -822,99 +820,141 @@ Respond with enthusiasm and encouragement, mentioning that becoming a club partn
     return this.generateResponse(message, { conversationHistory, context }, systemPrompt);
   }
 
-  async handleRefundPolicy(
-    message: string,
-    conversationHistory: any[] = [],
-    context?: any
-  ): Promise<string> {
-    const conversationContext = conversationHistory.length > 0 
-      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
-      : '';
 
-    const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
-
-${conversationContext}
-
-The user is asking about the refund policy. Provide accurate information about Cavens' refund policy:
-
-**REFUND POLICY:**
-
-**Current Status**: Cavens does not currently offer refunds for event tickets.
-
-**Why No Refunds?**
-- Event tickets are non-refundable to protect venues and event organizers
-- This ensures fair pricing and prevents last-minute cancellations
-- Venues need guaranteed attendance for planning purposes
-
-**What You Can Do Instead:**
-1. **Transfer to Friend**: You can share your ticket with friends or family
-2. **Sell to Others**: You can transfer your ticket to someone else who wants to attend
-3. **Contact Support**: In exceptional circumstances (event cancellation, venue issues), contact our support team
-4. **Event Rescheduling**: If an event is rescheduled, your ticket remains valid for the new date
-
-**Important Notes:**
-- All sales are final
-- Tickets cannot be refunded for change of mind
-- This policy applies to all events on Cavens platform
-- Check event details before booking to avoid disappointment
-
-**Support Contact:**
-- For genuine issues (event cancelled, venue problems), contact our support team
-- We'll review each case individually
-- Documentation may be required for exceptional circumstances
-
-Respond with empathy and understanding, but be clear about the no-refund policy. Offer alternative solutions and emphasize the importance of checking event details before booking. Use a friendly, professional tone with appropriate emojis.`;
-
-    return this.generateResponse(message, { conversationHistory, context }, systemPrompt);
+  // Policy knowledge base for dynamic responses
+  private getPolicyKnowledgeBase(): { [key: string]: any } {
+    return {
+      refund: {
+        title: "REFUND POLICY",
+        status: "Cavens does not currently offer refunds for event tickets.",
+        reasons: [
+          "Event tickets are non-refundable to protect venues and event organizers",
+          "This ensures fair pricing and prevents last-minute cancellations",
+          "Venues need guaranteed attendance for planning purposes"
+        ],
+        alternatives: [
+          "Transfer to Friend: You can share your ticket with friends or family",
+          "Sell to Others: You can transfer your ticket to someone else who wants to attend",
+          "Contact Support: In exceptional circumstances (event cancellation, venue issues), contact our support team",
+          "Event Rescheduling: If an event is rescheduled, your ticket remains valid for the new date"
+        ],
+        notes: [
+          "All sales are final",
+          "Tickets cannot be refunded for change of mind",
+          "This policy applies to all events on Cavens platform",
+          "Check event details before booking to avoid disappointment"
+        ]
+      },
+      cancellation: {
+        title: "CANCELLATION POLICY",
+        status: "Cavens does not currently allow ticket cancellations after purchase.",
+        reasons: [
+          "Event tickets are non-cancellable to protect venues and event organizers",
+          "This ensures fair pricing and prevents last-minute cancellations",
+          "Venues need guaranteed attendance for planning purposes"
+        ],
+        alternatives: [
+          "Transfer to Friend: You can share your ticket with friends or family",
+          "Sell to Others: You can transfer your ticket to someone else who wants to attend",
+          "Contact Support: In exceptional circumstances (event cancellation, venue issues), contact our support team",
+          "Event Rescheduling: If an event is rescheduled, your ticket remains valid for the new date"
+        ],
+        notes: [
+          "All sales are final",
+          "Tickets cannot be cancelled for change of mind",
+          "This policy applies to all events on Cavens platform",
+          "Check event details before booking to avoid disappointment"
+        ]
+      },
+      general: {
+        title: "BOOKING POLICIES & TERMS",
+        sections: [
+          {
+            title: "Ticket Sales",
+            points: [
+              "All ticket sales are final",
+              "No refunds or cancellations after purchase",
+              "Prices may vary based on demand and availability"
+            ]
+          },
+          {
+            title: "Event Attendance",
+            points: [
+              "Arrive on time for events",
+              "Bring valid ID for age verification",
+              "Follow venue dress codes and rules",
+              "Respect other attendees and venue staff"
+            ]
+          },
+          {
+            title: "Ticket Transfer",
+            points: [
+              "You can transfer tickets to friends or family",
+              "Use the share feature in your bookings",
+              "Ensure the recipient has the Cavens app"
+            ]
+          },
+          {
+            title: "Event Changes",
+            points: [
+              "If an event is rescheduled, your ticket remains valid",
+              "If an event is cancelled, contact support for assistance",
+              "Venue changes will be communicated via app notifications"
+            ]
+          },
+          {
+            title: "Age Restrictions",
+            points: [
+              "Follow venue age requirements (usually 18+ or 21+)",
+              "Bring valid government-issued ID",
+              "Underage attendees will be denied entry"
+            ]
+          },
+          {
+            title: "Dress Code",
+            points: [
+              "Check event details for specific dress codes",
+              "Smart casual is generally recommended",
+              "Some venues may have specific requirements"
+            ]
+          },
+          {
+            title: "Payment",
+            points: [
+              "Secure payment processing",
+              "All major credit cards accepted",
+              "Payment confirmation sent via email"
+            ]
+          },
+          {
+            title: "Support",
+            points: [
+              "Contact support for genuine issues",
+              "Response time: within 24 hours",
+              "Documentation may be required for claims"
+            ]
+          }
+        ]
+      }
+    };
   }
 
-  async handleCancellationPolicy(
-    message: string,
-    conversationHistory: any[] = [],
-    context?: any
-  ): Promise<string> {
-    const conversationContext = conversationHistory.length > 0 
-      ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
-      : '';
-
-    const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
-
-${conversationContext}
-
-The user is asking about cancellation policy. Provide accurate information about Cavens' cancellation policy:
-
-**CANCELLATION POLICY:**
-
-**Current Status**: Cavens does not currently allow ticket cancellations after purchase.
-
-**Why No Cancellations?**
-- Event tickets are non-cancellable to protect venues and event organizers
-- This ensures fair pricing and prevents last-minute cancellations
-- Venues need guaranteed attendance for planning purposes
-
-**What You Can Do Instead:**
-1. **Transfer to Friend**: You can share your ticket with friends or family
-2. **Sell to Others**: You can transfer your ticket to someone else who wants to attend
-3. **Contact Support**: In exceptional circumstances (event cancellation, venue issues), contact our support team
-4. **Event Rescheduling**: If an event is rescheduled, your ticket remains valid for the new date
-
-**Important Notes:**
-- All sales are final
-- Tickets cannot be cancelled for change of mind
-- This policy applies to all events on Cavens platform
-- Check event details before booking to avoid disappointment
-
-**Support Contact:**
-- For genuine issues (event cancelled, venue problems), contact our support team
-- We'll review each case individually
-- Documentation may be required for exceptional circumstances
-
-Respond with empathy and understanding, but be clear about the no-cancellation policy. Offer alternative solutions and emphasize the importance of checking event details before booking. Use a friendly, professional tone with appropriate emojis.`;
-
-    return this.generateResponse(message, { conversationHistory, context }, systemPrompt);
+  // Extract policy type from user message
+  private extractPolicyType(message: string): string {
+    const lowerMessage = message.toLowerCase();
+    
+    if (lowerMessage.includes('refund') || lowerMessage.includes('money back')) {
+      return 'refund';
+    }
+    
+    if (lowerMessage.includes('cancel') || lowerMessage.includes('cancellation')) {
+      return 'cancellation';
+    }
+    
+    return 'general';
   }
 
-  async handleBookingPolicies(
+  async handlePolicyQuery(
     message: string,
     conversationHistory: any[] = [],
     context?: any
@@ -923,64 +963,59 @@ Respond with empathy and understanding, but be clear about the no-cancellation p
       ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
       : '';
 
-    const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
+    const policyType = this.extractPolicyType(message);
+    const policyData = this.getPolicyKnowledgeBase()[policyType];
+
+    let systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
 
 ${conversationContext}
 
-The user is asking about booking policies, terms, and conditions. Provide comprehensive information about Cavens' booking policies:
+The user is asking about booking policies. Based on their query, provide accurate information about Cavens' policies.
 
-**BOOKING POLICIES & TERMS:**
+**${policyData.title}:**
 
-**1. Ticket Sales:**
-- All ticket sales are final
-- No refunds or cancellations after purchase
-- Prices may vary based on demand and availability
+`;
 
-**2. Event Attendance:**
-- Arrive on time for events
-- Bring valid ID for age verification
-- Follow venue dress codes and rules
-- Respect other attendees and venue staff
+    if (policyType === 'general') {
+      systemPrompt += `**Current Status**: Here are our comprehensive booking policies and terms.
 
-**3. Ticket Transfer:**
-- You can transfer tickets to friends or family
-- Use the share feature in your bookings
-- Ensure the recipient has the Cavens app
-
-**4. Event Changes:**
-- If an event is rescheduled, your ticket remains valid
-- If an event is cancelled, contact support for assistance
-- Venue changes will be communicated via app notifications
-
-**5. Age Restrictions:**
-- Follow venue age requirements (usually 18+ or 21+)
-- Bring valid government-issued ID
-- Underage attendees will be denied entry
-
-**6. Dress Code:**
-- Check event details for specific dress codes
-- Smart casual is generally recommended
-- Some venues may have specific requirements
-
-**7. Payment:**
-- Secure payment processing
-- All major credit cards accepted
-- Payment confirmation sent via email
-
-**8. Support:**
-- Contact support for genuine issues
-- Response time: within 24 hours
-- Documentation may be required for claims
-
-**Important Reminders:**
+`;
+      policyData.sections.forEach((section: any) => {
+        systemPrompt += `**${section.title}:**\n`;
+        section.points.forEach((point: string) => {
+          systemPrompt += `- ${point}\n`;
+        });
+        systemPrompt += `\n`;
+      });
+      
+      systemPrompt += `**Important Reminders:**
 - Read event details carefully before booking
 - Check venue location and timing
 - Plan your transportation in advance
 - Have fun and stay safe! 🎉
 
 Respond with a helpful, comprehensive overview of the booking policies. Use a friendly, professional tone with appropriate emojis and clear structure.`;
+    } else {
+      systemPrompt += `**Current Status**: ${policyData.status}
 
-    return this.generateResponse(message, { conversationHistory, context }, systemPrompt);
+**Why This Policy?**
+${policyData.reasons.map((reason: string) => `- ${reason}`).join('\n')}
+
+**What You Can Do Instead:**
+${policyData.alternatives.map((alt: string) => `${alt}`).join('\n')}
+
+**Important Notes:**
+${policyData.notes.map((note: string) => `- ${note}`).join('\n')}
+
+**Support Contact:**
+- For genuine issues (event cancelled, venue problems), contact our support team
+- We'll review each case individually
+- Documentation may be required for exceptional circumstances
+
+Respond with empathy and understanding, but be clear about the policy. Offer alternative solutions and emphasize the importance of checking event details before booking. Use a friendly, professional tone with appropriate emojis.`;
+    }
+
+    return this.generateResponse(message, { conversationHistory, context, policyType }, systemPrompt);
   }
 }
 
