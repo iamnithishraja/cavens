@@ -78,13 +78,7 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
         }
 
         // Analyze user intent with conversation context
-        console.log('🤖 [CHATBOT DEBUG] Analyzing intent for message:', message);
         const intent = await openRouterService.analyzeIntent(message, conversationHistory);
-        console.log('🤖 [CHATBOT DEBUG] Intent analysis result:', {
-          type: intent.type,
-          extractedInfo: intent.extractedInfo,
-          confidence: intent.confidence
-        });
 
     let response: string;
     let responseType: number;
@@ -267,7 +261,6 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
         break;
 
       case 'my_bookings':
-        console.log('🤖 [CHATBOT DEBUG] Processing my_bookings intent');
         responseType = 7; // Return 7 for my bookings
         
         // Get booking data first to pass to OpenRouter
@@ -293,10 +286,8 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
               ticketType: booking.ticket?.name || '',
               ticketPrice: booking.ticket?.price || 0
             }));
-            
-            console.log('🤖 [CHATBOT DEBUG] Booking data for OpenRouter:', bookingData.length);
           } catch (error) {
-            console.error('🤖 [CHATBOT DEBUG] Error getting booking data:', error);
+            console.error('Error getting booking data:', error);
           }
         }
         
@@ -305,7 +296,6 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
           conversationHistory,
           { city: effectiveCity, userId, screen, bookings: bookingData }
         );
-        console.log('🤖 [CHATBOT DEBUG] My bookings response:', response);
         break;
 
       case 'booking_status':
@@ -359,15 +349,6 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
         break;
     }
 
-    console.log('🤖 [CHATBOT DEBUG] Final response data:', {
-      response,
-      type: responseType,
-      intent: intent.type,
-      confidence: intent.confidence,
-      showCards: intent.showCards || false,
-      cardType: intent.cardType || null,
-      hasCards: intent.showCards
-    });
 
     res.json({
       success: true,
@@ -718,27 +699,17 @@ async function findClubFromQuery(intent: any, city: string): Promise<any> {
 // Function to get card data based on intent
 async function getCardData(intent: any, city: string, userId?: string): Promise<any[]> {
   try {
-    console.log('🎯 [CARDS DEBUG] Starting getCardData');
-    console.log('🎯 [CARDS DEBUG] Input parameters:', { intent, city, userId });
-    
     const { type, cardType } = intent;
-    console.log('🎯 [CARDS DEBUG] Extracted type and cardType:', { type, cardType });
     
     if (type === 'my_bookings') {
-      console.log('🎫 [CARDS DEBUG] Processing my_bookings type for cards');
       // Get user's bookings as event cards
       if (!userId) {
-        console.log('❌ [CARDS DEBUG] No userId provided for my_bookings cards');
         return [];
       }
       
       try {
-        console.log('🎫 [CARDS DEBUG] Step 1: Importing User model for cards');
         // Import the User model and use the same logic as getBookings
         const User = require('../models/userModel').default;
-        console.log('🎫 [CARDS DEBUG] User model imported successfully for cards');
-        
-        console.log('🎫 [CARDS DEBUG] Step 2: Building query for userId:', userId);
         
         // Build the query based on user intent - filter by status if requested
         let statusFilter = {};
@@ -746,12 +717,8 @@ async function getCardData(intent: any, city: string, userId?: string): Promise<
         // Check if user is asking for specific status
         if (intent?.query?.toLowerCase().includes('paid') || intent?.query?.toLowerCase().includes('ready')) {
           statusFilter = { status: 'paid' };
-          console.log('🎫 [CARDS DEBUG] Filtering for paid bookings only');
         } else if (intent?.query?.toLowerCase().includes('scanned') || intent?.query?.toLowerCase().includes('used')) {
           statusFilter = { status: 'scanned' };
-          console.log('🎫 [CARDS DEBUG] Filtering for scanned bookings only');
-        } else {
-          console.log('🎫 [CARDS DEBUG] Showing all bookings (no status filter)');
         }
         
         const userQuery = User.findById(userId).populate({
@@ -763,37 +730,12 @@ async function getCardData(intent: any, city: string, userId?: string): Promise<
             { path: "club", model: "Club" },
           ],
         });
-        console.log('🎫 [CARDS DEBUG] Query built successfully for cards');
 
-        console.log('🎫 [CARDS DEBUG] Step 3: Executing query for cards...');
         const userData = await userQuery;
-        console.log('🎫 [CARDS DEBUG] Query executed for cards. User data:', {
-          userExists: !!userData,
-          userId: userData?._id,
-          ordersCount: userData?.orders?.length || 0
-        });
-        
         const userBookings = userData?.orders || [];
-        console.log('🎫 [CARDS DEBUG] Step 4: Processing bookings for cards:', userBookings.length);
 
-        if (userBookings.length > 0) {
-          console.log('🎫 [CARDS DEBUG] Sample booking structure for cards:', JSON.stringify(userBookings[0], null, 2));
-        } else {
-          console.log('🎫 [CARDS DEBUG] No bookings found for user in cards');
-        }
-
-        console.log('🎫 [CARDS DEBUG] Step 5: Transforming to event cards format for cards');
         // Transform results to event cards format
         const bookingEvents = userBookings.map((booking: any, index: number) => {
-          console.log(`🎫 [CARDS DEBUG] Processing booking ${index + 1} for cards:`, {
-            bookingId: booking._id,
-            hasEvent: !!booking.event,
-            hasClub: !!booking.club,
-            hasTicket: !!booking.ticket,
-            eventName: booking.event?.name || 'No event name',
-            clubName: booking.club?.name || 'No club name',
-            ticketName: booking.ticket?.name || 'No ticket name'
-          });
           
           return {
             id: booking.event?._id || booking.event,
@@ -820,20 +762,9 @@ async function getCardData(intent: any, city: string, userId?: string): Promise<
           };
         });
 
-        console.log('🎫 [CARDS DEBUG] Step 6: Final cards result:', {
-          totalEvents: bookingEvents.length,
-          sampleEvent: bookingEvents[0] ? {
-            id: bookingEvents[0].id,
-            name: bookingEvents[0].name,
-            venue: bookingEvents[0].venue,
-            bookingId: bookingEvents[0].bookingId
-          } : 'No events'
-        });
-
         return bookingEvents;
       } catch (error: any) {
-        console.error('🎫 [CARDS DEBUG] Error in booking fetch process for cards:', error);
-        console.error('🎫 [CARDS DEBUG] Error stack for cards:', error.stack);
+        console.error('Error in booking fetch process:', error);
         return [];
       }
     }

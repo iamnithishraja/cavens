@@ -56,8 +56,6 @@ export default function BookingsScreen() {
   };
 
   const handleChatButtonPress = async () => {
-    console.log('🎫 Bookings Screen Navigation');
-    
     // Get the selected city from store, default to Dubai
     const selectedCity = await store.get('selectedCity') || 'Dubai';
     

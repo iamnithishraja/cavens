@@ -98,18 +98,10 @@ const Chatbot: React.FC<ChatbotProps> = ({
       const cityName = typeof city === 'string' ? city : city || 'Dubai';
       const apiUrl = `/api/chatbot/suggestions?city=${cityName}&screen=${screen}`;
       
-      console.log('🔍 Loading suggestions with:', {
-        screen,
-        city: cityName,
-        apiUrl
-      });
       
       const response = await apiClient.get(apiUrl);
       
-      console.log('📋 Suggestions response:', response.data);
-      
       if (response.data.success) {
-        console.log('✅ Setting suggestions:', response.data.data.suggestions);
         setSuggestions(response.data.data.suggestions);
       }
     } catch (error) {
@@ -140,19 +132,8 @@ const Chatbot: React.FC<ChatbotProps> = ({
         type: msg.type
       }));
 
-      // Check if user is authenticated
-      const token = await store.get('token');
-      console.log('🔐 User authentication status:', {
-        hasToken: !!token,
-        tokenLength: token?.length || 0
-      });
-
-      console.log('🚀 Sending chatbot request:', {
-        message: text.trim(),
-        screen,
-        city: typeof city === 'string' ? city : city || 'Dubai',
-        conversationHistoryLength: conversationHistory.length
-      });
+          // Check if user is authenticated
+          const token = await store.get('token');
 
       const response = await apiClient.post('/api/chatbot/chat', {
         message: text.trim(),
@@ -167,15 +148,6 @@ const Chatbot: React.FC<ChatbotProps> = ({
       });
 
           if (response.data.success) {
-            console.log('🤖 [FRONTEND DEBUG] API Response:', {
-              response: response.data.data.response,
-              type: response.data.data.type,
-              showCards: response.data.data.showCards,
-              cardType: response.data.data.cardType,
-              cardsLength: response.data.data.cards?.length || 0,
-              cards: response.data.data.cards
-            });
-            
             const botMessage: Message = {
               id: (Date.now() + 1).toString(),
               text: response.data.data.response,
@@ -186,12 +158,6 @@ const Chatbot: React.FC<ChatbotProps> = ({
               cardType: response.data.data.cardType || null,
               cards: response.data.data.cards || null
             };
-
-            console.log('🤖 Bot message with cards:', {
-              showCards: botMessage.showCards,
-              cardType: botMessage.cardType,
-              cardsCount: botMessage.cards?.length || 0
-            });
 
             setMessages(prev => [...prev, botMessage]);
           } else {
@@ -330,16 +296,6 @@ const Chatbot: React.FC<ChatbotProps> = ({
                       />
                     )}
                     
-                    {/* Debug info for cards */}
-                    {!message.isUser && (
-                      <View style={{ padding: 10, backgroundColor: 'rgba(255,255,255,0.1)', margin: 5, borderRadius: 5 }}>
-                        <Text style={{ color: 'white', fontSize: 10 }}>
-                          DEBUG: showCards={String(message.showCards)}, 
-                          cards={message.cards?.length || 0}, 
-                          cardType={message.cardType || 'none'}
-                        </Text>
-                      </View>
-                    )}
                   </View>
                 ))}
 

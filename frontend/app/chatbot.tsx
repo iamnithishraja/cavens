@@ -14,11 +14,9 @@ export default function ChatbotScreen() {
   const [isChatbotVisible, setIsChatbotVisible] = useState(true);
   
   const params = useLocalSearchParams();
-  console.log('params is ',params);
   const screen = (params.Screen as string) || 'GENERAL';
   const city = (params.city as string) || 'Dubai';
   const hasBookings = params.hasBookings === 'true';
- console.log('screen is ',screen);
   const handleClose = () => {
     setIsChatbotVisible(false);
     router.back();
