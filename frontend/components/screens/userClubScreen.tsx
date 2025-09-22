@@ -85,7 +85,7 @@ const UserClubScreen = () => {
       try {
         setClubsLoading(true);
         
-        // If user location is available, fetch clubs with distance in one call
+        // If location is available, fetch approved clubs with distance using mapLink
         if (userLocation) {
           const params: Record<string, string> = {
             latitude: userLocation.latitude.toString(),
@@ -93,8 +93,7 @@ const UserClubScreen = () => {
           };
           if (selectedCity?.name) params.city = selectedCity.name;
           if (selectedTypes.length === 1) params.type = selectedTypes[0];
-          
-          const res = await apiClient.get('/api/user/getAllEvents', { params });
+          const res = await apiClient.get('/api/club/public/approved-with-distance', { params });
           const clubsWithDistance = (res.data?.clubs || []) as any[];
           const clubs = clubsWithDistance.map((c: any) => ({
             ...c.club,

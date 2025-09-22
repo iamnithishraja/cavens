@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import Club from "../models/clubModel";
+import { calculateDistanceFromMapsLink } from "../utils/mapsDistanceCalculator";
 import eventModel from "../models/eventModel";
 import { createEventSchema } from "../schemas/eventSchema";
 import type { CustomRequest } from "../types";
@@ -200,6 +201,97 @@ export const listApprovedClubs = async (req: Request, res: Response): Promise<vo
     res.status(200).json({ success: true, items: clubs });
   } catch (error) {
     console.error('Error listing approved clubs:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// List approved clubs with computed distance based on user's location
+export const listApprovedClubsWithDistance = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { latitude, longitude, city, type } = req.query as { latitude?: string; longitude?: string; city?: string; type?: string };
+
+    if (!latitude || !longitude) {
+      res.status(400).json({ success: false, message: 'latitude and longitude are required' });
+      return;
+    }
+
+    const userLat = parseFloat(latitude);
+    const userLng = parseFloat(longitude);
+    if (!isFinite(userLat) || !isFinite(userLng)) {
+      res.status(400).json({ success: false, message: 'invalid latitude/longitude' });
+      return;
+    }
+
+    const filter: any = { isApproved: true };
+    if (city) filter.city = { $regex: new RegExp(`^${city}$`, 'i') };
+    if (type) {
+      const flexible = type.replace(/_/g, '[ _]+');
+      filter.typeOfVenue = { $regex: new RegExp(`(^|,)\s*${flexible}\s*(,|$)`, 'i') };
+    }
+
+    const clubs = await Club.find(filter).sort({ createdAt: -1 });
+
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY || '';
+    const results = await Promise.all(
+      clubs.map(async (club) => {
+        if (!club.mapLink) {
+          return {
+            club,
+            distanceInMeters: Number.MAX_VALUE,
+            distanceText: 'N/A',
+            durationText: 'N/A',
+            durationInSeconds: 0,
+            method: 'No map link available',
+          };
+        }
+
+        try {
+          const distanceResult = await calculateDistanceFromMapsLink(
+            userLat,
+            userLng,
+            club.mapLink,
+            apiKey,
+            'driving',
+            true
+          );
+
+          if ('duration' in distanceResult.distance) {
+            return {
+              club,
+              distanceInMeters: distanceResult.distance.distance.value,
+              distanceText: distanceResult.distance.distance.text,
+              durationText: distanceResult.distance.duration.text,
+              durationInSeconds: distanceResult.distance.duration.value,
+              method: 'Google Maps API',
+            };
+          } else {
+            return {
+              club,
+              distanceInMeters: distanceResult.distance.distance.value,
+              distanceText: distanceResult.distance.distance.text,
+              durationText: 'N/A',
+              durationInSeconds: 0,
+              method: distanceResult.distance.method,
+            };
+          }
+        } catch (err) {
+          return {
+            club,
+            distanceInMeters: Number.MAX_VALUE,
+            distanceText: 'N/A',
+            durationText: 'N/A',
+            durationInSeconds: 0,
+            method: 'Distance calculation failed',
+          };
+        }
+      })
+    );
+
+    results.sort((a, b) => a.distanceInMeters - b.distanceInMeters);
+
+    res.status(200).json({ success: true, userLocation: { latitude: userLat, longitude: userLng }, clubs: results });
+  } catch (error) {
+    console.error('Error listing approved clubs with distance:', error);
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };

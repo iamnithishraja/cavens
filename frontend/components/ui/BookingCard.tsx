@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions, Animated, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
 import { Colors } from '@/constants/Colors';
 import type { Order } from '@/types/order';
 import QRCode from 'react-native-qrcode-svg';
@@ -9,8 +8,6 @@ interface BookingCardProps {
   booking: Order;
   onPress?: () => void;
 }
-
-const { width } = Dimensions.get('window');
 
 const BookingCard: React.FC<BookingCardProps> = ({ booking, onPress }) => {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -86,50 +83,17 @@ const BookingCard: React.FC<BookingCardProps> = ({ booking, onPress }) => {
           <Animated.View
             style={[
               styles.cardSide,
-              styles.frontSide,
               { transform: [{ rotateY: frontRotateY }] }
             ]}
           >
-        {/* Main Card with Gradient Background */}
-        <LinearGradient
-          colors={Colors.gradients.background as [string, string]}
-          style={styles.card}
-        >
           {/* Top Section with Image and Overlay Info */}
           <View style={styles.topSection}>
             <View style={styles.imageContainer}>
-              {booking.event.coverImage || booking.event.image ? (
-                <>
                   <Image 
                     source={{ uri: booking.event.coverImage || booking.event.image }} 
                     style={styles.eventImage}
                     resizeMode="cover"
                   />
-                  <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.8)']}
-                    style={styles.imageOverlay}
-                  />
-                </>
-              ) : (
-                <LinearGradient
-                  colors={Colors.gradients.blue as [string, string]}
-                  style={styles.placeholderImage}
-                >
-                  <Text style={styles.placeholderText}>🎵</Text>
-                </LinearGradient>
-              )}
-            </View>
-
-
-            {/* Status Badge - Top Right */}
-            <View style={styles.statusContainer}>
-              <View style={[
-                styles.statusDot, 
-                booking.isPaid ? styles.statusPaid : styles.statusPending
-              ]} />
-              <Text style={styles.statusText}>
-                {booking.isPaid ? 'Confirmed' : 'Pending'}
-              </Text>
             </View>
           </View>
 
@@ -192,27 +156,16 @@ const BookingCard: React.FC<BookingCardProps> = ({ booking, onPress }) => {
               </View>
             </View>
           </View>
-        </LinearGradient>
           </Animated.View>
 
           {/* Back Side - QR Code */}
           <Animated.View
             style={[
               styles.cardSide,
-              styles.backSide,
               { transform: [{ rotateY: backRotateY }] }
             ]}
           >
-            <LinearGradient
-              colors={Colors.gradients.background as [string, string]}
-              style={styles.card}
-            >
               <View style={styles.qrContainer}>
-                <View style={styles.qrHeader}>
-                  <Text style={styles.qrTitle}>Entry QR Code</Text>
-                  <Text style={styles.qrSubtitle}>{booking.event.name}</Text>
-                </View>
-
                 <View style={styles.qrDisplay}>
                   {loading ? (
                     <View style={styles.loadingContainer}>
@@ -245,7 +198,6 @@ const BookingCard: React.FC<BookingCardProps> = ({ booking, onPress }) => {
                   </View>
                 </View>
               </View>
-            </LinearGradient>
           </Animated.View>
 
           {/* Subtle Border Glow */}
@@ -263,26 +215,13 @@ const styles = StyleSheet.create({
   },
   cardContainer: {
     position: 'relative',
-    height: 400, // Fixed height for consistent card size
+    height: 400,
   },
   cardSide: {
     position: 'absolute',
     width: '100%',
     height: '100%',
     backfaceVisibility: 'hidden',
-  },
-  frontSide: {
-    // Front side styling
-  },
-  backSide: {
-    // Back side styling
-  },
-  card: {
-    flex: 1,
-    borderRadius: 24,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.withOpacity.white10,
   },
   borderGlow: {
     position: 'absolute',
@@ -308,52 +247,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  imageOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 60,
-  },
-  placeholderImage: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  placeholderText: {
-    fontSize: 32,
-  },
-  statusContainer: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.withOpacity.black80,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.withOpacity.white10,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  statusPaid: {
-    backgroundColor: Colors.success,
-  },
-  statusPending: {
-    backgroundColor: Colors.warning,
-  },
-  statusText: {
-    color: Colors.textPrimary,
-    fontSize: 12,
-    fontWeight: '600',
-  },
+
   contentSection: {
     flex: 1,
     padding: 20,
@@ -453,22 +347,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
-  },
-  qrHeader: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  qrTitle: {
-    color: Colors.textPrimary,
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  qrSubtitle: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
   },
   qrDisplay: {
     alignItems: 'center',
