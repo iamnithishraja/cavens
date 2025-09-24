@@ -1,15 +1,12 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  StyleSheet
-} from 'react-native';
-import { Colors } from '@/constants/Colors';
-import type { EventItem } from './types';
-import type { City } from '@/components/ui/CityPickerModal';
-import type { TimelineTab } from './TimelineFilterTabs';
+import React from "react";
+import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
+import { Colors } from "@/constants/Colors";
+import type { EventItem } from "./types";
+import type { City } from "@/components/ui/CityPickerModal";
+import type { TimelineTab } from "./TimelineFilterTabs";
+import { Calendar, Music2 } from "lucide-react-native";
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface EventsListProps {
   filteredEvents: EventItem[];
@@ -26,26 +23,40 @@ const EventsList: React.FC<EventsListProps> = ({
   activeTab,
   search,
   onEventPress,
-  onClearSearch
+  onClearSearch,
 }) => {
-  // Get club name from event
-  const getClubName = (event: EventItem) => {
-    return event.venue || 'Club Name';
+  console.log("EventsList received:", filteredEvents.length, "events");
+  const getClubName = (event: EventItem) => event.venue || "Club Name";
+  const getArtist = (event: EventItem) => (event as any).djArtists || "";
+  const getGenres = (event: EventItem) => {
+    const g = (event as any).genres || (event as any).musicGenres || "";
+    if (Array.isArray(g)) return g.join(", ");
+    return g as string;
+  };
+  const getDayAndVenue = (event: EventItem) => {
+    try {
+      const d = new Date(event.date);
+      const day = d.toLocaleDateString("en-US", { weekday: "short" });
+      return `${day} • ${getClubName(event)}`;
+    } catch {
+      return getClubName(event);
+    }
   };
 
   if (filteredEvents.length === 0) {
     return (
       <View style={styles.noEventsContainer}>
         <Image
-          source={{ uri: "https://img.icons8.com/ios/100/CCCCCC/calendar--v1.png" }}
+          source={{
+            uri: "https://img.icons8.com/ios/100/CCCCCC/calendar--v1.png",
+          }}
           style={styles.noEventsIcon}
         />
         <Text style={styles.noEventsTitle}>No Events Found</Text>
         <Text style={styles.noEventsSubtitle}>
           {search
-            ? `No events match "${search}" for ${activeTab.replace('_', ' ')}`
-            : `No events scheduled for ${activeTab.replace('_', ' ')}`
-          }
+            ? `No events match "${search}" for ${activeTab.replace("_", " ")}`
+            : `No events scheduled for ${activeTab.replace("_", " ")}`}
         </Text>
         {search && (
           <TouchableOpacity
@@ -60,51 +71,62 @@ const EventsList: React.FC<EventsListProps> = ({
   }
 
   return (
-    <View style={styles.clubListContainer}>
+    <View style={styles.listContainer}>
       {filteredEvents.map((event, index) => (
         <TouchableOpacity
           key={`${event._id}-${index}`}
-          style={styles.clubCard}
-          onPress={() => {
-            console.log("Event clicked:", event._id, event.name);
-            onEventPress(event._id || '');
-          }}
+          style={styles.card}
+          onPress={() => onEventPress(event._id || "")}
           activeOpacity={0.9}
         >
-          <Image
-            source={{ uri: event.coverImage }}
-            style={styles.clubImage}
+          <BlurView
+            style={StyleSheet.absoluteFill}
+            intensity={28}
+            tint="dark"
           />
-          <View style={styles.cardSurface}>
-            <View style={styles.clubInfo}>
-              <View>
-                <Text style={styles.clubName} numberOfLines={2}>{event.name}</Text>
-                <Text style={styles.clubGenre} numberOfLines={1}>{getClubName(event)}, {selectedCity.name}</Text>
-              </View>
-              <View style={styles.ratingDistanceContainer}>
-                <View style={styles.ratingContainer}>
-                  {[1, 2, 3, 4, 5].map((star, i) => (
-                    <Image
-                      key={star}
-                      source={{ uri: "https://img.icons8.com/ios-filled/50/F9D65C/star.png" }}
-                      style={[styles.starIcon, i >= 4 && { opacity: 0.5 }]}
-                    />
-                  ))}
-                </View>
-                <Text style={styles.clubDistanceText}>{event.distance || `${Math.floor(Math.random() * 15) + 1} km`}</Text>
-              </View>
+          <LinearGradient
+            colors={["rgba(255,255,255,0.06)", "rgba(255,255,255,0)"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+
+          <Image source={{ uri: event.coverImage }} style={styles.cover} />
+
+          <View style={styles.content}>
+            <Text style={styles.title} numberOfLines={1}>
+              {event.name}
+            </Text>
+            {!!getArtist(event) && (
+              <Text style={styles.subtitle} numberOfLines={1}>
+                {getArtist(event)}
+              </Text>
+            )}
+
+            <View style={styles.metaRow}>
+              <Calendar
+                color={Colors.textPrimary}
+                size={16}
+                style={styles.metaIcon}
+              />
+              <Text style={styles.metaText} numberOfLines={1}>
+                {getDayAndVenue(event)}
+              </Text>
             </View>
-            <View style={styles.ticketButtonContainer}>
-              <TouchableOpacity 
-                style={styles.ticketButton}
-                onPress={() => {
-                  console.log("GET TICKETS clicked for event:", event._id, event.name);
-                  onEventPress(event._id || '');
-                }}
-              >
-                <Text style={styles.ticketButtonText}>GET TICKETS</Text>
-              </TouchableOpacity>
-            </View>
+
+            {!!getGenres(event) && (
+              <View style={styles.metaRow}>
+                <Music2
+                  color={Colors.textPrimary}
+                  size={16}
+                  style={styles.metaIcon}
+                />
+                <Text style={styles.metaText} numberOfLines={1}>
+                  {getGenres(event)}
+                </Text>
+              </View>
+            )}
           </View>
         </TouchableOpacity>
       ))}
@@ -113,90 +135,65 @@ const EventsList: React.FC<EventsListProps> = ({
 };
 
 const styles = StyleSheet.create({
-  clubListContainer: {
+  listContainer: {
     paddingHorizontal: 16,
-    gap: 16,
+    gap: 12,
   },
-  clubCard: {
-    flexDirection: 'row',
-    borderRadius: 16,
-    overflow: 'hidden',
-    height: 100,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.28)",
     borderWidth: 1,
     borderColor: Colors.withOpacity.white10,
+    padding: 10,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 8,
+    overflow: "hidden",
   },
-  cardSurface: {
+  cover: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    marginRight: 12,
+    backgroundColor: Colors.backgroundSecondary,
+  },
+  content: {
     flex: 1,
-    flexDirection: 'row',
-    // Removed backgroundColor to match original styling
   },
-  clubImage: {
-    width: 100,
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  clubInfo: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'space-between',
-  },
-  clubName: {
+  title: {
     color: Colors.textPrimary,
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 4,
-    lineHeight: 22,
+    fontSize: 20,
+    fontWeight: "800",
+    letterSpacing: 0.2,
+    marginBottom: 1,
   },
-  clubGenre: {
-    color: Colors.genre,
+  subtitle: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    marginBottom: 6,
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 3,
+  },
+  metaIcon: {
+    marginRight: 6,
+    opacity: 0.9,
+  },
+  metaText: {
+    color: Colors.textPrimary,
     fontSize: 14,
+    opacity: 0.95,
   },
-  ratingDistanceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  starIcon: {
-    width: 14,
-    height: 14,
-    marginRight: 2,
-    tintColor: Colors.rating,
-  },
-  clubDistanceText: {
-    color: Colors.distance,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  ticketButtonContainer: {
-    justifyContent: 'center',
-    paddingRight: 12,
-  },
-  ticketButton: {
-    backgroundColor: Colors.button.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  ticketButtonText: {
-    color: Colors.button.text,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  // No Events state
+  // Empty state
   noEventsContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 60,
     paddingHorizontal: 32,
   },
@@ -209,27 +206,27 @@ const styles = StyleSheet.create({
   noEventsTitle: {
     color: Colors.textPrimary,
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   noEventsSubtitle: {
     color: Colors.textSecondary,
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 22,
     marginBottom: 20,
   },
   clearSearchButton: {
-    backgroundColor: Colors.button.background,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 25,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
   },
   clearSearchButtonText: {
     color: Colors.button.text,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

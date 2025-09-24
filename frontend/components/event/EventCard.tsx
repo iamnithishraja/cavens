@@ -143,14 +143,7 @@ const EventCard: React.FC<Props> = ({ event, onPress }) => {
 const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
     backgroundColor: Colors.background,
-    shadowColor: Colors.blueAccent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
     position: 'relative',
     overflow: 'hidden',
     height: 160,
@@ -191,11 +184,6 @@ const styles = StyleSheet.create({
     left: 8,
     borderRadius: 8,
     overflow: 'hidden',
-    shadowColor: Colors.blueAccent,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 4,
   },
   dateBadgeGradient: {
     paddingHorizontal: 10,
@@ -282,8 +270,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   featureText: {
     color: Colors.textSecondary,
@@ -294,15 +280,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    borderWidth: 1,
   },
   availableBadge: {
     backgroundColor: `${Colors.primary}15`,
-    borderColor: Colors.primary,
   },
   soldOutBadge: {
     backgroundColor: `${Colors.textSecondary}15`,
-    borderColor: Colors.textSecondary,
   },
   statusText: {
     fontSize: 10,

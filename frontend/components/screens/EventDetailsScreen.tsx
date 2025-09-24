@@ -30,17 +30,14 @@ type EventDetailsResponse = {
   data: EventItem;
 };
 
-const EventDetailsScreen: React.FC<Props> = ({
-  eventId,
-  onGoBack,
-}) => {
+const EventDetailsScreen: React.FC<Props> = ({ eventId, onGoBack }) => {
   const [event, setEvent] = useState<EventItem | null>(null);
   const [loading, setLoading] = useState<boolean>(!!eventId);
   const [error, setError] = useState<string | null>(null);
   const [menuVisible, setMenuVisible] = useState<boolean>(false);
   const [rulesVisible, setRulesVisible] = useState<boolean>(false);
-  const [clubName, setClubName] = useState<string>('');
-  const [clubMapLink, setClubMapLink] = useState<string>('');
+  const [clubName, setClubName] = useState<string>("");
+  const [clubMapLink, setClubMapLink] = useState<string>("");
 
   // Fetch event details if eventId is provided but no initial event
   useEffect(() => {
@@ -75,6 +72,16 @@ const EventDetailsScreen: React.FC<Props> = ({
     return Math.min(...event.tickets.map((t) => t.price));
   }, [event]);
 
+  // Determine if there are any explicit table options
+  const hasTables = useMemo(() => {
+    if (!event || !Array.isArray(event.tickets)) return false;
+    return event.tickets.some((t: any) => {
+      const norm = (s?: string) => (s || "").toLowerCase();
+      const hay = `${norm(t.name)} ${norm(t.description)}`;
+      return /\btable\b/i.test(hay);
+    });
+  }, [event]);
+
   const mediaItems = useMemo(() => {
     if (!event) return [] as { type: "image" | "video"; uri: string }[];
     const items: { type: "image" | "video"; uri: string }[] = [];
@@ -101,13 +108,16 @@ const EventDetailsScreen: React.FC<Props> = ({
 
   const openMaps = () => {
     if (!event) return;
-    const url = clubMapLink && clubMapLink.length > 0 
-      ? clubMapLink 
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clubName || event.name)}`;
+    const url =
+      clubMapLink && clubMapLink.length > 0
+        ? clubMapLink
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+            clubName || event.name
+          )}`;
     Linking.openURL(url).catch(() => {});
   };
 
-  const handleBook = () => {
+  const handleBook = (mode: "tickets" | "tables") => {
     if (!event) return;
     router.push({
       pathname: "/payment",
@@ -117,7 +127,8 @@ const EventDetailsScreen: React.FC<Props> = ({
         eventDate: event.date,
         eventTime: event.time,
         tickets: JSON.stringify(event.tickets || []),
-        coverImage: event.coverImage || '',
+        coverImage: event.coverImage || "",
+        mode,
       },
     });
   };
@@ -182,16 +193,24 @@ const EventDetailsScreen: React.FC<Props> = ({
         // Try authorized endpoint first; fall back to public clubs
         let clubs: any[] = [];
         try {
-          const res = await apiClient.get('/api/user/getAllEvents');
+          const res = await apiClient.get("/api/user/getAllEvents");
           clubs = res.data?.clubs?.map((c: any) => c.club) || [];
         } catch {
-          const res = await apiClient.get('/api/club/public/approved', { params: { includeEvents: 'true' } });
+          const res = await apiClient.get("/api/club/public/approved", {
+            params: { includeEvents: "true" },
+          });
           clubs = res.data?.items || [];
         }
-        const ownerClub = clubs.find((c: any) => Array.isArray(c.events) && c.events.some((ev: any) => (ev._id || ev).toString?.() === event._id));
+        const ownerClub = clubs.find(
+          (c: any) =>
+            Array.isArray(c.events) &&
+            c.events.some(
+              (ev: any) => (ev._id || ev).toString?.() === event._id
+            )
+        );
         if (ownerClub) {
-          setClubName(ownerClub.name || '');
-          setClubMapLink(ownerClub.mapLink || '');
+          setClubName(ownerClub.name || "");
+          setClubMapLink(ownerClub.mapLink || "");
         }
       } catch {}
     };
@@ -211,7 +230,10 @@ const EventDetailsScreen: React.FC<Props> = ({
           <Text style={styles.errorText}>Event not found</Text>
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
           {/* Media Carousel in Safe Area with top blend */}
           <SafeAreaView edges={["top"]}>
             <View style={styles.mediaContainer}>
@@ -249,7 +271,11 @@ const EventDetailsScreen: React.FC<Props> = ({
                 </View>
               )}
               {/* Back Button */}
-              <TouchableOpacity style={styles.backBtn} onPress={onGoBack || (() => router.back())} activeOpacity={0.9}>
+              <TouchableOpacity
+                style={styles.backBtn}
+                onPress={onGoBack || (() => router.back())}
+                activeOpacity={0.9}
+              >
                 <Text style={styles.backIcon}>←</Text>
               </TouchableOpacity>
             </View>
@@ -260,9 +286,13 @@ const EventDetailsScreen: React.FC<Props> = ({
             <Text style={styles.eventName}>{event.name}</Text>
             <View style={styles.metaRow}>
               {!!(clubName || clubMapLink) && (
-                <TouchableOpacity onPress={openMaps} activeOpacity={0.8} style={{ maxWidth: '70%' }}>
+                <TouchableOpacity
+                  onPress={openMaps}
+                  activeOpacity={0.8}
+                  style={{ maxWidth: "70%" }}
+                >
                   <Text style={styles.venueLink} numberOfLines={1}>
-                    {clubName || 'View on Maps'} →
+                    {clubName || "View on Maps"} →
                   </Text>
                 </TouchableOpacity>
               )}
@@ -320,11 +350,27 @@ const EventDetailsScreen: React.FC<Props> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Book Tickets CTA (non-sticky) */}
+          {/* Book Tickets & Tables CTA (non-sticky) */}
           <View style={styles.bookCtaWrap}>
-            <TouchableOpacity style={styles.bookBtn} onPress={handleBook} activeOpacity={0.9}>
-              <Text style={styles.bookText}>Book tickets from AED {lowestTicket}</Text>
-            </TouchableOpacity>
+            <View style={styles.bookButtonsRow}>
+              <TouchableOpacity
+                style={styles.bookBtn}
+                onPress={() => handleBook("tickets")}
+                activeOpacity={0.9}
+              >
+                <Text style={styles.bookText}>🎫 Book Tickets</Text>
+                <Text style={styles.bookSubText}>from AED {lowestTicket}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.bookBtn, !hasTables && { opacity: 0.5 }]}
+                onPress={() => handleBook("tables")}
+                disabled={!hasTables}
+                activeOpacity={0.9}
+              >
+                <Text style={styles.bookText}>🍽️ Book Tables</Text>
+                <Text style={styles.bookSubText}>from AED {lowestTicket}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={{ height: 24 }} />
@@ -398,7 +444,7 @@ const styles = StyleSheet.create({
     width: 20,
   },
   backBtn: {
-    position: 'absolute',
+    position: "absolute",
     top: 10,
     left: 10,
     backgroundColor: Colors.withOpacity.black60,
@@ -410,7 +456,7 @@ const styles = StyleSheet.create({
   },
   backIcon: {
     color: Colors.textPrimary,
-    fontWeight: '900',
+    fontWeight: "900",
     fontSize: 16,
   },
   headerSection: {
@@ -443,9 +489,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: 12,
   },
   section: {
@@ -495,7 +541,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
   },
+  bookButtonsRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
   bookBtn: {
+    flex: 1,
     backgroundColor: Colors.primary,
     borderRadius: 18,
     paddingVertical: 14,
@@ -511,8 +562,15 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     fontSize: 16,
   },
+  bookSubText: {
+    color: Colors.button.text,
+    fontWeight: "600",
+    fontSize: 12,
+    marginTop: 2,
+    opacity: 0.9,
+  },
   bottomBarSafe: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,

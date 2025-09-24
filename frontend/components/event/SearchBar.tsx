@@ -1,22 +1,25 @@
 import React from "react";
-import { View, TextInput, StyleSheet, Image } from "react-native";
+import { View, TextInput, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
+import { Search, X } from "lucide-react-native";
 
 type Props = {
   value: string;
-  onChangeText: (t: string) => void;
+  onChangeText: (text: string) => void;
   placeholder?: string;
   onFocusNavigate?: () => void;
 };
 
-const SearchBar: React.FC<Props> = ({ value, onChangeText, placeholder, onFocusNavigate }) => {
+const SearchBar: React.FC<Props> = ({
+  value,
+  onChangeText,
+  placeholder,
+  onFocusNavigate,
+}) => {
   return (
     <View>
       <View style={styles.searchContainer}>
-        <Image 
-          source={{ uri: "https://img.icons8.com/ios-filled/50/FFFFFF/search.png" }} 
-          style={styles.searchIcon} 
-        />
+        <Search color={Colors.textMuted} size={18} style={styles.leadingIcon} />
         <TextInput
           style={styles.textInput}
           placeholder={placeholder || "Search events, artists..."}
@@ -33,12 +36,12 @@ const SearchBar: React.FC<Props> = ({ value, onChangeText, placeholder, onFocusN
           }}
         />
         {value.length > 0 && (
-          <View style={styles.clearButton}>
-            <Image 
-              source={{ uri: "https://img.icons8.com/ios-filled/50/FFFFFF/multiply.png" }} 
-              style={styles.clearIcon} 
-            />
-          </View>
+          <TouchableOpacity
+            style={styles.clearButton}
+            onPress={() => onChangeText("")}
+          >
+            <X color={Colors.textMuted} size={16} />
+          </TouchableOpacity>
         )}
       </View>
     </View>
@@ -47,20 +50,17 @@ const SearchBar: React.FC<Props> = ({ value, onChangeText, placeholder, onFocusN
 
 const styles = StyleSheet.create({
   searchContainer: {
-    backgroundColor: Colors.backgroundSecondary,
+    backgroundColor: Colors.withOpacity.black60,
     borderRadius: 12,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderWidth: 1,
-    borderColor: Colors.separator,
+    borderColor: Colors.withOpacity.white10,
   },
-  searchIcon: { 
-    width: 16, 
-    height: 16, 
-    tintColor: Colors.textMuted, 
-    marginRight: 12,
+  leadingIcon: {
+    marginRight: 10,
   },
   textInput: {
     flex: 1,
@@ -71,11 +71,6 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     padding: 4,
-  },
-  clearIcon: {
-    width: 14,
-    height: 14,
-    tintColor: Colors.textMuted,
   },
 });
 

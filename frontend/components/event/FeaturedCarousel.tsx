@@ -86,23 +86,30 @@ const CarouselVideoItem: React.FC<{
   }, [active, uniqueUri, player]);
 
   return (
-    <View style={[styles.videoContainer, { width, height: Math.round(width * 0.6) }]}>
-      {active ? (
-        <VideoView
-          key={`video-${idKey}`}
-          style={styles.video}
-          player={player}
-          contentFit="cover"
-          nativeControls={false}
-        />
-      ) : (
-        <Image 
-          key={`thumb-${idKey}`} 
-          source={{ uri: event.coverImage }} 
-          style={styles.videoPlaceholder}
-          resizeMode="cover"
-        />
-      )}
+    <LinearGradient
+      colors={['#4F46E5', '#7C3AED', '#EC4899']} // bluish-purplish gradient
+      style={[styles.gradientBorder, { width, height: Math.round(width * 0.6) }]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      <View style={styles.videoContainer}>
+        {active ? (
+          <VideoView
+            key={`video-${idKey}`}
+            style={styles.video}
+            player={player}
+            contentFit="cover"
+            nativeControls={false}
+          />
+        ) : (
+          <Image 
+            key={`thumb-${idKey}`} 
+            source={{ uri: event.coverImage }} 
+            style={styles.videoPlaceholder}
+            resizeMode="cover"
+          />
+        )}
+      </View>
       
       {/* Event Details Overlay */}
       <LinearGradient
@@ -129,7 +136,7 @@ const CarouselVideoItem: React.FC<{
           </Text>
         </View>
       </LinearGradient>
-    </View>
+    </LinearGradient>
   );
 };
 
@@ -292,11 +299,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginLeft: 16,
   },
-  videoContainer: {
+  gradientBorder: {
     borderRadius: 20,
+    padding: 3, // Creates the border width
+  },
+  videoContainer: {
+    borderRadius: 17, // Slightly smaller to show the gradient border
     overflow: 'hidden',
     position: 'relative',
     backgroundColor: Colors.surfaceElevated,
+    flex: 1,
   },
   video: {
     width: '100%',
@@ -306,7 +318,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: Colors.surfaceElevated,
-    borderRadius: 20,
+    borderRadius: 17,
   },
   detailsOverlay: {
     position: 'absolute',
