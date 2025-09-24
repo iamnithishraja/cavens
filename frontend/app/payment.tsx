@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -8,14 +8,14 @@ import {
   ActivityIndicator,
   Alert,
   StatusBar,
-  Image
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router, useLocalSearchParams } from 'expo-router';
-import { Colors } from '@/constants/Colors';
-import apiClient from '@/app/api/client';
-import TicketCounter from '../components/ui/TicketCounter';
+  Image,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import { router, useLocalSearchParams } from "expo-router";
+import { Colors } from "@/constants/Colors";
+import apiClient from "@/app/api/client";
+import TicketCounter from "../components/ui/TicketCounter";
 
 type TicketType = {
   _id?: string;
@@ -65,21 +65,23 @@ type PurchaseTicketResponse = {
 };
 
 const PaymentScreen = () => {
-  const { eventId, eventName, eventDate, eventTime, tickets, coverImage } = useLocalSearchParams<{
-    eventId: string;
-    eventName: string;
-    eventDate: string;
-    eventTime: string;
-    tickets: string;
-    coverImage?: string;
-  }>();
+  const { eventId, eventName, eventDate, eventTime, tickets, coverImage } =
+    useLocalSearchParams<{
+      eventId: string;
+      eventName: string;
+      eventDate: string;
+      eventTime: string;
+      tickets: string;
+      coverImage?: string;
+      mode?: "tickets" | "tables";
+    }>();
 
   const [purchasing, setPurchasing] = useState(false);
-  const [selectedTicketType, setSelectedTicketType] = useState<string>('');
+  const [selectedTicketType, setSelectedTicketType] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
 
   // Parse tickets from navigation params
-  const eventTickets: TicketType[] = useMemo(() => {
+  const eventTicketsAll: TicketType[] = useMemo(() => {
     try {
       return tickets ? JSON.parse(tickets) : [];
     } catch {
@@ -87,11 +89,33 @@ const PaymentScreen = () => {
     }
   }, [tickets]);
 
+  // Filter by mode using simple string parsing of name/description
+  const mode = (useLocalSearchParams() as any).mode as
+    | "tickets"
+    | "tables"
+    | undefined;
+  const eventTickets: TicketType[] = useMemo(() => {
+    const list = eventTicketsAll || [];
+    if (!mode) return list;
+    const norm = (s?: string) => (s || "").toLowerCase();
+    return list.filter((t) => {
+      const hay = `${norm(t.name)} ${norm(t.description)}`;
+      const isTableItem = /\btable\b/i.test(hay);
+      const isTicketItem = /\bticket\b/i.test(hay);
+      if (mode === "tables") {
+        // Tables mode: only explicit tables
+        return isTableItem;
+      }
+      // Tickets mode: explicit tickets OR no keyword (default to tickets), but exclude anything marked table
+      return (!isTableItem && !isTicketItem) || (isTicketItem && !isTableItem);
+    });
+  }, [eventTicketsAll, mode]);
+
   // Set default ticket type to first available ticket
   useEffect(() => {
     if (eventTickets.length > 0) {
-      const firstAvailableTicket = eventTickets.find(ticket => 
-        (ticket.quantityAvailable - ticket.quantitySold) > 0
+      const firstAvailableTicket = eventTickets.find(
+        (ticket) => ticket.quantityAvailable - ticket.quantitySold > 0
       );
       if (firstAvailableTicket) {
         setSelectedTicketType(firstAvailableTicket.name);
@@ -100,19 +124,23 @@ const PaymentScreen = () => {
   }, [eventTickets]);
 
   // Get selected ticket details
-  const selectedTicket = eventTickets.find(ticket => ticket.name === selectedTicketType);
-  const availableTickets = selectedTicket ? selectedTicket.quantityAvailable - selectedTicket.quantitySold : 0;
+  const selectedTicket = eventTickets.find(
+    (ticket) => ticket.name === selectedTicketType
+  );
+  const availableTickets = selectedTicket
+    ? selectedTicket.quantityAvailable - selectedTicket.quantitySold
+    : 0;
   const totalAmount = selectedTicket ? selectedTicket.price * quantity : 0;
 
   // Handle ticket purchase
   const handlePurchase = async () => {
     if (!selectedTicket) {
-      Alert.alert('Error', 'Please select a ticket type');
+      Alert.alert("Error", "Please select a ticket type");
       return;
     }
 
     if (quantity > availableTickets) {
-      Alert.alert('Error', `Only ${availableTickets} tickets available`);
+      Alert.alert("Error", `Only ${availableTickets} tickets available`);
       return;
     }
 
@@ -121,33 +149,52 @@ const PaymentScreen = () => {
       const purchaseData: PurchaseTicketRequest = {
         eventId: eventId!,
         ticketType: selectedTicketType,
-        quantity: quantity
+        quantity: quantity,
       };
 
-      const response = await apiClient.post<PurchaseTicketResponse>('/api/user/purchase-ticket', purchaseData);
-      
+      const response = await apiClient.post<PurchaseTicketResponse>(
+        "/api/user/purchase-ticket",
+        purchaseData
+      );
+
       if (response.data.success) {
         const { totalAmount } = response.data.data;
-        router.navigate('/userTabs/bookings');
+        router.navigate("/userTabs/bookings");
       } else {
-        Alert.alert('Purchase Failed', response.data.message || 'Something went wrong');
+        Alert.alert(
+          "Purchase Failed",
+          response.data.message || "Something went wrong"
+        );
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to purchase tickets. Please try again.';
-      Alert.alert('Purchase Failed', errorMessage);
+      const errorMessage =
+        err.response?.data?.message ||
+        "Failed to purchase tickets. Please try again.";
+      Alert.alert("Purchase Failed", errorMessage);
     } finally {
       setPurchasing(false);
     }
   };
 
-  if (!eventId || !eventName || eventTickets.length === 0) {
+  // Consider the event invalid only if the base list is empty, not the filtered one
+  if (!eventId || !eventName || eventTicketsAll.length === 0) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top','bottom']}>
-        <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
-        <LinearGradient colors={Colors.gradients.background as [string, string]} style={styles.container}>
+      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+        <StatusBar
+          translucent
+          backgroundColor="transparent"
+          barStyle="light-content"
+        />
+        <LinearGradient
+          colors={Colors.gradients.background as [string, string]}
+          style={styles.container}
+        >
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>Invalid event data</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={() => router.back()}
+            >
               <Text style={styles.retryButtonText}>Go Back</Text>
             </TouchableOpacity>
           </View>
@@ -157,113 +204,166 @@ const PaymentScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top','bottom']}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Buy Tickets</Text>
-          <View style={styles.spacer} />
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>
+          {mode === "tables" ? "Book Tables" : "Buy Tickets"}
+        </Text>
+        <View style={styles.spacer} />
+      </View>
+
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Event Info */}
+        <View style={styles.eventInfoContainer}>
+          <View style={styles.eventRow}>
+            {!!coverImage && (
+              <Image
+                source={{ uri: String(coverImage) }}
+                style={styles.eventImage}
+                resizeMode="cover"
+              />
+            )}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.eventName} numberOfLines={2}>
+                {eventName}
+              </Text>
+              <Text style={styles.eventDate}>
+                {eventDate} • {eventTime}
+              </Text>
+            </View>
+          </View>
         </View>
 
-        <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
-          {/* Event Info */}
-          <View style={styles.eventInfoContainer}>
-            <View style={styles.eventRow}>
-              {!!coverImage && (
-                <Image source={{ uri: String(coverImage) }} style={styles.eventImage} resizeMode="cover" />
-              )}
-              <View style={{ flex: 1 }}>
-                <Text style={styles.eventName} numberOfLines={2}>{eventName}</Text>
-                <Text style={styles.eventDate}>{eventDate} • {eventTime}</Text>
-              </View>
-            </View>
-          </View>
+        {/* Ticket/Table Selection */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            {mode === "tables" ? "Select Table Type" : "Select Ticket Type"}
+          </Text>
+          <View style={styles.ticketOptions}>
+            {eventTickets.map((ticket, index) => {
+              const available = ticket.quantityAvailable - ticket.quantitySold;
+              const isSelected = selectedTicketType === ticket.name;
+              const isAvailable = available > 0;
 
-          {/* Ticket Selection */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Select Ticket Type</Text>
-            <View style={styles.ticketOptions}>
-              {eventTickets.map((ticket, index) => {
-                const available = ticket.quantityAvailable - ticket.quantitySold;
-                const isSelected = selectedTicketType === ticket.name;
-                const isAvailable = available > 0;
-                
-                return (
-                  <TouchableOpacity
-                    key={ticket._id || `${ticket.name}-${index}`}
-                    style={[
-                      styles.ticketOption,
-                      isSelected && styles.selectedTicketOption,
-                      !isAvailable && styles.unavailableTicketOption
-                    ]}
-                    onPress={() => isAvailable && setSelectedTicketType(ticket.name)}
-                    disabled={!isAvailable}
-                  >
-                    <View style={styles.ticketOptionLeft}>
-                      <Text style={[styles.ticketOptionName, isSelected && styles.selectedTicketText]}>
-                        {ticket.name}
-                      </Text>
-                      <Text style={styles.ticketOptionDescription}>{ticket.description}</Text>
-                      <Text style={[styles.ticketAvailability, !isAvailable && styles.unavailableText]}>
-                        {isAvailable ? `${available} available` : 'Sold Out'}
-                      </Text>
-                    </View>
-                    <Text style={[styles.ticketOptionPrice, isSelected && styles.selectedTicketText]}>
-                      AED {ticket.price}
+              return (
+                <TouchableOpacity
+                  key={ticket._id || `${ticket.name}-${index}`}
+                  style={[
+                    styles.ticketOption,
+                    isSelected && styles.selectedTicketOption,
+                    !isAvailable && styles.unavailableTicketOption,
+                  ]}
+                  onPress={() =>
+                    isAvailable && setSelectedTicketType(ticket.name)
+                  }
+                  disabled={!isAvailable}
+                >
+                  <View style={styles.ticketOptionLeft}>
+                    <Text
+                      style={[
+                        styles.ticketOptionName,
+                        isSelected && styles.selectedTicketText,
+                      ]}
+                    >
+                      {ticket.name}
                     </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+                    <Text style={styles.ticketOptionDescription}>
+                      {ticket.description}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.ticketAvailability,
+                        !isAvailable && styles.unavailableText,
+                      ]}
+                    >
+                      {isAvailable ? `${available} available` : "Sold Out"}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.ticketOptionPrice,
+                      isSelected && styles.selectedTicketText,
+                    ]}
+                  >
+                    د.إ {ticket.price}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
+        </View>
 
-          {/* Quantity Selection */}
-          {selectedTicket && availableTickets > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Number of Tickets</Text>
-              <TicketCounter
-                value={quantity}
-                onChange={setQuantity}
-                min={1}
-                max={Math.min(10, availableTickets)}
-              />
-            </View>
-          )}
+        {/* Quantity Selection */}
+        {selectedTicket && availableTickets > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              {mode === "tables" ? "Number of Tables" : "Number of Tickets"}
+            </Text>
+            <TicketCounter
+              value={quantity}
+              onChange={setQuantity}
+              min={1}
+              max={Math.min(10, availableTickets)}
+            />
+          </View>
+        )}
 
-          {/* Price Summary */}
-          {selectedTicket && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Order Summary</Text>
-              <View style={styles.summaryContainer}>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>{selectedTicket.name} × {quantity}</Text>
-                  <Text style={styles.summaryValue}>AED {selectedTicket.price * quantity}</Text>
-                </View>
-                <View style={styles.summaryDivider} />
-                <View style={styles.summaryRow}>
-                  <Text style={styles.totalLabel}>Total</Text>
-                  <Text style={styles.totalValue}>AED {totalAmount}</Text>
-                </View>
+        {/* Price Summary */}
+        {selectedTicket && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Order Summary</Text>
+            <View style={styles.summaryContainer}>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>
+                  {selectedTicket.name} × {quantity}
+                </Text>
+                <Text style={styles.summaryValue}>
+                  د.إ {selectedTicket.price * quantity}
+                </Text>
+              </View>
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryRow}>
+                <Text style={styles.totalLabel}>Total</Text>
+                <Text style={styles.totalValue}>د.إ {totalAmount}</Text>
               </View>
             </View>
+          </View>
+        )}
+        <TouchableOpacity
+          style={[
+            styles.purchaseButton,
+            purchasing && styles.purchaseButtonDisabled,
+            (eventTickets.length === 0 || !selectedTicket) &&
+              styles.purchaseButtonDisabled,
+          ]}
+          onPress={handlePurchase}
+          disabled={purchasing || eventTickets.length === 0 || !selectedTicket}
+        >
+          {purchasing ? (
+            <ActivityIndicator size="small" color={Colors.textPrimary} />
+          ) : (
+            <Text style={styles.purchaseButtonText}>
+              {mode === "tables" ? "Confirm Table Booking" : "Confirm Payment"}{" "}
+              • د.إ {totalAmount}
+            </Text>
           )}
-                      <TouchableOpacity
-              style={[styles.purchaseButton, purchasing && styles.purchaseButtonDisabled]}
-              onPress={handlePurchase}
-              disabled={purchasing}
-            >
-              {purchasing ? (
-                <ActivityIndicator size="small" color={Colors.textPrimary} />
-              ) : (
-                <Text style={styles.purchaseButtonText}>
-                  Confirm Payment • AED {totalAmount}
-                </Text>
-              )}
-            </TouchableOpacity>
-        </ScrollView>
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -278,14 +378,14 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 32,
   },
   errorText: {
     color: Colors.textPrimary,
     fontSize: 18,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 24,
   },
   retryButton: {
@@ -297,18 +397,18 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: Colors.textPrimary,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
@@ -319,16 +419,16 @@ const styles = StyleSheet.create({
   backButtonText: {
     color: Colors.primary,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   headerTitle: {
     color: Colors.textPrimary,
     fontSize: 20,
-    fontWeight: '700',
-    position: 'absolute',
+    fontWeight: "700",
+    position: "absolute",
     left: 0,
     right: 0,
-    textAlign: 'center',
+    textAlign: "center",
     zIndex: -1,
   },
   spacer: {
@@ -350,8 +450,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.withOpacity.white10,
   },
   eventRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   eventImage: {
@@ -363,13 +463,13 @@ const styles = StyleSheet.create({
   eventName: {
     color: Colors.textPrimary,
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 4,
   },
   eventDate: {
     color: Colors.textSecondary,
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   section: {
     marginBottom: 24,
@@ -377,14 +477,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: Colors.textPrimary,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 16,
   },
   ticketOptions: {
     gap: 12,
   },
   ticketOption: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: Colors.backgroundSecondary,
     borderRadius: 12,
     padding: 16,
@@ -405,7 +505,7 @@ const styles = StyleSheet.create({
   ticketOptionName: {
     color: Colors.textPrimary,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 4,
   },
   selectedTicketText: {
@@ -419,7 +519,7 @@ const styles = StyleSheet.create({
   ticketAvailability: {
     color: Colors.textMuted,
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   unavailableText: {
     color: Colors.error,
@@ -427,8 +527,8 @@ const styles = StyleSheet.create({
   ticketOptionPrice: {
     color: Colors.textPrimary,
     fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'right',
+    fontWeight: "700",
+    textAlign: "right",
   },
   summaryContainer: {
     backgroundColor: Colors.backgroundSecondary,
@@ -438,9 +538,9 @@ const styles = StyleSheet.create({
     borderColor: Colors.withOpacity.white10,
   },
   summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
   },
   summaryLabel: {
@@ -450,7 +550,7 @@ const styles = StyleSheet.create({
   summaryValue: {
     color: Colors.textPrimary,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   summaryDivider: {
     height: 1,
@@ -460,18 +560,18 @@ const styles = StyleSheet.create({
   totalLabel: {
     color: Colors.textPrimary,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   totalValue: {
     color: Colors.primary,
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   purchaseButton: {
     backgroundColor: Colors.primary,
     borderRadius: 25,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -484,7 +584,7 @@ const styles = StyleSheet.create({
   purchaseButtonText: {
     color: Colors.button.text,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });
 

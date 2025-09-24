@@ -1,35 +1,35 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from "react";
 import {
   TouchableOpacity,
-  Text,
   StyleSheet,
   Animated,
-  Dimensions
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import { Colors } from '@/constants/Colors';
+  Dimensions,
+  View,
+} from "react-native";
+import { router } from "expo-router";
+import { Colors } from "@/constants/Colors";
+import { Sparkles } from "lucide-react-native";
+import { BlurView } from "expo-blur";
 
 interface FloatingChatButtonProps {
   onPress?: () => void;
   style?: any;
 }
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
-const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ 
-  onPress, 
-  style 
+const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({
+  onPress,
+  style,
 }) => {
   const scaleAnimation = useRef(new Animated.Value(1)).current;
   const pulseAnimation = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Subtle pulse animation
     const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnimation, {
-          toValue: 1.1,
+          toValue: 1.06,
           duration: 2000,
           useNativeDriver: true,
         }),
@@ -41,15 +41,13 @@ const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({
       ])
     );
     pulse.start();
-
     return () => pulse.stop();
   }, []);
 
   const handlePress = () => {
-    // Scale animation on press
     Animated.sequence([
       Animated.timing(scaleAnimation, {
-        toValue: 0.9,
+        toValue: 0.92,
         duration: 100,
         useNativeDriver: true,
       }),
@@ -60,40 +58,27 @@ const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({
       }),
     ]).start();
 
-    if (onPress) {
-      onPress();
-    } else {
-      router.push('/chatbot');
-    }
+    if (onPress) onPress();
+    else router.push("/chatbot");
   };
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.container,
         style,
-        { 
-          transform: [
-            { scale: scaleAnimation },
-            { scale: pulseAnimation }
-          ] 
-        }
+        { transform: [{ scale: scaleAnimation }, { scale: pulseAnimation }] },
       ]}
     >
       <TouchableOpacity
         style={styles.button}
         onPress={handlePress}
-        activeOpacity={0.8}
+        activeOpacity={0.9}
       >
-        <LinearGradient
-          colors={[Colors.primary, Colors.primaryDark]}
-          style={styles.gradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <Text style={styles.icon}>🤖</Text>
-          <Text style={styles.label}>AI</Text>
-        </LinearGradient>
+        <BlurView intensity={28} tint="dark" style={styles.glass}>
+          <View style={styles.innerBorder} />
+          <Sparkles color="#FFFFFF" size={22} />
+        </BlurView>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -101,39 +86,41 @@ const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 100,
     right: 20,
     zIndex: 999,
   },
   button: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    elevation: 8,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    elevation: 6,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
     shadowRadius: 8,
+    overflow: "hidden",
   },
-  gradient: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
+  glass: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 28,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
     borderColor: Colors.withOpacity.white10,
   },
-  icon: {
-    fontSize: 20,
-    marginBottom: -2,
-  },
-  label: {
-    color: Colors.button.text,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+  innerBorder: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
   },
 });
 

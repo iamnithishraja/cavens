@@ -1,27 +1,32 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { 
-  StyleSheet, 
-  StatusBar, 
-  View, 
-  ScrollView
-} from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLocation } from '@/hooks/useLocation';
-import EventDetailsScreen from './EventDetailsScreen';
-import { SAMPLE_EVENTS } from '@/components/event/data';
-import type { EventItem } from '@/components/event/types';
-import { Colors } from '@/constants/Colors';
-import apiClient from '@/app/api/client';
-import CityPickerModal, { CITIES, type City } from '@/components/ui/CityPickerModal';
-import { store } from '@/utils';
-import TimelineFilterTabs, { type TimelineTab, getDateRange } from '@/components/event/TimelineFilterTabs';
-import LocationHeader from '@/components/event/LocationHeader';
-import FilterModal from '@/components/Models/filterModel';
-import FeaturedEventsCarousel from '@/components/event/FeaturedEventsCarousel';
-import EventsList from '@/components/event/EventsList';
-import SearchSection from '@/components/event/SearchSection';
-import { LoadingState, ErrorState } from '@/components/event/LoadingStates';
-import { router } from 'expo-router';
+import React, { useMemo, useState, useEffect } from "react";
+import { StyleSheet, StatusBar, View, ScrollView } from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { useLocation } from "@/hooks/useLocation";
+import EventDetailsScreen from "./EventDetailsScreen";
+import { SAMPLE_EVENTS } from "@/components/event/data";
+import type { EventItem } from "@/components/event/types";
+import { Colors } from "@/constants/Colors";
+import apiClient from "@/app/api/client";
+import CityPickerModal, {
+  CITIES,
+  type City,
+} from "@/components/ui/CityPickerModal";
+import { store } from "@/utils";
+import TimelineFilterTabs, {
+  type TimelineTab,
+  getDateRange,
+} from "@/components/event/TimelineFilterTabs";
+import LocationHeader from "@/components/event/LocationHeader";
+import FilterModal from "@/components/Models/filterModel";
+import FeaturedEventsCarousel from "@/components/event/FeaturedEventsCarousel";
+import EventsList from "@/components/event/EventsList";
+import SearchSection from "@/components/event/SearchSection";
+import { LoadingState, ErrorState } from "@/components/event/LoadingStates";
+import { router } from "expo-router";
+import AnimatedGlowHeader from "@/components/ui/AnimatedGlowHeader";
 
 // Types for API responses
 type ClubWithEvents = {
@@ -63,27 +68,39 @@ type GetFeaturedEventsResponse = {
 
 const UserHomeScreen = () => {
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<TimelineTab>('tonight');
+  const [activeTab, setActiveTab] = useState<TimelineTab>("tonight");
   const [selectedCity, setSelectedCity] = useState<City>(CITIES[0]); // Default to Dubai
   const [cityPickerVisible, setCityPickerVisible] = useState(false);
-  const [search, setSearch] = useState('');
-  
+  const [search, setSearch] = useState("");
+
   // API data states
-  const [featuredEvents, setFeaturedEvents] = useState<FeaturedEventWithDistance[]>([]);
+  const [featuredEvents, setFeaturedEvents] = useState<
+    FeaturedEventWithDistance[]
+  >([]);
   const [allEvents, setAllEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filtersVisible, setFiltersVisible] = useState(false);
-  const [eventFilters, setEventFilters] = useState<{ maxPrice?: number; featured?: boolean; hasMenu?: boolean; ticketsAvailable?: boolean; soldOut?: boolean; mostPopular?: boolean; distanceKm?: number | null; sameCity?: boolean; walkingDistance?: boolean }>({ maxPrice: 100000, distanceKm: null });
-  
+  const [eventFilters, setEventFilters] = useState<{
+    maxPrice?: number;
+    featured?: boolean;
+    hasMenu?: boolean;
+    ticketsAvailable?: boolean;
+    soldOut?: boolean;
+    mostPopular?: boolean;
+    distanceKm?: number | null;
+    sameCity?: boolean;
+    walkingDistance?: boolean;
+  }>({ maxPrice: 100000, distanceKm: null });
+
   // Use location hook
-  const { userLocation, locationLoading, hasLocation, isFallbackLocation } = useLocation();
+  const { userLocation, locationLoading, hasLocation, isFallbackLocation } =
+    useLocation();
 
   // Initialize selected city in store
   useEffect(() => {
-    store.set('selectedCity', selectedCity.name);
+    store.set("selectedCity", selectedCity.name);
   }, []);
-
 
   // Fetch events data when location or city changes
   useEffect(() => {
@@ -96,20 +113,23 @@ const UserHomeScreen = () => {
 
         // Call both APIs in parallel using Promise.all with user's location
         const [allEventsResponse, featuredEventsResponse] = await Promise.all([
-          apiClient.get<GetAllEventsResponse>('/api/user/getAllEvents', {
+          apiClient.get<GetAllEventsResponse>("/api/user/getAllEvents", {
             params: {
               latitude: userLocation.latitude,
               longitude: userLocation.longitude,
-              city: selectedCity.name
-            }
+              city: selectedCity.name,
+            },
           }),
-          apiClient.get<GetFeaturedEventsResponse>('/api/event/featured-events', {
-            params: {
-              latitude: userLocation.latitude,
-              longitude: userLocation.longitude,
-              city: selectedCity.name
+          apiClient.get<GetFeaturedEventsResponse>(
+            "/api/event/featured-events",
+            {
+              params: {
+                latitude: userLocation.latitude,
+                longitude: userLocation.longitude,
+                city: selectedCity.name,
+              },
             }
-          })
+          ),
         ]);
 
         // Process getAllEvents response
@@ -123,30 +143,38 @@ const UserHomeScreen = () => {
                   ...event,
                   venue: clubData.club.name,
                   distance: clubData.distanceText,
-                  distanceInMeters: clubData.distanceInMeters
+                  distanceInMeters: clubData.distanceInMeters,
                 } as EventItem);
               });
             }
           });
           setAllEvents(extractedEvents);
+          console.log("Fetched events:", extractedEvents.length);
         }
 
         // Process getFeaturedEvents response
-        if (featuredEventsResponse.data.success && featuredEventsResponse.data.data) {
-          const featuredWithDistances = featuredEventsResponse.data.data.map(event => ({
-            ...event,
-            distance: event.distanceText,
-            venue: event.venue || 'Unknown Venue'
-          }));
+        if (
+          featuredEventsResponse.data.success &&
+          featuredEventsResponse.data.data
+        ) {
+          const featuredWithDistances = featuredEventsResponse.data.data.map(
+            (event) => ({
+              ...event,
+              distance: event.distanceText,
+              venue: event.venue || "Unknown Venue",
+            })
+          );
           setFeaturedEvents(featuredWithDistances.slice(0, 3)); // Limit to 3 for carousel
         }
-
       } catch (err) {
         // Fallback to public clubs endpoint
         try {
-          const publicClubsRes = await apiClient.get('/api/club/public/approved', {
-            params: { city: selectedCity.name, includeEvents: 'true' }
-          });
+          const publicClubsRes = await apiClient.get(
+            "/api/club/public/approved",
+            {
+              params: { city: selectedCity.name, includeEvents: "true" },
+            }
+          );
           const clubsWithEvents = (publicClubsRes.data?.items || []) as any[];
           // Build events list
           const aggregatedEvents: EventItem[] = [];
@@ -164,14 +192,21 @@ const UserHomeScreen = () => {
           // Derive featured from aggregated events if available
           const derivedFeatured = aggregatedEvents
             .filter((e: any) => e.isFeatured)
-            .sort((a: any, b: any) => (a.featuredNumber || 0) - (b.featuredNumber || 0))
+            .sort(
+              (a: any, b: any) =>
+                (a.featuredNumber || 0) - (b.featuredNumber || 0)
+            )
             .slice(0, 3) as any[];
           setFeaturedEvents(derivedFeatured);
           setError(null);
         } catch (fallbackErr) {
-          setError('Failed to load events. Please try again.');
+          setError("Failed to load events. Please try again.");
           // Final fallback to sample data
-          setFeaturedEvents(SAMPLE_EVENTS.filter(event => event.promoVideos?.length > 0 || event.coverImage).slice(0, 3));
+          setFeaturedEvents(
+            SAMPLE_EVENTS.filter(
+              (event) => event.promoVideos?.length > 0 || event.coverImage
+            ).slice(0, 3)
+          );
           setAllEvents(SAMPLE_EVENTS.slice(0, 5));
         }
       } finally {
@@ -185,60 +220,79 @@ const UserHomeScreen = () => {
   // Filter events based on the active tab, search (regex) and filters
   const filteredEvents = useMemo(() => {
     let events = allEvents;
-    
+
     // Apply regex-based search filter first
     if (search.trim().length > 0) {
       // Escape regex special characters in input to avoid invalid patterns but allow simple regex-like usage
       const escaped = search
         .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
         .replace(/\s+/g, ".*?"); // treat spaces as fuzzy gaps
-      const pattern = new RegExp(escaped, 'i');
+      const pattern = new RegExp(escaped, "i");
       events = events.filter((event) => {
         const fields = [
-          event.name || '',
-          event.djArtists || '',
-          event.venue || '',
+          event.name || "",
+          event.djArtists || "",
+          event.venue || "",
         ];
         return fields.some((f) => pattern.test(f));
       });
     }
-    
+
     // Apply timeline filter
     const { start, end } = getDateRange(activeTab);
-    events = events.filter(event => {
+    events = events.filter((event) => {
       const eventDate = new Date(event.date);
       return eventDate >= start && eventDate <= end;
     });
 
     // Apply eventFilters
-    events = events.filter(event => {
+    events = events.filter((event) => {
       // price filter
-      const minTicket = event.tickets && event.tickets.length > 0 ? Math.min(...event.tickets.map(t => t.price)) : 0;
-      if (eventFilters.maxPrice !== undefined && minTicket > (eventFilters.maxPrice ?? 100000)) return false;
+      const minTicket =
+        event.tickets && event.tickets.length > 0
+          ? Math.min(...event.tickets.map((t) => t.price))
+          : 0;
+      if (
+        eventFilters.maxPrice !== undefined &&
+        minTicket > (eventFilters.maxPrice ?? 100000)
+      )
+        return false;
       // has menu
-      if (eventFilters.hasMenu && (!event.menuItems || event.menuItems.length === 0)) return false;
+      if (
+        eventFilters.hasMenu &&
+        (!event.menuItems || event.menuItems.length === 0)
+      )
+        return false;
       // featured
       if (eventFilters.featured && !event.isFeatured) return false;
       // tickets available
       if (eventFilters.ticketsAvailable) {
-        const anyAvailable = (event.tickets || []).some(t => (t.quantityAvailable - t.quantitySold) > 0);
+        const anyAvailable = (event.tickets || []).some(
+          (t) => t.quantityAvailable - t.quantitySold > 0
+        );
         if (!anyAvailable) return false;
       }
       // sold out
       if (eventFilters.soldOut) {
-        const allSold = (event.tickets || []).every(t => (t.quantityAvailable - t.quantitySold) <= 0);
+        const allSold = (event.tickets || []).every(
+          (t) => t.quantityAvailable - t.quantitySold <= 0
+        );
         if (!allSold) return false;
       }
       // distance
       if (eventFilters.distanceKm != null && event.distanceInMeters != null) {
-        if (event.distanceInMeters > eventFilters.distanceKm * 1000) return false;
+        if (event.distanceInMeters > eventFilters.distanceKm * 1000)
+          return false;
       }
       return true;
     });
-    
+
     // Sort events by date (earliest first)
-    events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    
+    events.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    console.log("Filtered events:", events.length, "from", allEvents.length);
     return events;
   }, [allEvents, activeTab, search, eventFilters]);
 
@@ -247,7 +301,7 @@ const UserHomeScreen = () => {
     setSelectedCity(city);
     setCityPickerVisible(false);
     // Save selected city to store for other screens
-    store.set('selectedCity', city.name);
+    store.set("selectedCity", city.name);
   };
 
   // Event handlers
@@ -260,7 +314,6 @@ const UserHomeScreen = () => {
     setLoading(true);
   };
 
-
   // Show loading state
   if (loading && featuredEvents.length === 0 && allEvents.length === 0) {
     return <LoadingState locationLoading={locationLoading} />;
@@ -272,8 +325,16 @@ const UserHomeScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
+
+      {/* Animated SVG Glow Header */}
+      <AnimatedGlowHeader />
+
       <View style={styles.fullBackground}>
         {/* Fixed Header */}
         <View style={styles.fixedHeader}>
@@ -290,12 +351,12 @@ const UserHomeScreen = () => {
             cityName={selectedCity.name}
           />
         </View>
-        
-        <ScrollView 
-          style={styles.container} 
+
+        <ScrollView
+          style={styles.container}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingTop: 110, paddingBottom: insets.bottom + 120 }
+            { paddingTop: 110, paddingBottom: insets.bottom + 120 },
           ]}
           stickyHeaderIndices={[1]}
           scrollIndicatorInsets={{ top: 110, bottom: insets.bottom + 80 }}
@@ -322,7 +383,7 @@ const UserHomeScreen = () => {
             activeTab={activeTab}
             search={search}
             onEventPress={handleEventPress}
-            onClearSearch={() => setSearch('')}
+            onClearSearch={() => setSearch("")}
           />
         </ScrollView>
 
@@ -363,12 +424,12 @@ const styles = StyleSheet.create({
   },
   // Fixed Header
   fixedHeader: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     zIndex: 10,
-    backgroundColor: Colors.background,
+    backgroundColor: "transparent", // Transparent to show gradient
     paddingTop: 8,
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
