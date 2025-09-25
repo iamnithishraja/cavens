@@ -28,6 +28,7 @@ interface ChatbotRequest extends Request {
     conversationHistory?: ChatbotMessage[];
     screen?: 'HOME' | 'MAP' | 'BOOKINGS' | 'PROFILE' | 'GENERAL';
     hasBookings?: boolean;
+    stream?: boolean;
     preferences?: {
       musicGenres?: string[];
       priceRange?: { min: number; max: number };
@@ -37,45 +38,248 @@ interface ChatbotRequest extends Request {
   };
 }
 
+
 export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
   try {
-    const { message, eventId, city = 'Dubai', userLocation, preferences, conversationHistory = [], screen = 'GENERAL', hasBookings = false } = req.body;
+    const { message, eventId, city = 'Dubai', userLocation, preferences, conversationHistory = [], screen = 'GENERAL', hasBookings = false, stream = false } = req.body;
+    
+    console.log('🚀 [DEBUG] ===== CHATBOT REQUEST START =====');
+    console.log('🚀 [DEBUG] Full message:', message);
+    console.log('🚀 [DEBUG] Stream mode:', stream);
+    console.log('🚀 [DEBUG] City:', city);
+    console.log('🚀 [DEBUG] Screen:', screen);
+    console.log('🚀 [DEBUG] Has bookings:', hasBookings);
+    console.log('🚀 [DEBUG] Conversation history length:', conversationHistory?.length || 0);
+    console.log('🚀 [DEBUG] User location:', userLocation);
     
     // Get userId from authenticated user
     const userId = req.user?.id;
     
-    console.log('🔐 User authentication:', {
+    console.log('🔐 [DEBUG] User authentication:', {
       userId,
       userEmail: req.user?.email,
       userName: req.user?.name,
       isAuthenticated: !!req.user
     });
     
-    console.log('📍 Location data received:', {
+    console.log('📍 [DEBUG] Location data received:', {
       userLocation,
       hasLocation: !!userLocation,
       latitude: userLocation?.latitude,
       longitude: userLocation?.longitude,
-      screen
+      screen,
+      stream
     });
     
     // Ensure city is a string
     const cityString = typeof city === 'string' ? city : 'Dubai';
 
     if (!message || typeof message !== 'string') {
-       res.status(400).json({
-        success: false,
-        error: 'Message is required and must be a string'
+      if (stream) {
+        res.writeHead(400, {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive'
+        });
+        res.write(`data: ${JSON.stringify({ type: 'error', error: 'Message is required and must be a string' })}\n\n`);
+        res.end();
+      } else {
+        res.status(400).json({
+          success: false,
+          error: 'Message is required and must be a string'
+        });
+      }
+      return;
+    }
+
+    // Handle streaming response
+    if (stream) {
+      console.log('🚀 [DEBUG] ===== STARTING STREAMING MODE =====');
+      console.log('🚀 [DEBUG] Setting up SSE headers...');
+      
+      // Set up SSE headers
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Cache-Control'
       });
+
+      // Send initial connection event
+      res.write(`data: ${JSON.stringify({ type: 'connection', message: 'Connected to AI stream' })}\n\n`);
+      
+      // Set up heartbeat to keep connection alive
+      const heartbeatInterval = setInterval(() => {
+        res.write(`data: ${JSON.stringify({ type: 'heartbeat', timestamp: Date.now() })}\n\n`);
+      }, 30000);
+
+      try {
+        console.log('🚀 [DEBUG] Processing streaming request...');
+        
+        // Send immediate "thinking" response
+        console.log('🚀 [DEBUG] Sending thinking response...');
+        res.write(`data: ${JSON.stringify({ 
+          type: 'thinking', 
+          message: 'I\'m thinking...' 
+        })}\n\n`);
+        
+        // Process the actual intent and generate response
+        console.log('🚀 [DEBUG] Analyzing intent for streaming...');
+        const intent = await openRouterService.analyzeIntent(message, conversationHistory);
+        console.log('🎯 [DEBUG] Intent analysis result:', intent);
+        
+        // Process based on intent type
+        let response: string;
+        let responseType: number;
+        
+        // Determine user's actual location
+        let effectiveCity = cityString;
+        
+        // Handle "near me" queries - just use their current city setting
+        if (intent.extractedInfo?.nearMe || intent.extractedInfo?.location === 'current') {
+          console.log('🗺️ [DEBUG] Using current city for near me query:', effectiveCity);
+        } else if (intent.extractedInfo?.location && intent.extractedInfo.location !== 'current') {
+          // User specified a different city
+          effectiveCity = intent.extractedInfo.location;
+          console.log('🏙️ [DEBUG] Using specified city:', effectiveCity);
+        }
+
+        console.log('🚀 [DEBUG] Processing intent type:', intent.type);
+        
+        switch (intent.type) {
+          case 'find_events':
+          case 'filter_events':
+            console.log('🎯 [DEBUG] Processing find_events intent');
+            responseType = 2;
+            
+            try {
+              let events: any[] = [];
+              
+              if (userLocation && intent.extractedInfo?.nearMe) {
+                console.log('🗺️ [DEBUG] Using distance-based event search');
+                const clubsWithDistance = await getClubsWithDistance(userLocation, effectiveCity);
+                events = extractEventsFromClubs(clubsWithDistance);
+                console.log(`✅ [DEBUG] Found ${events.length} events with distance data`);
+              } else {
+                console.log('🔍 [DEBUG] Using regular event search');
+                const aiQuery = await executeAIGeneratedQuery(message, intent, effectiveCity);
+                
+                if (aiQuery.type === 'Club') {
+                  events = extractEventsFromClubs(aiQuery.data);
+                } else {
+                  events = aiQuery.data.map((event: any) => ({
+                    id: event._id,
+                    name: event.name,
+                    description: event.description,
+                    date: event.date,
+                    time: event.time,
+                    djArtists: event.djArtists,
+                    tickets: event.tickets,
+                    guestExperience: event.guestExperience
+                  }));
+                }
+              }
+              
+              console.log('🤖 [DEBUG] Generating event recommendations...');
+              const fullResponse = await openRouterService.generateEventRecommendations(
+                message,
+                events,
+                preferences,
+                conversationHistory,
+                intent.extractedInfo
+              );
+              
+              console.log('📝 [DEBUG] Event response generated:', fullResponse.substring(0, 100) + '...');
+              await streamResponse(fullResponse, res);
+              response = fullResponse;
+              
+            } catch (error) {
+              console.error('❌ [DEBUG] Error in event search:', error);
+              const fallbackEvents = await searchEventsForChatbot(
+                intent.query || message, 
+                effectiveCity
+              );
+              const fallbackResponse = await openRouterService.generateEventRecommendations(
+                message,
+                fallbackEvents,
+                preferences,
+                conversationHistory,
+                intent.extractedInfo
+              );
+              console.log('📝 [DEBUG] Fallback response generated:', fallbackResponse.substring(0, 100) + '...');
+              await streamResponse(fallbackResponse, res);
+              response = fallbackResponse;
+            }
+            break;
+            
+          default:
+            console.log('🎯 [DEBUG] Processing default/general conversation intent');
+            responseType = 0;
+            const generalResponse = await openRouterService.handleGeneralConversation(message, conversationHistory, { screen, hasBookings, city: effectiveCity });
+            console.log('📝 [DEBUG] General response generated:', generalResponse.substring(0, 100) + '...');
+            await streamResponse(generalResponse, res);
+            response = generalResponse;
+            break;
+        }
+        
+        // Send final complete event
+        console.log('🚀 [DEBUG] Sending final complete event...');
+        res.write(`data: ${JSON.stringify({ 
+          type: 'complete', 
+          data: {
+            response,
+            type: responseType,
+            intent: intent.type,
+            confidence: intent.confidence,
+            showCards: false,
+            cardType: null,
+            cards: null
+          }
+        })}\n\n`);
+
+        
+        clearInterval(heartbeatInterval);
+        res.end();
+        console.log('✅ [DEBUG] Streaming response completed successfully');
+      } catch (error) {
+        console.error('Chatbot streaming error:', error);
+        clearInterval(heartbeatInterval);
+        res.write(`data: ${JSON.stringify({ 
+          type: 'error', 
+          error: 'Sorry, I encountered an error while processing your request.'
+        })}\n\n`);
+        res.end();
+      }
       return;
     }
 
         // Quick fallback for simple greetings
+        console.log('🔍 [DEBUG] Checking greeting pattern for message:', message);
         if (message.toLowerCase().match(/^(hi|hello|hey|good morning|good afternoon|good evening)$/)) {
-          res.json({
-            success: true,
+          console.log('✅ [DEBUG] Message matches greeting pattern, using simple response');
+          const greetingResponse = "Hi! I'm Cavens AI 🎉 I can help you find amazing events and answer questions about nightlife in your city. What can I help you with?";
+          
+          // Stream the greeting response word by word
+          const words = greetingResponse.split(' ');
+          for (let i = 0; i < words.length; i++) {
+            const word = words[i];
+            if (!word) continue;
+            
+            res.write(`data: ${JSON.stringify({ 
+              type: 'token', 
+              token: (i > 0 ? ' ' : '') + word,
+              isComplete: i === words.length - 1
+            })}\n\n`);
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          
+          // Send final complete event
+          res.write(`data: ${JSON.stringify({ 
+            type: 'complete', 
             data: {
-              response: "Hi! I'm Cavens AI 🎉 I can help you find amazing events and answer questions about nightlife in your city. What can I help you with?",
+              response: greetingResponse,
               type: 0,
               intent: 'general',
               confidence: 1.0,
@@ -83,12 +287,16 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
               cardType: null,
               cards: null
             }
-          });
+          })}\n\n`);
+          
+          res.end();
           return;
         }
 
         // Analyze user intent with conversation context
+        console.log('🔍 [DEBUG] Analyzing intent for message:', message);
         const intent = await openRouterService.analyzeIntent(message, conversationHistory);
+        console.log('🎯 [DEBUG] Intent analysis result:', intent);
         
         console.log('🎯 Intent analysis result:', {
           intent: intent.type,
@@ -113,9 +321,11 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
       effectiveCity = intent.extractedInfo.location;
     }
 
+    console.log('🚀 [DEBUG] Processing intent type:', intent.type);
     switch (intent.type) {
       case 'find_events':
       case 'filter_events':
+        console.log('🎯 [DEBUG] Processing find_events intent');
         responseType = 2; // Return 2 for finding events
         
         try {
@@ -127,29 +337,7 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
             
             // Use the existing getNearbyEvents logic
             const clubsWithDistance = await getClubsWithDistance(userLocation, effectiveCity);
-            
-            // Extract events from clubs with distance data
-            clubsWithDistance.forEach((club: any) => {
-              if (club.events && Array.isArray(club.events)) {
-                club.events.forEach((event: any) => {
-                  if (event && event._id) {
-                    events.push({
-                      id: event._id,
-                      name: event.name,
-                      description: event.description,
-                      date: event.date,
-                      time: event.time,
-                      venue: club.name,
-                      city: club.city,
-                      djArtists: event.djArtists,
-                      tickets: event.tickets,
-                      guestExperience: event.guestExperience,
-                      distanceFromUser: club.distanceFromUser // Include distance data
-                    });
-                  }
-                });
-              }
-            });
+            events = extractEventsFromClubs(clubsWithDistance);
             
             console.log(`✅ Found ${events.length} events with distance data`);
           } else {
@@ -158,27 +346,8 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
             const aiQuery = await executeAIGeneratedQuery(message, intent, effectiveCity);
             
             if (aiQuery.type === 'Club') {
-              // Extract events from clubs
-              aiQuery.data.forEach((club: any) => {
-                if (club.events && Array.isArray(club.events)) {
-                  club.events.forEach((event: any) => {
-                    if (event && event._id) {
-                      events.push({
-                        id: event._id,
-                        name: event.name,
-                        description: event.description,
-                        date: event.date,
-                        time: event.time,
-                        venue: club.name,
-                        city: club.city,
-                        djArtists: event.djArtists,
-                        tickets: event.tickets,
-                        guestExperience: event.guestExperience
-                      });
-                    }
-                  });
-                }
-              });
+              // Extract events from clubs using helper function
+              events = extractEventsFromClubs(aiQuery.data);
             } else {
               // Direct event results
               events = aiQuery.data.map((event: any) => ({
@@ -194,7 +363,8 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
             }
           }
           
-          response = await openRouterService.generateEventRecommendations(
+          // Stream the response word by word
+          const fullResponse = await openRouterService.generateEventRecommendations(
             message,
             events,
             preferences,
@@ -202,16 +372,21 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
             intent.extractedInfo
           );
           
+          // Stream the response word by word
+          await streamResponse(fullResponse, res);
+          
+          response = fullResponse;
+          
         } catch (error) {
           console.error('Error in event search:', error);
-          // Fallback to existing method
-          const events = await searchEventsForChatbot(
+          // Only use fallback if AI query completely fails
+          const fallbackEvents = await searchEventsForChatbot(
             intent.query || message, 
             effectiveCity
           );
           response = await openRouterService.generateEventRecommendations(
             message,
-            events,
+            fallbackEvents,
             preferences,
             conversationHistory,
             intent.extractedInfo
@@ -255,13 +430,19 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
             }));
           }
           
-          response = await openRouterService.generateClubRecommendations(
+          // Stream the response word by word
+          const fullResponse = await openRouterService.generateClubRecommendations(
             message,
             clubs,
             preferences,
             conversationHistory,
             intent.extractedInfo
           );
+          
+          // Stream the response word by word
+          await streamResponse(fullResponse, res);
+          
+          response = fullResponse;
           
         } catch (error) {
           console.error('Error in club search:', error);
@@ -270,13 +451,30 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
             intent.query || message,
             effectiveCity
           );
-          response = await openRouterService.generateClubRecommendations(
+          const fallbackResponse = await openRouterService.generateClubRecommendations(
             message,
             clubs,
             preferences,
             conversationHistory,
             intent.extractedInfo
           );
+          
+          // Stream fallback response
+          const words = fallbackResponse.split(' ');
+          for (let i = 0; i < words.length; i++) {
+            const word = words[i];
+            if (!word) continue;
+            
+            res.write(`data: ${JSON.stringify({ 
+              type: 'token', 
+              token: (i > 0 ? ' ' : '') + word,
+              isComplete: i === words.length - 1
+            })}\n\n`);
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          
+          response = fallbackResponse;
         }
         break;
 
@@ -310,21 +508,33 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
           });
         }
 
-        response = await openRouterService.answerEventQuestion(
+        // Stream the response word by word
+        const eventResponse = await openRouterService.answerEventQuestion(
           message,
           eventDetails,
           { city: effectiveCity, userId, intent, conversationHistory, userLocation }
         );
+        
+        // Stream the response word by word
+        await streamResponse(eventResponse, res);
+        
+        response = eventResponse;
         break;
 
       case 'club_question':
         responseType = 4; // Return 4 for club questions
         const clubDetails = await findClubFromQuery(intent, effectiveCity);
-        response = await openRouterService.answerClubQuestion(
+        // Stream the response word by word
+        const clubResponse = await openRouterService.answerClubQuestion(
           message,
           clubDetails,
           { city: effectiveCity, userId, intent, conversationHistory, userLocation }
         );
+        
+        // Stream the response word by word
+        await streamResponse(clubResponse, res);
+        
+        response = clubResponse;
         break;
 
       case 'my_bookings':
@@ -358,11 +568,17 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
           }
         }
         
-        response = await openRouterService.handleMyBookings(
+        // Stream the response word by word
+        const bookingResponse = await openRouterService.handleMyBookings(
           message,
           conversationHistory,
           { city: effectiveCity, userId, screen, bookings: bookingData }
         );
+        
+        // Stream the response word by word
+        await streamResponse(bookingResponse, res);
+        
+        response = bookingResponse;
         break;
 
       case 'booking_status':
@@ -394,40 +610,51 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
 
       case 'policy_query':
         responseType = 11; // Return 11 for policy queries
-        response = await openRouterService.handlePolicyQuery(
+        const policyResponse = await openRouterService.handlePolicyQuery(
           message,
           conversationHistory,
           { city: effectiveCity, userId, screen }
         );
+        await streamResponse(policyResponse, res);
+        response = policyResponse;
         break;
 
       case 'booking_help':
         responseType = 5; // Return 5 for booking help
-        response = await openRouterService.handleBookingHelp(
+        const helpResponse = await openRouterService.handleBookingHelp(
           message,
           conversationHistory,
           { city: effectiveCity, userId, screen, hasBookings }
         );
+        await streamResponse(helpResponse, res);
+        response = helpResponse;
         break;
 
       case 'directions':
         responseType = 6; // Return 6 for directions
-        response = await openRouterService.handleDirections(
+        const directionsResponse = await openRouterService.handleDirections(
           message,
           intent.extractedInfo,
           { city: effectiveCity, userLocation, conversationHistory, screen }
         );
+        await streamResponse(directionsResponse, res);
+        response = directionsResponse;
         break;
 
       default:
+        console.log('🎯 [DEBUG] Processing default/general conversation intent');
         responseType = 0; // General conversation
-        response = await openRouterService.handleGeneralConversation(message, conversationHistory, { screen, hasBookings, city: effectiveCity });
+        const generalResponse = await openRouterService.handleGeneralConversation(message, conversationHistory, { screen, hasBookings, city: effectiveCity });
+        console.log('📝 [DEBUG] General response generated:', generalResponse.substring(0, 100) + '...');
+        await streamResponse(generalResponse, res);
+        response = generalResponse;
         break;
     }
 
 
-    res.json({
-      success: true,
+    // Send final complete event
+    res.write(`data: ${JSON.stringify({ 
+      type: 'complete', 
       data: {
         response,
         type: responseType,
@@ -440,7 +667,9 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
           new Promise(resolve => setTimeout(() => resolve([]), 5000)) // 5 second timeout for cards
         ]) : null
       }
-    });
+    })}\n\n`);
+    
+    res.end();
     return;
   } catch (error) {
     console.error('Chatbot error:', error);
@@ -449,6 +678,50 @@ export const chatWithBot = async (req: ChatbotRequest, res: Response) => {
       error: 'Sorry, I encountered an error while processing your request.'
     });
     return;
+  }
+};
+
+// Helper function to extract events from clubs (avoids code duplication)
+const extractEventsFromClubs = (clubs: any[]): any[] => {
+  const events: any[] = [];
+  clubs.forEach(club => {
+    if (club.events && Array.isArray(club.events)) {
+      club.events.forEach((event: any) => {
+        if (event && event._id) {
+          events.push({
+            id: event._id,
+            name: event.name,
+            description: event.description,
+            date: event.date,
+            time: event.time,
+            venue: club.name,
+            city: club.city,
+            djArtists: event.djArtists,
+            tickets: event.tickets,
+            guestExperience: event.guestExperience,
+            distanceFromUser: club.distanceFromUser
+          });
+        }
+      });
+    }
+  });
+  return events;
+};
+
+// Helper function to stream response word by word
+const streamResponse = async (response: string, res: Response): Promise<void> => {
+  const words = response.split(' ');
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    if (!word) continue;
+    
+    res.write(`data: ${JSON.stringify({ 
+      type: 'token', 
+      token: (i > 0 ? ' ' : '') + word,
+      isComplete: i === words.length - 1
+    })}\n\n`);
+    
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
 };
 
@@ -476,26 +749,43 @@ async function executeAIGeneratedQuery(
     switch (queryConfig.model) {
       case 'Club':
         if (queryConfig.populate) {
-          results = await clubModel.find(queryConfig.query).populate(queryConfig.populate);
+          // Optimize populate with selective fields for chat responses
+          const optimizedPopulate = {
+            ...queryConfig.populate,
+            select: 'name description date time djArtists tickets guestExperience coverImage status'
+          };
+          results = await clubModel.find(queryConfig.query)
+            .select('name city address phone rating photos typeOfVenue clubDescription operatingDays')
+            .populate(optimizedPopulate)
+            .limit(10);
         } else {
-          results = await clubModel.find(queryConfig.query);
+          results = await clubModel.find(queryConfig.query)
+            .select('name city address phone rating photos typeOfVenue clubDescription operatingDays')
+            .limit(10);
         }
         break;
         
       case 'Event':
         if (queryConfig.populate) {
-          results = await eventModel.find(queryConfig.query).populate(queryConfig.populate);
+          results = await eventModel.find(queryConfig.query)
+            .select('name description date time djArtists tickets guestExperience coverImage status')
+            .populate(queryConfig.populate)
+            .limit(10);
         } else {
-          results = await eventModel.find(queryConfig.query);
+          results = await eventModel.find(queryConfig.query)
+            .select('name description date time djArtists tickets guestExperience coverImage status')
+            .limit(10);
         }
         break;
         
       default:
-        // Fallback to club search
+        // Fallback to club search with optimized fields
         results = await clubModel.find({ 
           city: { $regex: new RegExp(`^${city}$`, 'i') }, 
           isApproved: true 
-        });
+        })
+        .select('name city address phone rating photos typeOfVenue clubDescription operatingDays')
+        .limit(10);
         break;
     }
     
@@ -635,13 +925,19 @@ async function searchEventsForChatbot(query: string, city: string): Promise<any[
       city: { $regex: new RegExp(`^${city}$`, 'i') },
       isApproved: true,
       events: { $exists: true, $not: { $size: 0 } }
-    }).populate({
+    })
+    .select('name city address phone rating photos typeOfVenue clubDescription operatingDays')
+    .populate({
       path: 'events',
+      select: 'name description date time djArtists tickets guestExperience coverImage status',
       match: { 
         status: 'active',
         date: { $gte: currentDate } // Only upcoming events
       },
-      populate: { path: 'tickets' }
+      options: { 
+        sort: { isFeatured: -1, date: 1 }, 
+        limit: 10 
+      }
     });
 
     const events: any[] = [];
@@ -1028,14 +1324,15 @@ const getClubsWithDistance = async (
       query.city = { $regex: new RegExp(`^${city}$`, "i") };
     }
     
-    const clubs = await clubModel.find(query).populate({
-      path: "events",
-      match: { status: "active" },
-      populate: [
-        { path: "tickets" },
-        { path: "menuItems" }
-      ]
-    });
+    const clubs = await clubModel.find(query)
+      .select('name city address phone rating photos typeOfVenue clubDescription operatingDays mapLink')
+      .limit(10)
+      .populate({
+        path: "events",
+        select: 'name description date time djArtists tickets guestExperience coverImage status',
+        match: { status: "active" },
+        options: { limit: 5 }
+      });
 
     // Calculate distances for all clubs in parallel
     const distancePromises = clubs.map(async (club) => {
@@ -1151,6 +1448,7 @@ const getClubsWithDistance = async (
     return [];
   }
 };
+
 
 export const getChatbotSuggestions = async (req: Request, res: Response) => {
   try {

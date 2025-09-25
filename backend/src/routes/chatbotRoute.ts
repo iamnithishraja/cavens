@@ -4,7 +4,7 @@ import { isAuthenticated } from '../middleware/auth';
 
 const router = express.Router();
 
-// Chat with the AI bot
+// Chat with the AI bot (supports both regular and streaming responses)
 router.post('/chat', isAuthenticated, chatWithBot);
 
 // Get chatbot suggestions and popular events
