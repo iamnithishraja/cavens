@@ -63,104 +63,60 @@ class OpenRouterService {
 
   async analyzeIntent(userMessage: string, conversationHistory: any[] = []): Promise<ChatbotIntent> {
     try {
-      // Build conversation context
+      // OPTIMIZATION 1: Fast keyword-based intent detection (no AI call needed)
+      const lowerMessage = userMessage.toLowerCase();
+      
+      // Quick keyword matching for common intents
+      if (lowerMessage.includes('my booking') || lowerMessage.includes('my ticket') || lowerMessage.includes('my order') || lowerMessage.includes('show my')) {
+        return { 
+          type: 'my_bookings', 
+          confidence: 0.9,
+          showCards: true,
+          cardType: 'mixed'
+        };
+      }
+      
+      if (lowerMessage.includes('find event') || lowerMessage.includes('show event') || lowerMessage.includes('event near') || lowerMessage.includes('what event')) {
+        return { 
+          type: 'find_events', 
+          confidence: 0.9,
+          showCards: true,
+          cardType: 'events',
+          extractedInfo: { nearMe: lowerMessage.includes('near me') }
+        };
+      }
+      
+      if (lowerMessage.includes('find club') || lowerMessage.includes('show club') || lowerMessage.includes('club near') || lowerMessage.includes('what club')) {
+        return { 
+          type: 'find_clubs', 
+          confidence: 0.9,
+          showCards: true,
+          cardType: 'clubs',
+          extractedInfo: { nearMe: lowerMessage.includes('near me') }
+        };
+      }
+
+      // OPTIMIZATION 2: Minimal AI call with shorter prompt and faster model
       const messages: OpenRouterMessage[] = [
         {
           role: 'system',
-          content: `You are an AI assistant for a nightlife events app called Cavens. Analyze user messages and determine their intent and whether to show cards or text responses.
-
-CRITICAL: Respond ONLY with valid JSON. Do not include any explanatory text before or after the JSON.
-
-Analyze the user's message and determine:
-1. **Intent type**: find_events, find_clubs, event_question, club_question, booking_help, booking_status, booking_details, my_bookings, general, etc.
-2. **showCards**: true if user wants to see actual event/club cards, false for text-only responses
-3. **cardType**: "events", "clubs", or "mixed" when showCards is true
-
-**CARD DETECTION RULES:**
-- Show cards for: "show me events", "find clubs", "what events are happening", "list venues", "recommend events"
-- Show text for: "what time does it start", "how much does it cost", "tell me about this event", general questions
-
-**BOOKING INTENT DETECTION:**
-- **my_bookings**: "show my bookings", "what are my bookings", "my tickets", "my reservations"
-- **booking_status**: "status of my booking", "is my booking confirmed", "booking status"
-- **booking_details**: "details of my booking", "booking information", "my ticket details"
-- **booking_help**: "how to book", "booking process", "how to make a booking"
-- **policy_query**: "refund policy", "cancellation policy", "booking terms", "booking conditions", "booking rules", "ticket policies", "booking guidelines", "can I get a refund", "how to cancel", "money back", "refund terms", "cancel my ticket", "cancel reservation", "booking rules", "terms and conditions"
-
-**CLUB REGISTRATION INTENT DETECTION:**
-- **club_registration**: "how to become a club", "become a club owner", "club registration", "start a club", "club application", "how to register club", "club signup", "partner with cavens", "club membership", "how to join as club"
-
-**EVENT NAME EXTRACTION:**
-- Extract event names, DJ names, venue names from questions
-- Look for specific event references in conversation history
-- Identify when user is asking about a specific event vs general events
-
-Respond with ONLY this JSON format:
-{
-  "type": "intent_type", 
-  "confidence": 0.9, 
-  "showCards": true/false,
-  "cardType": "events/clubs/mixed",
-  "query": "search terms", 
-  "extractedInfo": {
-    "location": "city",
-    "eventName": "specific event name",
-    "venueName": "venue name",
-    "djName": "DJ name",
-    "nearMe": true/false
-  }
-}
-
-Examples:
-"Find events near me" -> {"type": "find_events", "confidence": 0.9, "showCards": true, "cardType": "events", "extractedInfo": {"nearMe": true}}
-"Show me clubs in Dubai" -> {"type": "find_clubs", "confidence": 0.9, "showCards": true, "cardType": "clubs", "extractedInfo": {"location": "Dubai"}}
-"What time does the party start?" -> {"type": "event_question", "confidence": 0.8, "showCards": false}
-"What's the cover charge?" -> {"type": "event_question", "confidence": 0.8, "showCards": false}
-"Tell me about the Tech House Night at XYZ Club" -> {"type": "event_question", "confidence": 0.9, "showCards": false, "extractedInfo": {"eventName": "Tech House Night", "venueName": "XYZ Club"}}
-"What time does DJ John's set start?" -> {"type": "event_question", "confidence": 0.9, "showCards": false, "extractedInfo": {"djName": "DJ John"}}
-"Show my bookings" -> {"type": "my_bookings", "confidence": 0.9, "showCards": true, "cardType": "events"}
-"What's the status of my booking?" -> {"type": "booking_status", "confidence": 0.9, "showCards": false}
-"Tell me about my ticket details" -> {"type": "booking_details", "confidence": 0.9, "showCards": false}
-"How can I become a club in Cavens?" -> {"type": "club_registration", "confidence": 0.9, "showCards": false}
-"How do I book tickets?" -> {"type": "booking_help", "confidence": 0.9, "showCards": false}
-"What's your refund policy?" -> {"type": "policy_query", "confidence": 0.9, "showCards": false}
-"How can I cancel my booking?" -> {"type": "policy_query", "confidence": 0.9, "showCards": false}
-"What are your booking terms?" -> {"type": "policy_query", "confidence": 0.9, "showCards": false}
-"Hello" -> {"type": "general", "confidence": 0.9, "showCards": false}
-"Recommend some events" -> {"type": "find_events", "confidence": 0.9, "showCards": true, "cardType": "events"}
-
-RESPOND WITH ONLY JSON - NO OTHER TEXT.`
+          content: `Classify intent. Return ONLY JSON: {"type": "find_events|find_clubs|event_question|club_question|my_bookings|general", "confidence": 0.9, "showCards": true, "cardType": "events|clubs|mixed"}`
+        },
+        {
+        role: 'user',
+        content: userMessage
         }
       ];
 
-      // Add conversation history (last 3 messages for context - reduced for speed)
-      const recentHistory = conversationHistory.slice(-3);
-      if (recentHistory.length > 0) {
-        messages.push({
-          role: 'system',
-          content: `CONVERSATION HISTORY for context:
-${recentHistory.map((msg: any, index: number) => 
-  `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
-).join('\n')}
-
-Use this conversation history to understand context. If the user is asking about a specific event/venue mentioned in previous messages, extract that information.`
-        });
-      }
-
-      // Add current user message
-      messages.push({
-        role: 'user',
-        content: userMessage
-      });
-
-              const response = await axios.post<OpenRouterResponse>(
-                `${this.baseURL}/chat/completions`,
-                {
-                  model: 'openai/gpt-4o-mini', // Fast and reliable model for intent analysis
-                  messages,
-                  max_tokens: 150, // Reduced from 200
-                  temperature: 0.3
-                },
+      const response = await axios.post<OpenRouterResponse>(
+        `${this.baseURL}/chat/completions`,
+        {
+          model: 'openai/gpt-4o-mini',
+          messages,
+          max_tokens: 50, // Much smaller response
+          temperature: 0.1, // Lower temperature for consistency
+          stop: ['}'] // Stop at end of JSON
+        },
         {
           headers: {
             'Authorization': `Bearer ${this.apiKey}`,
@@ -188,17 +144,27 @@ Use this conversation history to understand context. If the user is asking about
         return intent;
       } catch (parseError) {
         
-        // Simple fallback based on keywords
-        const lowerMessage = content.toLowerCase();
+        // Fast fallback based on keywords
         if (lowerMessage.includes('event') || lowerMessage.includes('party')) {
-          return { type: 'find_events', confidence: 0.7 };
+          return { 
+            type: 'find_events', 
+            confidence: 0.7,
+            showCards: true,
+            cardType: 'events'
+          };
         } else if (lowerMessage.includes('club') || lowerMessage.includes('venue')) {
-          return { type: 'find_clubs', confidence: 0.7 };
+          return { 
+            type: 'find_clubs', 
+            confidence: 0.7,
+            showCards: true,
+            cardType: 'clubs'
+          };
         }
         
         return {
           type: 'general',
-          confidence: 0.5
+          confidence: 0.5,
+          showCards: false
         };
       }
 
@@ -296,7 +262,7 @@ Use this conversation history to understand context. If the user is asking about
       tickets: event.tickets?.slice(0, 2) // Only first 2 ticket types
     }));
 
-    const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
+    const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app. 
 
 ${conversationContext}
 ${locationContext}
@@ -705,91 +671,88 @@ Use a helpful, practical tone with appropriate emojis.`;
 
   async generateDatabaseQuery(
     userMessage: string,
-    intent: any,
-    databaseSchema: string
+    intent: ChatbotIntent, 
+    userId?: string
   ): Promise<{ model: string; query: any; populate?: any }> {
-    try {
-      const systemPrompt = `You are a MongoDB query generator for a nightlife events app. 
+    const today = new Date().toISOString().split('T')[0];
 
-DATABASE SCHEMA:
-${databaseSchema}
-
-Based on the user's message and intent, generate the optimal MongoDB query.
-
-User message: "${userMessage}"
-Intent: ${JSON.stringify(intent, null, 2)}
-Current date: "${new Date().toISOString().split('T')[0]}" (use this for filtering upcoming events)
-
-Respond with ONLY a JSON object in this format:
-{
-  "model": "Club|Event|User|Order",
-  "query": { /* MongoDB query object */ },
-  "populate": { /* populate options if needed */ }
-}
-
-Examples:
-- "Find clubs in Dubai" → {"model": "Club", "query": {"city": {"$regex": "^Dubai$", "$options": "i"}, "isApproved": true}}
-- "Events with hip-hop" → {"model": "Club", "query": {"events": {"$exists": true}, "isApproved": true}, "populate": {"path": "events", "match": {"status": "active", "$or": [{"name": {"$regex": "hip-hop", "$options": "i"}}, {"djArtists": {"$regex": "hip-hop", "$options": "i"}}]}}}
-- "Rooftop venues" → {"model": "Club", "query": {"typeOfVenue": {"$regex": "rooftop", "$options": "i"}, "isApproved": true}}
-- "My bookings" → {"model": "User", "query": {"_id": "USER_ID"}, "populate": {"path": "orders", "populate": [{"path": "event"}, {"path": "club"}, {"path": "ticket"}]}}
-- "Show my orders" → {"model": "User", "query": {"_id": "USER_ID"}, "populate": {"path": "orders", "populate": [{"path": "event"}, {"path": "club"}, {"path": "ticket"}]}}
-- "My tickets" → {"model": "User", "query": {"_id": "USER_ID"}, "populate": {"path": "orders", "populate": [{"path": "event"}, {"path": "club"}, {"path": "ticket"}]}}
-- "Booking status" → {"model": "User", "query": {"_id": "USER_ID"}, "populate": {"path": "orders", "match": {"status": "STATUS_VALUE"}, "populate": [{"path": "event"}, {"path": "club"}, {"path": "ticket"}]}}
-
-IMPORTANT: 
-- For upcoming events, filter by date: {"date": {"$gte": "2024-01-01"}} (use current date provided above)
-- Do NOT use JavaScript functions like new Date() in queries
-- Use simple string values for dates in YYYY-MM-DD format
-- Keep all values as basic JSON types (string, number, boolean, object, array)
-- Always filter events by status: "active" and upcoming dates
-- For user bookings: Use User model with _id query and populate orders
-- For orders: Order model does NOT have userId field - use User.orders relationship
-- Replace "USER_ID" in examples with the actual userId from intent
-- For booking queries, always populate: event, club, and ticket references
-- The chatbot uses the same query pattern as getBookings function in userController
-- Status filtering: Use {"match": {"status": "paid"}} for paid orders, {"match": {"status": "scanned"}} for scanned orders
-
-RESPOND WITH ONLY JSON - NO OTHER TEXT.`;
-
-      const response = await this.generateResponse(userMessage, { intent }, systemPrompt);
-      
-      try {
-        // Extract JSON from response
-        const jsonMatch = response.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
+    // Rule-based: find clubs
+    if (intent.type === 'find_clubs') {
+          return {
+            model: 'Club',
+        query: {
+          isApproved: true,
+          ...(intent.extractedInfo?.location
+            ? { city: { $regex: `^${intent.extractedInfo.location}$`, $options: 'i' } }
+            : {})
         }
-        throw new Error('No JSON found in response');
-      } catch (parseError) {
-        // Fallback to simple query based on intent
-        if (intent.type?.includes('club')) {
+      };
+    }
+
+    // Rule-based: find events
+    if (intent.type === 'find_events') {
           return {
-            model: 'Club',
-            query: { isApproved: true }
-          };
-        } else {
-          return {
-            model: 'Club',
+        model: 'Event',
             query: { 
-              isApproved: true,
-              events: { $exists: true, $not: { $size: 0 } }
-            },
-            populate: {
-              path: 'events',
-              match: { status: 'active' },
-              populate: { path: 'tickets' }
-            }
-          };
+          status: 'active',
+          date: { $gte: today },
+          ...(intent.extractedInfo?.location
+            ? { city: { $regex: `^${intent.extractedInfo.location}$`, $options: 'i' } }
+            : {}),
+          ...(intent.extractedInfo?.keywords
+            ? { $or: intent.extractedInfo.keywords.map(k => ({
+                name: { $regex: k, $options: 'i' }
+              })) }
+            : {})
         }
-      }
+      };
+    }
 
-    } catch (error) {
-      console.error('Error generating database query:', error);
+    // Rule-based: bookings (requires userId)
+    if (intent.type?.includes('booking') && userId) {
+      const statusMap: Record<string, string> = {
+        booking_status: 'paid',
+        my_bookings: 'paid',
+        booking_details: 'paid',
+      };
+      return {
+        model: 'User',
+        query: { _id: userId },
+        populate: {
+          path: 'orders',
+          match: { status: statusMap[intent.type] || 'paid' },
+          populate: [{ path: 'event' }, { path: 'club' }, { path: 'ticket' }]
+        }
+      };
+    }
+
+    // AI fallback (when rules can't determine what to do)
       return {
         model: 'Club',
         query: { isApproved: true }
       };
     }
+
+  private getSchemaForAI() {
+    return {
+      Club: {
+        name: 'string',
+        city: 'string',
+        isApproved: 'boolean',
+        rating: 'number',
+        typeOfVenue: 'string'
+      },
+      Event: {
+        name: 'string',
+        date: 'string',
+        status: 'string',
+        city: 'string'
+      },
+      User: {
+        _id: 'ObjectId',
+        orders: 'array'
+      }
+    };
   }
 
   async handleClubRegistration(
