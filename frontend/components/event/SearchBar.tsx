@@ -19,7 +19,7 @@ const SearchBar: React.FC<Props> = ({
   return (
     <View>
       <View style={styles.searchContainer}>
-        <Search color={Colors.textMuted} size={18} style={styles.leadingIcon} />
+        <Search color={Colors.primary} size={18} style={styles.leadingIcon} />
         <TextInput
           style={styles.textInput}
           placeholder={placeholder || "Search events, artists..."}

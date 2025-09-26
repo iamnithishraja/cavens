@@ -1,8 +1,7 @@
 import React from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import SearchBar from "./SearchBar";
-import { Filter as FilterIcon } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 
 interface SearchSectionProps {
@@ -21,7 +20,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
   const router = useRouter();
   return (
     <View style={styles.row}>
-      <View style={styles.searchContainer}>
+      <View style={styles.searchContainerFull}>
         <SearchBar
           value={value}
           onChangeText={onChangeText}
@@ -34,13 +33,6 @@ const SearchSection: React.FC<SearchSectionProps> = ({
           }
         />
       </View>
-      <TouchableOpacity
-        style={styles.filterButton}
-        onPress={onFilterPress}
-        activeOpacity={0.85}
-      >
-        <FilterIcon color={Colors.textPrimary} size={18} />
-      </TouchableOpacity>
     </View>
   );
 };
@@ -52,19 +44,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 8,
   },
-  searchContainer: {
+  searchContainerFull: {
     flex: 1,
-    marginRight: 8,
-  },
-  filterButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Colors.withOpacity.black60,
-    borderWidth: 1,
-    borderColor: Colors.withOpacity.white10,
   },
 });
 

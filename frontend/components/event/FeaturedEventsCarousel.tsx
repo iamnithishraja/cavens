@@ -411,12 +411,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginTop: 16,
-    height: 294,
+    height: 330,
     marginBottom: 10,
   },
   carouselItem: {
     width: SCREEN_WIDTH,
-    height: 280,
+    height: 316,
     paddingHorizontal: 16,
     position: "relative",
   },
@@ -430,6 +430,8 @@ const styles = StyleSheet.create({
     borderRadius: 17, // Slightly smaller to show the gradient border
     overflow: "hidden",
     backgroundColor: Colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: "rgba(1,28,81,0.35)",
   },
   featuredImage: {
     width: "100%",
@@ -476,9 +478,10 @@ const styles = StyleSheet.create({
   },
   venueName: {
     color: "#FFFFFF",
-    fontSize: 32,
+    fontSize: 38,
     fontWeight: "900",
-    lineHeight: 38,
+    lineHeight: 44,
+    letterSpacing: -0.5,
     textTransform: "uppercase",
   },
   clubLocation: {

@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
 import { Colors } from "@/constants/Colors";
 import type { City } from "@/components/ui/CityPickerModal";
-import { Filter as FilterIcon } from "lucide-react-native";
+import { Filter as FilterIcon, MapPin } from "lucide-react-native";
 import { ChevronDown } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -26,14 +26,7 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
 }) => {
   return (
     <View style={styles.locationHeader}>
-      <View style={styles.logoContainer}>
-        <Image
-          source={require("../../assets/images/adaptive-icon.png")}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </View>
-
+      {/* Left: Location Selector */}
       <LinearGradient
         colors={[Colors.withOpacity.white10, Colors.withOpacity.white10]}
         style={styles.gradientPill}
@@ -45,8 +38,9 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
           onPress={onLocationPress}
           activeOpacity={0.85}
         >
-          <Image
-            source={{ uri: "https://img.icons8.com/ios/50/FFFFFF/marker.png" }}
+          <MapPin
+            color={Colors.primary}
+            size={16}
             style={styles.locationIcon}
           />
           <Text style={styles.locationText}>{selectedCity.name}</Text>
@@ -57,6 +51,15 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
           />
         </TouchableOpacity>
       </LinearGradient>
+
+      {/* Right: Filter Button */}
+      <TouchableOpacity
+        style={styles.filterButton}
+        onPress={onFilterPress}
+        activeOpacity={0.85}
+      >
+        <FilterIcon color={Colors.primary} size={18} />
+      </TouchableOpacity>
     </View>
   );
 };
