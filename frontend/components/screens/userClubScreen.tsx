@@ -1,25 +1,26 @@
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { 
-  StyleSheet, 
-  StatusBar, 
-  View, 
-  ScrollView
-} from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '@/constants/Colors';
-import CityPickerModal, { CITIES, type City } from '@/components/ui/CityPickerModal';
-import type { Club } from '@/components/Map/ClubCard';
-import EmptyClubsView from '@/components/Map/EmptyClubsView';
-import apiClient from '@/app/api/client';
-import { useRouter } from 'expo-router';
-import UserClubHeader from '@/components/screens/UserClub/UserClubHeader';
-import UserClubListHeader from '@/components/screens/UserClub/UserClubListHeader';
-import MapViewCard from '@/components/Map/MapViewCard';
-import UserClubListItem from '@/components/screens/UserClub/UserClubListItem';
-import FilterModal from '@/components/Models/filterModel';
-import FloatingChatButton from '@/components/ui/FloatingChatButton';
-import { store } from '@/utils';
-import { useLocation } from '@/hooks/useLocation';
+import React, { useCallback, useMemo, useState, useEffect } from "react";
+import { StyleSheet, StatusBar, View, ScrollView } from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { Colors } from "@/constants/Colors";
+import CityPickerModal, {
+  CITIES,
+  type City,
+} from "@/components/ui/CityPickerModal";
+import type { Club } from "@/components/Map/ClubCard";
+import EmptyClubsView from "@/components/Map/EmptyClubsView";
+import apiClient from "@/app/api/client";
+import { useRouter } from "expo-router";
+import UserClubHeader from "@/components/screens/UserClub/UserClubHeader";
+import UserClubListHeader from "@/components/screens/UserClub/UserClubListHeader";
+import MapViewCard from "@/components/Map/MapViewCard";
+import UserClubListItem from "@/components/screens/UserClub/UserClubListItem";
+import FilterModal from "@/components/Models/filterModel";
+import FloatingChatButton from "@/components/ui/FloatingChatButton";
+import { store } from "@/utils";
+import { useLocation } from "@/hooks/useLocation";
 
 // Placeholder: screen only shows header and search now
 
@@ -29,15 +30,20 @@ const UserClubScreen = () => {
   const insets = useSafeAreaInsets();
   const [selectedCity, setSelectedCity] = useState<City>(CITIES[0]); // Default to Dubai
   const [cityPickerVisible, setCityPickerVisible] = useState(false);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const router = useRouter();
   const [filtersVisible, setFiltersVisible] = useState(false);
-  const [clubFilters, setClubFilters] = useState<{ distanceKm?: number | null; hasUpcomingEvents?: boolean; mostPopular?: boolean; clubTypes?: string[] }>({ distanceKm: null, clubTypes: [] });
+  const [clubFilters, setClubFilters] = useState<{
+    distanceKm?: number | null;
+    hasUpcomingEvents?: boolean;
+    mostPopular?: boolean;
+    clubTypes?: string[];
+  }>({ distanceKm: null, clubTypes: [] });
 
   // Use location hook (same as userHomeScreen)
-  const { userLocation, locationLoading, hasLocation, isFallbackLocation } = useLocation();
-
+  const { userLocation, locationLoading, hasLocation, isFallbackLocation } =
+    useLocation();
 
   // Handle city selection
   const handleCitySelect = (city: City) => {
@@ -47,7 +53,7 @@ const UserClubScreen = () => {
 
   const handleToggleType = (typeId: string) => {
     setSelectedTypes((prev) => {
-      if (typeId === 'all') return [];
+      if (typeId === "all") return [];
       if (prev.length === 1 && prev[0] === typeId) return [];
       return [typeId];
     });
@@ -57,9 +63,12 @@ const UserClubScreen = () => {
     router.push(`/club/userClubDetailsScreen?clubId=${club._id}`);
   };
 
-  const handleMapMarkerPress = useCallback((club: Club) => {
-    router.push(`/club/userClubDetailsScreen?clubId=${club._id}`);
-  }, [router]);
+  const handleMapMarkerPress = useCallback(
+    (club: Club) => {
+      router.push(`/club/userClubDetailsScreen?clubId=${club._id}`);
+    },
+    [router]
+  );
 
   const buildRegex = (input: string) => {
     const trimmed = input.trim();
@@ -67,15 +76,21 @@ const UserClubScreen = () => {
     const escaped = trimmed
       .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
       .replace(/\s+/g, ".*?");
-    return new RegExp(escaped, 'i');
+    return new RegExp(escaped, "i");
   };
 
-  const clubMatchesSelectedTypes = useCallback((club: Club) => {
-    if (selectedTypes.length === 0) return true;
-    const raw = (club.typeOfVenue || '').toLowerCase();
-    const types = raw.split(',').map((t) => t.trim().replace(/\s+/g, '_')).filter(Boolean);
-    return types.some((t) => selectedTypes.includes(t));
-  }, [selectedTypes]);
+  const clubMatchesSelectedTypes = useCallback(
+    (club: Club) => {
+      if (selectedTypes.length === 0) return true;
+      const raw = (club.typeOfVenue || "").toLowerCase();
+      const types = raw
+        .split(",")
+        .map((t) => t.trim().replace(/\s+/g, "_"))
+        .filter(Boolean);
+      return types.some((t) => selectedTypes.includes(t));
+    },
+    [selectedTypes]
+  );
 
   const [clubs, setClubs] = useState<Club[]>([]);
   const [clubsLoading, setClubsLoading] = useState<boolean>(false);
@@ -84,8 +99,6 @@ const UserClubScreen = () => {
     const fetchClubs = async () => {
       try {
         setClubsLoading(true);
-        
-        // If location is available, fetch approved clubs with distance using mapLink
         if (userLocation) {
           const params: Record<string, string> = {
             latitude: userLocation.latitude.toString(),
@@ -108,12 +121,14 @@ const UserClubScreen = () => {
           const params: Record<string, string> = {};
           if (selectedCity?.name) params.city = selectedCity.name;
           if (selectedTypes.length === 1) params.type = selectedTypes[0];
-          const res = await apiClient.get('/api/club/public/approved', { params: { ...params, includeEvents: 'true' } });
+          const res = await apiClient.get("/api/club/public/approved", {
+            params: { ...params, includeEvents: "true" },
+          });
           const items = (res.data?.items || []) as any[];
           setClubs(items as Club[]);
         }
       } catch (e) {
-        console.error('Failed to load clubs', e);
+        console.error("Failed to load clubs", e);
         setClubs([]);
       } finally {
         setClubsLoading(false);
@@ -124,47 +139,53 @@ const UserClubScreen = () => {
 
   const handleChatButtonPress = async () => {
     // Get the selected city from store, default to Dubai
-    const selectedCity = await store.get('selectedCity') || 'Dubai';
-    
+    const selectedCity = (await store.get("selectedCity")) || "Dubai";
+
     const params: any = {
-      Screen: 'MAP',
+      Screen: "MAP",
       city: selectedCity,
       userLocation: userLocation,
     };
-    
+
     // Only add location if we have it and it's not fallback
     if (hasLocation && !isFallbackLocation && userLocation) {
       params.latitude = userLocation.latitude.toString();
       params.longitude = userLocation.longitude.toString();
     }
-    
+
     router.push({
-      pathname: '/chatbot',
-      params
+      pathname: "/chatbot",
+      params,
     });
   };
-
 
   const filteredClubs = useMemo(() => {
     const pattern = buildRegex(search);
     return clubs.filter((club) => {
-      const cityOk = !selectedCity?.name || club.city.toLowerCase() === selectedCity.name.toLowerCase();
-      const searchOk = !pattern || [
-        club.name || '',
-        club.clubDescription || '',
-        club.address || '',
-        club.typeOfVenue || '',
-      ].some((f) => pattern.test(f));
+      const cityOk =
+        !selectedCity?.name ||
+        club.city.toLowerCase() === selectedCity.name.toLowerCase();
+      const searchOk =
+        !pattern ||
+        [
+          club.name || "",
+          club.clubDescription || "",
+          club.address || "",
+          club.typeOfVenue || "",
+        ].some((f) => pattern.test(f));
       const typeOk = clubMatchesSelectedTypes(club);
 
       // Apply filter modal selections
       if (clubFilters.distanceKm != null && club.distanceInMeters != null) {
-        if (club.distanceInMeters > (clubFilters.distanceKm * 1000)) return false;
+        if (club.distanceInMeters > clubFilters.distanceKm * 1000) return false;
       }
       if (clubFilters.clubTypes && clubFilters.clubTypes.length > 0) {
-        const raw = (club.typeOfVenue || '').toLowerCase();
-        const types = raw.split(',').map((t) => t.trim().replace(/\s+/g, '_')).filter(Boolean);
-        const hasType = types.some(t => clubFilters.clubTypes?.includes(t));
+        const raw = (club.typeOfVenue || "").toLowerCase();
+        const types = raw
+          .split(",")
+          .map((t) => t.trim().replace(/\s+/g, "_"))
+          .filter(Boolean);
+        const hasType = types.some((t) => clubFilters.clubTypes?.includes(t));
         if (!hasType) return false;
       }
       return cityOk && searchOk && typeOk;
@@ -172,8 +193,12 @@ const UserClubScreen = () => {
   }, [clubs, selectedCity, search, clubMatchesSelectedTypes, clubFilters]);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
       <View style={styles.fullBackground}>
         {/* Fixed Header */}
         <UserClubHeader
@@ -185,11 +210,11 @@ const UserClubScreen = () => {
         />
 
         {/* Content */}
-        <ScrollView 
-          style={styles.container} 
+        <ScrollView
+          style={styles.container}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingTop: 130, paddingBottom: insets.bottom + 120 }
+            { paddingTop: 130, paddingBottom: insets.bottom + 120 },
           ]}
           showsVerticalScrollIndicator={false}
           scrollIndicatorInsets={{ top: 130, bottom: insets.bottom + 80 }}
@@ -199,13 +224,13 @@ const UserClubScreen = () => {
         >
           {/* Map View Card */}
           <MapViewCard
-            clubs={filteredClubs.length ? filteredClubs : clubs} 
+            clubs={filteredClubs.length ? filteredClubs : clubs}
             loading={clubsLoading}
             onMarkerPress={handleMapMarkerPress}
             cityName={selectedCity.name}
             height={190}
           />
-          
+
           {/* User Club List Header */}
           <UserClubListHeader
             headerSpacing={HEADER_SPACING}
@@ -224,7 +249,7 @@ const UserClubScreen = () => {
               />
             ))
           ) : (
-            <EmptyClubsView 
+            <EmptyClubsView
               title="No clubs found"
               subtitle="Try changing city, types or search keywords."
             />
@@ -248,7 +273,7 @@ const UserClubScreen = () => {
           onApply={({ club }) => setClubFilters(club)}
         />
       </View>
-      <FloatingChatButton onPress={handleChatButtonPress} /> 
+      {/** <FloatingChatButton onPress={handleChatButtonPress} /> **/}
     </SafeAreaView>
   );
 };
@@ -274,7 +299,7 @@ const styles = StyleSheet.create({
   mapCardClip: {},
   // Fixed Header
   fixedHeader: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
@@ -296,10 +321,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: Colors.textSecondary,
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 20, 
+    fontWeight: "600",
+    marginBottom: 20,
     paddingHorizontal: 16,
-    textAlign: 'center',
+    textAlign: "center",
     opacity: 0.8,
   },
   // Enhanced Category Selector Container
@@ -321,21 +346,21 @@ const styles = StyleSheet.create({
   clubsHeaderTitle: {
     color: Colors.textPrimary,
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: "800",
     marginBottom: 4,
-    textAlign: 'center',
+    textAlign: "center",
   },
   clubsHeaderSubtitle: {
     color: Colors.textSecondary,
     fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
+    fontWeight: "500",
+    textAlign: "center",
   },
   // Club Cards - Matching EventsList styling
   clubCard: {
-    flexDirection: 'row',
+    flexDirection: "row",
     borderRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
     height: 100,
     marginHorizontal: 16,
     marginBottom: 16,
@@ -349,22 +374,22 @@ const styles = StyleSheet.create({
   },
   cardSurface: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   clubImage: {
     width: 100,
-    height: '100%',
-    resizeMode: 'cover',
+    height: "100%",
+    resizeMode: "cover",
   },
   clubInfo: {
     flex: 1,
     padding: 12,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   clubName: {
     color: Colors.textPrimary,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 4,
     lineHeight: 22,
   },
@@ -373,13 +398,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   ratingDistanceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   starIcon: {
     width: 14,
@@ -390,16 +415,16 @@ const styles = StyleSheet.create({
   clubDistanceText: {
     color: Colors.distance,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   ticketButtonContainer: {
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingRight: 12,
   },
   ticketButton: {
     backgroundColor: Colors.button.background,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -407,24 +432,24 @@ const styles = StyleSheet.create({
   ticketButtonText: {
     color: Colors.button.text,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   // Original styles (keeping these for compatibility)
   locationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   locationSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   locationInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   cityEmoji: {
@@ -437,13 +462,13 @@ const styles = StyleSheet.create({
   locationText: {
     color: Colors.textPrimary,
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 2,
   },
   locationSubtext: {
     color: Colors.textSecondary,
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   chevronIcon: {
     width: 16,
@@ -483,7 +508,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontSize: 14,
     marginBottom: 4,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   typesTestContainer: {
     backgroundColor: Colors.backgroundTertiary,
@@ -502,7 +527,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.success,
   },
   simpleClubCard: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: Colors.backgroundSecondary,
     borderRadius: 16,
     marginHorizontal: 16,
@@ -510,15 +535,15 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: Colors.withOpacity.white10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   simpleClubImage: {
     width: 60,
     height: 60,
     borderRadius: 12,
     backgroundColor: Colors.backgroundTertiary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   imageText: {
@@ -530,7 +555,7 @@ const styles = StyleSheet.create({
   clubNameSimple: {
     color: Colors.textPrimary,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 4,
   },
   clubTypeSimple: {
@@ -547,30 +572,30 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: Colors.withOpacity.black30,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   favoriteText: {
     fontSize: 20,
   },
   // Loading and Error states
   centerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 32,
   },
   loadingText: {
     color: Colors.textSecondary,
     fontSize: 16,
     marginTop: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   errorText: {
     color: Colors.textPrimary,
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 20,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   retryButton: {
     backgroundColor: Colors.button.background,
@@ -581,7 +606,7 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: Colors.button.text,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   // New styles for FlatList and EmptyClubsView
   heroBanner: {
@@ -591,19 +616,19 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginHorizontal: 16,
     marginBottom: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   heroTitle: {
     color: Colors.textPrimary,
     fontSize: 24,
-    fontWeight: '800',
-    textAlign: 'center',
+    fontWeight: "800",
+    textAlign: "center",
     marginBottom: 8,
   },
   heroSubtitle: {
     color: Colors.textSecondary,
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
   separator: {
     height: 1,
@@ -613,14 +638,13 @@ const styles = StyleSheet.create({
   },
   bottomTestSection: {
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   bottomTestText: {
     color: Colors.textMuted,
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
   },
-
 });
 
 export default UserClubScreen;

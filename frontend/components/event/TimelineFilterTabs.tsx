@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: Colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: Colors.withOpacity.white10,
+    borderColor: "#011C51",
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 999,
@@ -90,8 +90,8 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   activeTab: {
-    backgroundColor: Colors.withOpacity.primary10,
-    borderColor: Colors.primary,
+    backgroundColor: Colors.backgroundSecondary,
+    borderColor: "#011C51",
   },
   tabText: {
     color: Colors.textSecondary,
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   activeTabText: {
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
 });
 

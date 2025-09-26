@@ -332,10 +332,9 @@ const UserHomeScreen = () => {
         barStyle="light-content"
       />
 
-      {/* Animated SVG Glow Header */}
-      <AnimatedGlowHeader />
-
       <View style={styles.fullBackground}>
+        {/* Animated SVG Glow Header (behind content) */}
+        <AnimatedGlowHeader />
         {/* Fixed Header */}
         <View style={styles.fixedHeader}>
           <LocationHeader
@@ -428,7 +427,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 10,
+    zIndex: 2,
     backgroundColor: "transparent", // Transparent to show gradient
     paddingTop: 8,
     shadowColor: Colors.shadow,

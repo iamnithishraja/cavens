@@ -77,7 +77,7 @@ const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({
       >
         <BlurView intensity={28} tint="dark" style={styles.glass}>
           <View style={styles.innerBorder} />
-          <Sparkles color="#FFFFFF" size={22} />
+          <Sparkles color={Colors.primary} size={22} />
         </BlurView>
       </TouchableOpacity>
     </Animated.View>
