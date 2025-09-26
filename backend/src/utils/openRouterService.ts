@@ -153,14 +153,14 @@ Use this conversation history to understand context. If the user is asking about
         content: userMessage
       });
 
-      const response = await axios.post<OpenRouterResponse>(
-        `${this.baseURL}/chat/completions`,
-        {
-          model: 'anthropic/claude-3.5-sonnet',
-          messages,
-          max_tokens: 150, // Reduced from 200
-          temperature: 0.3
-        },
+              const response = await axios.post<OpenRouterResponse>(
+                `${this.baseURL}/chat/completions`,
+                {
+                  model: 'openai/gpt-4o-mini', // Fast and reliable model for intent analysis
+                  messages,
+                  max_tokens: 150, // Reduced from 200
+                  temperature: 0.3
+                },
         {
           headers: {
             'Authorization': `Bearer ${this.apiKey}`,
@@ -202,8 +202,14 @@ Use this conversation history to understand context. If the user is asking about
         };
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error analyzing intent:', error);
+      console.error('Intent analysis error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        model: 'openai/gpt-4o-mini'
+      });
       return {
         type: 'general',
         confidence: 0.5
@@ -231,10 +237,11 @@ Use this conversation history to understand context. If the user is asking about
       const response = await axios.post<OpenRouterResponse>(
         `${this.baseURL}/chat/completions`,
         {
-          model: 'anthropic/claude-3.5-sonnet',
+          model: 'openai/gpt-4o-mini', // Fast and reliable model for responses
           messages,
-          max_tokens: 300, // Reduced from 500
-          temperature: 0.7
+          max_tokens: 150, // Very limited for concise responses
+          temperature: 0.2, // Lower temperature for more focused responses
+          stop: ["\n\n", "User:", "Assistant:"] // Multiple stop conditions
         },
         {
           headers: {
@@ -249,8 +256,14 @@ Use this conversation history to understand context. If the user is asking about
 
       return response.data.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating response:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        model: 'openai/gpt-4o-mini'
+      });
       return 'Sorry, I encountered an error while processing your request.';
     }
   }
@@ -272,31 +285,28 @@ Use this conversation history to understand context. If the user is asking about
         ? `The user is looking for events in ${extractedInfo.location}.`
         : '';
 
-    const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app. 
+    // Create concise event summaries for Claude (limit to 5 events max)
+    const limitedEvents = events.slice(0, 5).map(event => ({
+      name: event.name,
+      date: event.date,
+      time: event.time,
+      venue: event.venue,
+      city: event.city,
+      djArtists: event.djArtists,
+      tickets: event.tickets?.slice(0, 2) // Only first 2 ticket types
+    }));
+
+    const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
 
 ${conversationContext}
 ${locationContext}
 
-IMPORTANT: You can ONLY use the events data provided below. Do NOT make up events or suggest events that are not in this list. If no events are provided, acknowledge that no events are currently available.
+Available events (${events.length} total):
+${JSON.stringify(limitedEvents, null, 2)}
 
-The user is looking for events. Here are the ONLY available events from the database:
-${JSON.stringify(events, null, 2)}
-
-User preferences: ${JSON.stringify(userPreferences || {}, null, 2)}
-
-Based on the conversation history and ONLY the events provided above:
 ${events.length === 0 ? 
-  '- Since no events are available, politely explain that there are currently no events in their area and suggest they check back later or try a different city.' :
-  `- Recommend the best 1-3 events from the list above
-- Explain why these events match their request
-- Include key details like date, time, venue, and price from the provided data
-- IMPORTANT: If an event has distanceFromUser data (distance.km or distance.text), mention the distance from the user's location
-- Example: "Tech House Night at XYZ Club is only 2.1 km away from you" or "DJ Party at ABC Venue is just 1.5 km from your location"
-- Use a friendly, enthusiastic tone
-- Encourage them to book tickets`
-}
-
-NEVER suggest events that are not in the provided list. Only use actual database data.`;
+  'No events available. Politely explain and suggest checking back later.' :
+  'Recommend 1-2 best events. Include key details. Keep under 2 sentences.'}`;
 
     return this.generateResponse(query, { events, userPreferences, conversationHistory }, systemPrompt);
   }
@@ -306,39 +316,67 @@ NEVER suggest events that are not in the provided list. Only use actual database
     eventDetails: any,
     additionalContext?: any
   ): Promise<string> {
+    console.log('🤖 [AI EVENT QUESTION] Starting AI event question processing');
+    console.log('🤖 [AI EVENT QUESTION] Question:', question);
+    console.log('🤖 [AI EVENT QUESTION] Event details:', eventDetails ? 'PRESENT' : 'NONE');
+    console.log('🤖 [AI EVENT QUESTION] Additional context:', additionalContext);
+    
     let systemPrompt = '';
 
-    const { conversationHistory = [] } = additionalContext || {};
+    const { conversationHistory = [], isFollowUp } = additionalContext || {};
+    console.log('🤖 [AI EVENT QUESTION] Conversation history length:', conversationHistory.length);
+    console.log('🤖 [AI EVENT QUESTION] Is follow-up:', isFollowUp);
+    
     const conversationContext = conversationHistory.length > 0 
       ? `\nConversation History:\n${conversationHistory.slice(-2).map((msg: any) => `${msg.role}: ${msg.content}`).join('\n')}\n`
       : '';
+    
+    console.log('🤖 [AI EVENT QUESTION] Conversation context length:', conversationContext.length);
 
     if (eventDetails) {
+      // Create a concise event summary for Claude
+      const eventSummary = {
+        name: eventDetails.name,
+        date: eventDetails.date,
+        time: eventDetails.time,
+        venue: eventDetails.venue,
+        city: eventDetails.city,
+        djArtists: eventDetails.djArtists,
+        description: eventDetails.description?.substring(0, 200) + '...', // Truncate description
+        tickets: eventDetails.tickets?.slice(0, 3) // Only first 3 ticket types
+      };
+
+      // Enhanced context for follow-up questions
+      const { isFollowUp } = additionalContext || {};
+      
+      console.log('🤖 [AI EVENT QUESTION] Processing with event details');
+      console.log('🤖 [AI EVENT QUESTION] Event summary:', eventSummary);
+      
+      let contextInfo = '';
+      if (isFollowUp) {
+        contextInfo = `\nThis is a follow-up question. The user is asking for more details about an event we discussed earlier. Use the conversation history to understand what event they're referring to.`;
+        console.log('🤖 [AI EVENT QUESTION] Added follow-up context info');
+      }
+
       systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
 
-${conversationContext}
+${conversationContext}${contextInfo}
 
-IMPORTANT: You can ONLY use the event data provided below. Do NOT make up information about this event.
+${eventDetails ? `Answer the user's question about this event using ONLY the data below:
+${JSON.stringify(eventSummary, null, 2)}` : `The user is asking about an event but no specific event details were found. Use the conversation history to understand what they're asking about and provide a helpful response.`}
 
-The user is asking about this specific event from the database:
-${JSON.stringify(eventDetails, null, 2)}
+Keep your response under 2 sentences. Be concise and helpful. If you don't have specific information, say so.`;
 
-Additional context: ${JSON.stringify(additionalContext || {}, null, 2)}
-
-Based on the conversation history and ONLY the event data provided above, provide a comprehensive and detailed answer to the user's question. Include:
-
-1. **Event Overview**: Name, date, time, venue
-2. **Specific Details**: Answer their specific question (time, price, location, etc.)
-3. **Additional Info**: DJ/artists, description, ticket types, contact info if relevant
-4. **Next Steps**: Suggest booking tickets or contacting the venue
-
-Be enthusiastic and helpful. If the specific information they're asking for is not in the event data, honestly say you don't have that information and suggest they contact the venue directly.
-
-NEVER make up event details. Only use the actual data provided.`;
+      console.log('🤖 [AI EVENT QUESTION] System prompt length:', systemPrompt.length);
+      console.log('🤖 [AI EVENT QUESTION] System prompt preview:', systemPrompt.substring(0, 200) + '...');
     } else {
       // No specific event found
+      console.log('🤖 [AI EVENT QUESTION] Processing without event details');
       const { intent } = additionalContext || {};
       const extractedInfo = intent?.extractedInfo || {};
+      
+      console.log('🤖 [AI EVENT QUESTION] Intent:', intent);
+      console.log('🤖 [AI EVENT QUESTION] Extracted info:', extractedInfo);
       
       systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
 
@@ -357,9 +395,17 @@ Based on the conversation history, respond helpfully by:
 5. Being encouraging and helpful
 
 Use a friendly, apologetic but helpful tone with appropriate emojis.`;
+
+      console.log('🤖 [AI EVENT QUESTION] System prompt for no event details length:', systemPrompt.length);
+      console.log('🤖 [AI EVENT QUESTION] System prompt preview:', systemPrompt.substring(0, 200) + '...');
     }
 
-    return this.generateResponse(question, { eventDetails, additionalContext }, systemPrompt);
+    console.log('🤖 [AI EVENT QUESTION] Calling generateResponse...');
+    const response = await this.generateResponse(question, { eventDetails, additionalContext }, systemPrompt);
+    console.log('🤖 [AI EVENT QUESTION] Generated response length:', response.length);
+    console.log('🤖 [AI EVENT QUESTION] Generated response preview:', response.substring(0, 100) + '...');
+    
+    return response;
   }
 
   async handleGeneralConversation(message: string, conversationHistory: any[] = [], screenContext?: any): Promise<string> {
@@ -420,30 +466,27 @@ Keep responses concise and use appropriate emojis.`;
 
     const locationContext = extractedInfo?.nearMe ? 'The user is looking for clubs near their current location.' : '';
 
+    // Create concise club summaries for Claude (limit to 5 clubs max)
+    const limitedClubs = clubs.slice(0, 5).map(club => ({
+      name: club.name,
+      type: club.type,
+      city: club.city,
+      rating: club.rating,
+      address: club.address,
+      eventsCount: club.eventsCount
+    }));
+
     const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
 
 ${conversationContext}
 ${locationContext}
 
-IMPORTANT: You can ONLY use the clubs data provided below. Do NOT make up clubs or suggest venues that are not in this list. If no clubs are provided, acknowledge that no clubs are currently available.
+Available clubs (${clubs.length} total):
+${JSON.stringify(limitedClubs, null, 2)}
 
-The user is looking for clubs/venues. Here are the ONLY available clubs from the database:
-${JSON.stringify(clubs, null, 2)}
-
-User preferences: ${JSON.stringify(userPreferences || {}, null, 2)}
-
-Based on the conversation history and ONLY the clubs provided above:
 ${clubs.length === 0 ? 
-  '- Since no clubs are available, politely explain that there are currently no clubs in their area and suggest they check back later or try a different city.' :
-  `- Recommend the best 1-3 clubs from the list above
-- Explain why these clubs match their request  
-- Include key details like location, type, rating from the provided data
-- Mention any events if included in the data
-- Use a friendly, enthusiastic tone
-- Suggest they can find events at these venues`
-}
-
-NEVER suggest clubs that are not in the provided list. Only use actual database data.`;
+  'No clubs available. Politely explain and suggest checking back later.' :
+  'Recommend 1-2 best clubs. Include key details. Keep under 2 sentences.'}`;
 
     return this.generateResponse(query, { clubs, userPreferences, conversationHistory }, systemPrompt);
   }
@@ -545,50 +588,25 @@ Use a friendly, supportive tone with appropriate emojis.`;
     const paidBookings = bookings.filter((booking: any) => booking.bookingStatus === 'paid');
     const scannedBookings = bookings.filter((booking: any) => booking.bookingStatus === 'scanned');
 
+    // Create concise booking summary for Claude
+    const bookingSummary = bookings.slice(0, 3).map((booking: any) => ({
+      name: booking.name,
+      venue: booking.venue,
+      date: booking.date,
+      status: booking.bookingStatus
+    }));
+
     const systemPrompt = `You are Cavens AI, a helpful assistant for a nightlife events app.
 
 ${conversationContext}
 ${screenContextInfo}
 
-The user is asking about their bookings/tickets. Here's their booking information:
+User's bookings (${bookings.length} total):
+${JSON.stringify(bookingSummary, null, 2)}
 
-**Total Bookings**: ${bookings.length}
-**Paid Bookings (Ready to Use)**: ${paidBookings.length}
-**Scanned Bookings (Already Used)**: ${scannedBookings.length}
-
-${bookings.length > 0 ? `
-**Recent Bookings**:
-${bookings.slice(0, 3).map((booking: any, index: number) => 
-  `${index + 1}. ${booking.name} at ${booking.venue} - ${booking.bookingStatus === 'paid' ? '✅ Ready' : '📱 Scanned'}`
-).join('\n')}
-` : ''}
-
-Respond based on their actual booking data:
-
-${bookings.length === 0 ? `
-The user has no bookings yet. Encourage them to:
-1. Browse available events
-2. Make their first booking
-3. Explain the booking process
-` : `
-The user has ${bookings.length} booking${bookings.length === 1 ? '' : 's'}. 
-
-${paidBookings.length > 0 ? `
-**Active Tickets (${paidBookings.length})**: These are ready to use! Mention they can:
-- View QR codes for entry
-- Get venue directions  
-- Check event details and times
-- Share tickets with friends
-` : ''}
-
-${scannedBookings.length > 0 ? `
-**Used Tickets (${scannedBookings.length})**: These have been scanned at events.
-` : ''}
-
-Guide them to manage their bookings and offer specific help.
-`}
-
-Use a friendly, helpful tone with appropriate emojis. Be specific about their actual bookings.`;
+${bookings.length === 0 ? 
+  'No bookings yet. Encourage them to browse events and make their first booking.' :
+  `User has ${bookings.length} booking${bookings.length === 1 ? '' : 's'}. ${paidBookings.length} ready to use, ${scannedBookings.length} already used. Keep response under 2 sentences.`}`;
 
     return this.generateResponse(message, { conversationHistory, context, bookings }, systemPrompt);
   }

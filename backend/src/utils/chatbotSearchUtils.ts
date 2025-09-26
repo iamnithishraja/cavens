@@ -7,38 +7,63 @@ export async function searchEventsForChatbot(query: string, city: string): Promi
   try {
     const currentDate = new Date().toISOString().split('T')[0];
     
-    // Search in events directly
-    const events = await eventModel.find({
-      $or: [
-        { name: { $regex: query, $options: 'i' } },
-        { description: { $regex: query, $options: 'i' } },
-        { djArtists: { $regex: query, $options: 'i' } }
-      ],
-      status: 'active',
-      date: { $gte: currentDate }
+    console.log('🔍 [SEARCH EVENTS] Searching for query:', query, 'in city:', city);
+    
+    // Search in clubs with events (events are embedded in clubs)
+    const clubs = await clubModel.find({
+      city: { $regex: new RegExp(`^${city}$`, 'i') },
+      isApproved: true,
+      events: { $exists: true, $ne: [] }
     })
-    .select('name description date time djArtists tickets guestExperience coverImage status')
-    .populate({
-      path: 'club',
-      select: 'name city address phone rating photos typeOfVenue clubDescription operatingDays'
-    })
-    .sort({ isFeatured: -1, date: 1 })
+    .select('name city address phone rating photos typeOfVenue clubDescription operatingDays events')
+    .sort({ rating: -1 })
     .limit(10)
     .lean();
 
-    return events.map(event => ({
-      id: event._id,
-      name: event.name,
-      description: event.description,
-      date: event.date,
-      time: event.time,
-      venue: (event as any).club?.name || 'Unknown Venue',
-      city: (event as any).club?.city || city,
-      djArtists: event.djArtists,
-      tickets: event.tickets,
-      guestExperience: event.guestExperience,
-      coverImage: event.coverImage
-    }));
+    console.log('🔍 [SEARCH EVENTS] Found clubs:', clubs.length);
+
+    // Extract events from clubs and filter by query
+    const events: any[] = [];
+    clubs.forEach(club => {
+      if (club.events && Array.isArray(club.events)) {
+        club.events.forEach((event: any) => {
+          if (event.status === 'active' && event.date && currentDate && event.date >= currentDate) {
+            // Check if event name matches the query (case insensitive)
+            const eventName = (event as any).name || '';
+            const queryLower = query.toLowerCase();
+            const eventNameLower = eventName.toLowerCase();
+            
+            console.log('🔍 [SEARCH EVENTS] Checking event:', eventName, 'against query:', query);
+            
+            if (eventNameLower.includes(queryLower) || queryLower.includes(eventNameLower)) {
+              console.log('🔍 [SEARCH EVENTS] Match found:', eventName);
+              events.push({
+                id: event._id,
+                name: (event as any).name,
+                description: (event as any).description,
+                date: (event as any).date,
+                time: (event as any).time,
+                venue: club.name,
+                city: club.city,
+                djArtists: (event as any).djArtists,
+                tickets: (event as any).tickets,
+                guestExperience: (event as any).guestExperience,
+                coverImage: (event as any).coverImage,
+                isFeatured: (event as any).isFeatured
+              });
+            }
+          }
+        });
+      }
+    });
+
+    console.log('🔍 [SEARCH EVENTS] Found matching events:', events.length);
+
+    return events.sort((a, b) => {
+      if (a.isFeatured && !b.isFeatured) return -1;
+      if (!a.isFeatured && b.isFeatured) return 1;
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    }).slice(0, 10);
     
   } catch (error) {
     console.error('Error searching events:', error);
@@ -89,30 +114,59 @@ export async function findEventFromQuery(intent: any, city: string): Promise<any
     }
 
     if (intent.extractedInfo?.eventName) {
-      const event = await eventModel.findOne({
-        name: { $regex: new RegExp(intent.extractedInfo.eventName, 'i') },
-        status: 'active'
+      // Search in clubs with events
+      const clubs = await clubModel.find({
+        city: { $regex: new RegExp(`^${city}$`, 'i') },
+        isApproved: true,
+        events: { $exists: true, $ne: [] }
       })
-      .populate({
-        path: 'club',
-        select: 'name city address phone rating photos typeOfVenue clubDescription operatingDays'
-      })
+      .select('name city address phone rating photos typeOfVenue clubDescription operatingDays events')
       .lean();
 
-      if (event) {
-        return {
-          id: event._id,
-          name: event.name,
-          description: event.description,
-          date: event.date,
-          time: event.time,
-          venue: (event as any).club?.name || 'Unknown Venue',
-          city: (event as any).club?.city || city,
-          djArtists: event.djArtists,
-          tickets: event.tickets,
-          guestExperience: event.guestExperience,
-          coverImage: event.coverImage
-        };
+      // Find the event in clubs
+      for (const club of clubs) {
+        if (club.events && Array.isArray(club.events)) {
+          const event = club.events.find((e: any) => {
+            if (!e.name || !intent.extractedInfo.eventName) return false;
+            
+            const eventName = e.name.toLowerCase();
+            const searchName = intent.extractedInfo.eventName.toLowerCase();
+            
+            // Try exact match first
+            if (eventName === searchName) return true;
+            
+            // Try partial match
+            if (eventName.includes(searchName) || searchName.includes(eventName)) return true;
+            
+            // Try word-by-word match
+            const eventWords = eventName.split(/\s+/);
+            const searchWords = searchName.split(/\s+/);
+            
+            // If any word matches, consider it a match
+            return searchWords.some((word: string) => 
+              word.length > 2 && eventWords.some((eventWord: string) => 
+                eventWord.includes(word) || word.includes(eventWord)
+              )
+            );
+          });
+          
+          if (event) {
+            return {
+              id: event._id,
+              name: (event as any).name,
+              description: (event as any).description,
+              date: (event as any).date,
+              time: (event as any).time,
+              venue: club.name,
+              city: club.city,
+              djArtists: (event as any).djArtists,
+              tickets: (event as any).tickets,
+              guestExperience: (event as any).guestExperience,
+              coverImage: (event as any).coverImage,
+              isFeatured: (event as any).isFeatured
+            };
+          }
+        }
       }
     }
 
@@ -161,28 +215,38 @@ export async function findClubFromQuery(intent: any, city: string): Promise<any>
 // Get event details
 export async function getEventDetails(eventId: string): Promise<any> {
   try {
-    const event = await eventModel.findById(eventId)
-      .populate({
-        path: 'club',
-        select: 'name city address phone rating photos typeOfVenue clubDescription operatingDays'
-      })
-      .lean();
+    // Search in clubs for the event
+    const clubs = await clubModel.find({
+      events: { $exists: true, $ne: [] }
+    })
+    .select('name city address phone rating photos typeOfVenue clubDescription operatingDays events')
+    .lean();
 
-    if (!event) return null;
+    // Find the event in clubs
+    for (const club of clubs) {
+      if (club.events && Array.isArray(club.events)) {
+        const event = club.events.find((e: any) => e._id && e._id.toString() === eventId);
+        
+        if (event) {
+          return {
+            id: event._id,
+            name: (event as any).name,
+            description: (event as any).description,
+            date: (event as any).date,
+            time: (event as any).time,
+            venue: club.name,
+            city: club.city,
+            djArtists: (event as any).djArtists,
+            tickets: (event as any).tickets,
+            guestExperience: (event as any).guestExperience,
+            coverImage: (event as any).coverImage,
+            isFeatured: (event as any).isFeatured
+          };
+        }
+      }
+    }
 
-    return {
-      id: event._id,
-      name: event.name,
-      description: event.description,
-      date: event.date,
-      time: event.time,
-      venue: (event as any).club?.name || 'Unknown Venue',
-      city: (event as any).club?.city || 'Unknown City',
-      djArtists: event.djArtists,
-      tickets: event.tickets,
-      guestExperience: event.guestExperience,
-      coverImage: event.coverImage
-    };
+    return null;
   } catch (error) {
     console.error('Error getting event details:', error);
     return null;

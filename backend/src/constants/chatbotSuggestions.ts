@@ -65,11 +65,10 @@ export const getContextualSuggestions = (
   screen: ScreenType,
   city?: string
 ): ChatbotSuggestion[] => {
-  console.log('🔧 getContextualSuggestions called with:', { screen, city });
+  
   
   let suggestions = [...getScreenSuggestions(screen)];
   
-  console.log('📋 Base screen suggestions for', screen, ':', suggestions);
   
   // Add city-specific suggestions
   if (city && city !== 'Dubai') {
@@ -84,7 +83,6 @@ export const getContextualSuggestions = (
   }
   
   const finalSuggestions = suggestions.slice(0, 6); // Limit to 6 suggestions
-  console.log('✅ Final suggestions:', finalSuggestions);
   
   return finalSuggestions;
 };

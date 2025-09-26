@@ -3,7 +3,107 @@ import clubModel from '../models/clubModel';
 import openRouterService from './openRouterService';
 import { getSchemaForAI } from './databaseSchema';
 
-// AI generates query and executes it
+// Fast rule-based query generation (no AI call)
+function generateFastQuery(userMessage: string, intent: any, city: string): { model: string; query: any; populate?: any } {
+  const lowerMessage = userMessage.toLowerCase();
+  const currentDate = new Date().toISOString().split('T')[0];
+  
+  // Event-related queries
+  if (intent.type === 'find_events' || intent.type === 'filter_events') {
+    if (intent.extractedInfo?.nearMe) {
+      // For "near me" queries, return clubs with events
+      return {
+        model: 'Club',
+        query: { 
+          city: { $regex: new RegExp(`^${city}$`, 'i') }, 
+          isApproved: true,
+          events: { $exists: true, $ne: [] }
+        },
+        populate: {
+          path: 'events',
+          match: { 
+            status: 'active',
+            date: { $gte: currentDate }
+          }
+        }
+      };
+    } else {
+      // For specific event searches
+      return {
+        model: 'Club',
+        query: { 
+          city: { $regex: new RegExp(`^${city}$`, 'i') }, 
+          isApproved: true,
+          events: { $exists: true, $ne: [] }
+        },
+        populate: {
+          path: 'events',
+          match: { 
+            status: 'active',
+            date: { $gte: currentDate }
+          }
+        }
+      };
+    }
+  }
+  
+  // Club-related queries
+  if (intent.type === 'find_clubs' || intent.type === 'filter_clubs') {
+    if (intent.extractedInfo?.nearMe) {
+      return {
+        model: 'Club',
+        query: { 
+          city: { $regex: new RegExp(`^${city}$`, 'i') }, 
+          isApproved: true 
+        }
+      };
+    } else {
+      return {
+        model: 'Club',
+        query: { 
+          city: { $regex: new RegExp(`^${city}$`, 'i') }, 
+          isApproved: true 
+        }
+      };
+    }
+  }
+  
+  // Booking queries
+  if (intent.type === 'my_bookings') {
+    return {
+      model: 'User',
+      query: { _id: intent.userId || null },
+      populate: {
+        path: 'orders',
+        match: { status: 'paid' },
+        populate: [
+          { path: 'event' },
+          { path: 'club' },
+          { path: 'ticket' }
+        ]
+      }
+    };
+  }
+  
+  // Default to clubs with events
+  return {
+    model: 'Club',
+    query: { 
+      city: { $regex: new RegExp(`^${city}$`, 'i') }, 
+      isApproved: true,
+      events: { $exists: true, $ne: [] }
+    },
+    populate: {
+      path: 'events',
+      match: { 
+        status: 'active',
+        date: { $gte: currentDate }
+      }
+    }
+  };
+}
+
+// Fast rule-based query generation (no AI call)
 export async function executeAIGeneratedQuery(
   userMessage: string,
   intent: any,
@@ -12,8 +112,6 @@ export async function executeAIGeneratedQuery(
   try {
     const schema = getSchemaForAI();
     const queryConfig = await openRouterService.generateDatabaseQuery(userMessage, intent, schema);
-    
-    console.log('🔍 [QUERY DEBUG] Generated query config:', queryConfig);
     
     let results = [];
     

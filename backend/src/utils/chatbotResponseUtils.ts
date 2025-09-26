@@ -43,9 +43,13 @@ export async function getCardData(intent: any, city: string, userId?: string): P
   }
 }
 
-// Stream response word by word
+// Stream response word by word (optimized)
 export async function streamResponse(response: string, res: any): Promise<void> {
   const words = response.split(' ');
+  
+  // Much faster streaming - 20ms delay instead of 100ms
+  const delay = 20;
+  
   for (let i = 0; i < words.length; i++) {
     const word = words[i];
     if (!word) continue;
@@ -56,7 +60,10 @@ export async function streamResponse(response: string, res: any): Promise<void> 
       isComplete: i === words.length - 1
     })}\n\n`);
     
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Only delay if not the last word
+    if (i < words.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
   }
 }
 
