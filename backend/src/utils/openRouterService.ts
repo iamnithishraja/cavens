@@ -111,7 +111,7 @@ class OpenRouterService {
       const response = await axios.post<OpenRouterResponse>(
         `${this.baseURL}/chat/completions`,
         {
-          model: 'openai/gpt-4o-mini',
+          model: 'google/gemini-2.5-flash',
           messages,
           max_tokens: 50, // Much smaller response
           temperature: 0.1, // Lower temperature for consistency
@@ -174,7 +174,7 @@ class OpenRouterService {
         message: error.message,
         status: error.response?.status,
         data: error.response?.data,
-        model: 'openai/gpt-4o-mini'
+        model: 'google/gemini-2.5-flash'
       });
       return {
         type: 'general',
@@ -203,7 +203,7 @@ class OpenRouterService {
       const response = await axios.post<OpenRouterResponse>(
         `${this.baseURL}/chat/completions`,
         {
-          model: 'openai/gpt-4o-mini', // Fast and reliable model for responses
+          model: 'google/gemini-2.5-flash', // Fast and reliable model for responses
           messages,
           max_tokens: 150, // Very limited for concise responses
           temperature: 0.2, // Lower temperature for more focused responses
@@ -228,7 +228,7 @@ class OpenRouterService {
         message: error.message,
         status: error.response?.status,
         data: error.response?.data,
-        model: 'openai/gpt-4o-mini'
+        model: 'google/gemini-2.5-flash'
       });
       return 'Sorry, I encountered an error while processing your request.';
     }
