@@ -137,9 +137,7 @@ export const calculateDistanceFromMapsLink = async (
     const originCoords: Coordinates = { lat: latitude, lng: longitude };
     const destinationCoords: Coordinates = await extractCoordinatesFromLink(mapsLink);
 
-    console.log(`Origin: ${originCoords.lat}, ${originCoords.lng}`);
-    console.log(`Destination (from maps link): ${destinationCoords.lat}, ${destinationCoords.lng}`);
-
+    
     try {
       const distanceResult = await calculateDistance(originCoords, destinationCoords, mode, apiKey);
 

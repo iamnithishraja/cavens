@@ -56,6 +56,7 @@ const Chatbot: React.FC<ChatbotProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
   const slideAnimation = useRef(new Animated.Value(height)).current;
@@ -132,37 +133,172 @@ const Chatbot: React.FC<ChatbotProps> = ({
         type: msg.type
       }));
 
-          // Check if user is authenticated
-          const token = await store.get('token');
+      // Check if user is authenticated
+      const token = await store.get('token');
 
-      const response = await apiClient.post('/api/chatbot/chat', {
-        message: text.trim(),
-        eventId,
-        city: typeof city === 'string' ? city : city || 'Dubai',
-        userLocation,
-        conversationHistory,
-        screen,
-        preferences: {
-          // Add user preferences here if available
-        }
+      // Use single endpoint with streaming parameter
+      const response = await fetch(`${apiClient.defaults.baseURL}/api/chatbot/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          message: text.trim(),
+          eventId,
+          city: typeof city === 'string' ? city : city || 'Dubai',
+          userLocation,
+          conversationHistory,
+          screen,
+          stream: true, // Enable streaming
+          preferences: {
+            // Add user preferences here if available
+          }
+        })
       });
 
-          if (response.data.success) {
-            const botMessage: Message = {
-              id: (Date.now() + 1).toString(),
-              text: response.data.data.response,
-              isUser: false,
-              type: response.data.data.type,
-              timestamp: new Date(),
-              showCards: response.data.data.showCards || false,
-              cardType: response.data.data.cardType || null,
-              cards: response.data.data.cards || null
-            };
+      if (!response.ok) {
+        throw new Error('Failed to connect to streaming service');
+      }
 
-            setMessages(prev => [...prev, botMessage]);
-          } else {
-            throw new Error('Failed to get response');
+      // Create a placeholder message for streaming
+      const streamingMessageId = (Date.now() + 1).toString();
+      const streamingMessage: Message = {
+        id: streamingMessageId,
+        text: '',
+        isUser: false,
+        timestamp: new Date(),
+        showCards: false,
+        cardType: undefined,
+        cards: undefined
+      };
+
+      setMessages(prev => [...prev, streamingMessage]);
+      setIsStreaming(true);
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      console.log('🔍 [FRONTEND DEBUG] Reader available:', !!reader);
+
+      if (reader) {
+        console.log('🚀 [FRONTEND DEBUG] Using stream reader...');
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                if (data.type === 'connection') {
+                  console.log('Connected to AI stream');
+                } else if (data.type === 'intent') {
+                  console.log('Intent detected:', data.intent);
+                } else if (data.type === 'token') {
+                  // Update the streaming message with new token
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === streamingMessageId 
+                      ? { ...msg, text: msg.text + data.token }
+                      : msg
+                  ));
+                } else if (data.type === 'complete') {
+                  // Update the final message with complete data
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === streamingMessageId 
+                      ? { 
+                          ...msg, 
+                          text: data.data.response,
+                          type: data.data.type,
+                          showCards: data.data.showCards || false,
+                          cardType: data.data.cardType || null,
+                          cards: data.data.cards || null
+                        }
+                      : msg
+                  ));
+                  setIsStreaming(false);
+                } else if (data.type === 'error') {
+                  // Handle error
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === streamingMessageId 
+                      ? { ...msg, text: data.error }
+                      : msg
+                  ));
+                }
+              } catch (parseError) {
+                console.error('Error parsing SSE data:', parseError);
+              }
+            }
           }
+        }
+      } else {
+        console.log('⚠️ [FRONTEND DEBUG] No reader available! Using fallback method...');
+        // Fallback for React Native - read the entire response and parse SSE events
+        const responseText = await response.text();
+        console.log('📄 [FRONTEND DEBUG] Full response text length:', responseText.length);
+        
+        const lines = responseText.split('\n');
+        let currentText = '';
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              console.log('📦 [FRONTEND DEBUG] Parsed SSE event:', data.type);
+              
+              if (data.type === 'connection') {
+                console.log('Connected to AI stream');
+              } else if (data.type === 'intent') {
+                console.log('Intent detected:', data.intent);
+              } else if (data.type === 'token') {
+                console.log('🔤 [FRONTEND DEBUG] Received token:', data.token);
+                currentText += data.token;
+                // Update the streaming message with accumulated text
+                setMessages(prev => prev.map(msg => 
+                  msg.id === streamingMessageId 
+                    ? { ...msg, text: currentText }
+                    : msg
+                ));
+                // Add small delay to simulate streaming
+                await new Promise(resolve => setTimeout(resolve, 50));
+              } else if (data.type === 'complete') {
+                console.log('✅ [FRONTEND DEBUG] Received complete event:', data.data);
+                // Update the final message with complete data
+                setMessages(prev => prev.map(msg => 
+                  msg.id === streamingMessageId 
+                    ? { 
+                        ...msg, 
+                        text: data.data.response,
+                        type: data.data.type,
+                        showCards: data.data.showCards || false,
+                        cardType: data.data.cardType || null,
+                        cards: data.data.cards || null
+                      }
+                    : msg
+                ));
+                setIsStreaming(false);
+              } else if (data.type === 'error') {
+                console.log('❌ [FRONTEND DEBUG] Received error:', data.error);
+                // Handle error
+                setMessages(prev => prev.map(msg => 
+                  msg.id === streamingMessageId 
+                    ? { ...msg, text: data.error }
+                    : msg
+                ));
+                setIsStreaming(false);
+              }
+            } catch (parseError) {
+              console.error('Error parsing SSE data:', parseError);
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage: Message = {
@@ -174,6 +310,7 @@ const Chatbot: React.FC<ChatbotProps> = ({
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+      setIsStreaming(false);
     }
   };
 
@@ -186,6 +323,18 @@ const Chatbot: React.FC<ChatbotProps> = ({
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
   };
+
+  const TypingIndicator = () => (
+    <View style={styles.typingContainer}>
+      <View style={styles.typingBubble}>
+        <View style={styles.typingDots}>
+          <View style={[styles.typingDot, { animationDelay: '0ms' }]} />
+          <View style={[styles.typingDot, { animationDelay: '150ms' }]} />
+          <View style={[styles.typingDot, { animationDelay: '300ms' }]} />
+        </View>
+      </View>
+    </View>
+  );
 
   useEffect(() => {
     scrollToBottom();
@@ -309,6 +458,8 @@ const Chatbot: React.FC<ChatbotProps> = ({
                 </View>
               </View>
             )}
+
+            {isStreaming && <TypingIndicator />}
 
             {/* Suggestions */}
             {messages.length <= 1 && suggestions.length > 0 && (
@@ -608,6 +759,30 @@ const styles = StyleSheet.create({
   },
   sendButtonText: {
     fontSize: 16,
+  },
+  typingContainer: {
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  typingBubble: {
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignSelf: 'flex-start',
+    maxWidth: '80%',
+  },
+  typingDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  typingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.primary,
+    opacity: 0.4,
   },
 });
 

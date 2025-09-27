@@ -48,15 +48,14 @@ const ChatbotCardsContainer: React.FC<ChatbotCardsContainerProps> = ({
     const isBookingData = item.bookingId || item.bookingStatus || item.transactionId;
     
     if (isBookingData) {
-      // This is booking data, use ChatbotBookingCard
+      // This is booking data, use ChatbotBookingCard (non-clickable)
       return (
         <ChatbotBookingCard
           key={`booking-${index}`}
           booking={item}
           onPress={() => {
-            console.log('Booking card pressed:', item.bookingId);
-            // For booking cards, we don't navigate to event details
-            // Instead, we could show QR code or booking details
+            console.log('Booking card pressed (non-clickable):', item.bookingId);
+            // Booking cards are non-clickable in chatbot
           }}
         />
       );
@@ -77,12 +76,25 @@ const ChatbotCardsContainer: React.FC<ChatbotCardsContainerProps> = ({
           <ChatbotClubCard
             key={`club-${index}`}
             club={item}
+            onPress={() => {
+              console.log('Club card pressed (non-clickable):', item.name);
+              // Club cards are non-clickable in chatbot
+            }}
           />
         );
       }
     }
 
     if (cardType === 'events') {
+      console.log('🎯 [CARDS CONTAINER DEBUG] Rendering event card:', {
+        eventId: item.id,
+        eventName: item.name,
+        eventDate: item.date,
+        eventTime: item.time,
+        venue: item.venue,
+        cardType: cardType
+      });
+      
       return (
         <ChatbotEventCard
           key={`event-${index}`}
@@ -96,6 +108,10 @@ const ChatbotCardsContainer: React.FC<ChatbotCardsContainerProps> = ({
         <ChatbotClubCard
           key={`club-${index}`}
           club={item}
+          onPress={() => {
+            console.log('Club card pressed (non-clickable):', item.name);
+            // Club cards are non-clickable in chatbot
+          }}
         />
       );
     }
@@ -113,7 +129,11 @@ const ChatbotCardsContainer: React.FC<ChatbotCardsContainerProps> = ({
         contentContainerStyle={styles.scrollContent}
         style={styles.scrollView}
       >
-        {cards.map((card, index) => renderCard(card, index))}
+        {cards.map((card, cardIndex) => 
+          card.data ? card.data.map((item: any, itemIndex: number) => 
+            renderCard(item, itemIndex)
+          ) : null
+        )}
       </ScrollView>
       
       <Text style={styles.hint}>

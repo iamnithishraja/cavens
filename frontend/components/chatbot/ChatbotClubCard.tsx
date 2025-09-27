@@ -36,9 +36,9 @@ const ChatbotClubCard: React.FC<ChatbotClubCardProps> = ({ club, onPress }) => {
   const handlePress = () => {
     if (onPress) {
       onPress();
-    } else {
-      router.push(`/club/details?id=${club.id}`);
     }
+    // Club cards in chatbot are non-clickable - no navigation
+    console.log('Club card pressed (non-clickable):', club.name);
   };
 
   const getOperatingDays = () => {
@@ -138,9 +138,9 @@ const ChatbotClubCard: React.FC<ChatbotClubCardProps> = ({ club, onPress }) => {
           )}
         </View>
 
-        {/* Tap indicator */}
+        {/* Info indicator */}
         <View style={styles.tapIndicator}>
-          <Text style={styles.tapText}>Tap to view venue →</Text>
+          <Text style={styles.tapText}>Venue information</Text>
         </View>
       </LinearGradient>
     </TouchableOpacity>
