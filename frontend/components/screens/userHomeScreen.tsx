@@ -91,6 +91,8 @@ const UserHomeScreen = () => {
     distanceKm?: number | null;
     sameCity?: boolean;
     walkingDistance?: boolean;
+    startDate?: Date;
+    endDate?: Date;
   }>({ maxPrice: 100000, distanceKm: null });
 
   // Use location hook
@@ -238,12 +240,24 @@ const UserHomeScreen = () => {
       });
     }
 
-    // Apply timeline filter
-    const { start, end } = getDateRange(activeTab);
-    events = events.filter((event) => {
-      const eventDate = new Date(event.date);
-      return eventDate >= start && eventDate <= end;
-    });
+    // Apply date filter - use custom date range if provided, otherwise use timeline tabs
+    if (eventFilters.startDate && eventFilters.endDate) {
+      // Use custom date range from filters
+      events = events.filter((event) => {
+        const eventDate = new Date(event.date);
+        return (
+          eventDate >= eventFilters.startDate! &&
+          eventDate <= eventFilters.endDate!
+        );
+      });
+    } else {
+      // Use timeline filter as fallback
+      const { start, end } = getDateRange(activeTab);
+      events = events.filter((event) => {
+        const eventDate = new Date(event.date);
+        return eventDate >= start && eventDate <= end;
+      });
+    }
 
     // Apply eventFilters
     events = events.filter((event) => {

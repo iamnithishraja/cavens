@@ -1,10 +1,22 @@
-import React, { useMemo, useState } from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, TouchableWithoutFeedback } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Slider from '@react-native-community/slider';
-import { Colors } from '@/constants/Colors';
+import React, { useMemo, useState } from "react";
+import {
+  Modal,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Dimensions,
+  TouchableWithoutFeedback,
+  Platform,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Slider from "@react-native-community/slider";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Calendar, MapPin } from "lucide-react-native";
+import { Colors } from "@/constants/Colors";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 interface EventFilters {
   featured?: boolean;
@@ -17,6 +29,8 @@ interface EventFilters {
   // removed from UI
   walkingDistance?: boolean;
   maxPrice?: number;
+  startDate?: Date;
+  endDate?: Date;
 }
 
 interface ClubFilters {
@@ -30,7 +44,7 @@ interface ClubFilters {
 interface FilterModalProps {
   visible: boolean;
   onClose: () => void;
-  type: 'events' | 'clubs';
+  type: "events" | "clubs";
   initialEventFilters?: EventFilters;
   initialClubFilters?: ClubFilters;
   onApply: (filters: { event: EventFilters; club: ClubFilters }) => void;
@@ -38,12 +52,12 @@ interface FilterModalProps {
 
 // Common club types based on the data
 const CLUB_TYPES = [
-  'bar',
-  'lounge', 
-  'nightclub',
-  'rooftop',
-  'pool_club',
-  'restaurant',
+  "bar",
+  "lounge",
+  "nightclub",
+  "rooftop",
+  "pool_club",
+  "restaurant",
 ];
 
 const FilterModal: React.FC<FilterModalProps> = ({
@@ -54,20 +68,29 @@ const FilterModal: React.FC<FilterModalProps> = ({
   initialClubFilters,
   onApply,
 }) => {
-  const [eventFilters, setEventFilters] = useState<EventFilters>(initialEventFilters || { maxPrice: 10000, distanceKm: null });
-  const [clubFilters, setClubFilters] = useState<ClubFilters>(initialClubFilters || { distanceKm: null, clubTypes: [] });
+  const [eventFilters, setEventFilters] = useState<EventFilters>(
+    initialEventFilters || { maxPrice: 10000, distanceKm: 50 }
+  );
+  const [clubFilters, setClubFilters] = useState<ClubFilters>(
+    initialClubFilters || { distanceKm: 50, clubTypes: [] }
+  );
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const insets = useSafeAreaInsets();
 
-  const title = useMemo(() => type === 'events' ? 'Filter Events' : 'Filter Clubs', [type]);
+  const title = useMemo(
+    () => (type === "events" ? "Filter Events" : "Filter Clubs"),
+    [type]
+  );
 
-  const apply = () => { 
+  const apply = () => {
     onApply({ event: eventFilters, club: clubFilters });
     onClose();
   };
 
   const clear = () => {
-    const defaultEventFilters = { maxPrice: 10000, distanceKm: null };
-    const defaultClubFilters = { distanceKm: null, clubTypes: [] };
+    const defaultEventFilters = { maxPrice: 10000, distanceKm: 50 };
+    const defaultClubFilters = { distanceKm: 50, clubTypes: [] };
     setEventFilters(defaultEventFilters);
     setClubFilters(defaultClubFilters);
     onApply({ event: defaultEventFilters, club: defaultClubFilters });
@@ -75,18 +98,26 @@ const FilterModal: React.FC<FilterModalProps> = ({
   };
 
   const toggleClubType = (clubType: string) => {
-    setClubFilters(prev => ({
+    setClubFilters((prev) => ({
       ...prev,
       clubTypes: prev.clubTypes?.includes(clubType)
-        ? prev.clubTypes.filter(type => type !== clubType)
-        : [...(prev.clubTypes || []), clubType]
+        ? prev.clubTypes.filter((type) => type !== clubType)
+        : [...(prev.clubTypes || []), clubType],
     }));
   };
 
   const formatPrice = (price: number) => {
-    if (price === 0) return 'Free';
-    if (price >= 10000) return 'AED 10,000+';
+    if (price === 0) return "Free";
+    if (price >= 10000) return "AED 10,000+";
     return `AED ${price.toLocaleString()}`;
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   return (
@@ -109,38 +140,80 @@ const FilterModal: React.FC<FilterModalProps> = ({
             </View>
           </View>
 
-          <ScrollView 
-            contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]} 
+          <ScrollView
+            contentContainerStyle={[
+              styles.content,
+              { paddingBottom: insets.bottom + 32 },
+            ]}
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
           >
             {/* Location Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Location</Text>
-              <View style={styles.chipsRow}>
-                {[1,5,10,50,100].map((km) => (
-                  <TouchableOpacity key={km} style={[styles.chip, ((type==='events'?eventFilters.distanceKm:clubFilters.distanceKm)===km) && styles.chipActive]} onPress={() => type==='events' ? setEventFilters((p)=>({ ...p, distanceKm: km })) : setClubFilters((p)=>({ ...p, distanceKm: km }))}>
-                    <Text style={[styles.chipText, ((type==='events'?eventFilters.distanceKm:clubFilters.distanceKm)===km) && styles.chipTextActive]}>
-                      {km === 100 ? '100+ km' : `${km} km`}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+              <Text style={styles.sectionTitle}>Location (km)</Text>
+              <View style={styles.sliderContainer}>
+                <View style={styles.sliderLabels}>
+                  <Text style={styles.sliderLabel}>0 km</Text>
+                  <Text style={styles.sliderLabel}>50 km</Text>
+                </View>
+                <Slider
+                  style={styles.slider}
+                  minimumValue={0}
+                  maximumValue={2711}
+                  value={
+                    type === "events"
+                      ? eventFilters.distanceKm ?? 50
+                      : clubFilters.distanceKm ?? 50
+                  }
+                  onValueChange={(value) => {
+                    if (type === "events") {
+                      setEventFilters((p) => ({
+                        ...p,
+                        distanceKm: Math.round(value),
+                      }));
+                    } else {
+                      setClubFilters((p) => ({
+                        ...p,
+                        distanceKm: Math.round(value),
+                      }));
+                    }
+                  }}
+                  minimumTrackTintColor={Colors.primary}
+                  maximumTrackTintColor={Colors.withOpacity.white10}
+                  thumbTintColor={Colors.primary}
+                />
+                <Text style={styles.priceValue}>
+                  {type === "events"
+                    ? `${eventFilters.distanceKm ?? 50} km away`
+                    : `${clubFilters.distanceKm ?? 50} km away`}
+                </Text>
               </View>
             </View>
 
             {/* Club Type Section (clubs only) */}
-            {type === 'clubs' && (
+            {type === "clubs" && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Club Type</Text>
                 <View style={styles.chipsRow}>
                   {CLUB_TYPES.map((clubType) => (
-                    <TouchableOpacity 
-                      key={clubType} 
-                      style={[styles.chip, clubFilters.clubTypes?.includes(clubType) && styles.chipActive]} 
+                    <TouchableOpacity
+                      key={clubType}
+                      style={[
+                        styles.chip,
+                        clubFilters.clubTypes?.includes(clubType) &&
+                          styles.chipActive,
+                      ]}
                       onPress={() => toggleClubType(clubType)}
                     >
-                      <Text style={[styles.chipText, clubFilters.clubTypes?.includes(clubType) && styles.chipTextActive]}>
-                        {clubType.charAt(0).toUpperCase() + clubType.slice(1).replace('_', ' ')}
+                      <Text
+                        style={[
+                          styles.chipText,
+                          clubFilters.clubTypes?.includes(clubType) &&
+                            styles.chipTextActive,
+                        ]}
+                      >
+                        {clubType.charAt(0).toUpperCase() +
+                          clubType.slice(1).replace("_", " ")}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -149,18 +222,34 @@ const FilterModal: React.FC<FilterModalProps> = ({
             )}
 
             {/* Type Section */}
-            {type === 'events' ? (
+            {type === "events" ? (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Event Type</Text>
                 <View style={styles.chipsRow}>
                   {[
-                    { key: 'featured', label: 'Featured' },
-                    { key: 'hasMenu', label: 'Has Menu' },
-                    { key: 'ticketsAvailable', label: 'Tickets Available' },
-                    { key: 'mostPopular', label: 'Most Popular' },
+                    { key: "featured", label: "Featured" },
+                    { key: "hasMenu", label: "Has Menu" },
+                    { key: "ticketsAvailable", label: "Tickets Available" },
+                    { key: "mostPopular", label: "Most Popular" },
                   ].map(({ key, label }) => (
-                    <TouchableOpacity key={key} style={[styles.chip, (eventFilters as any)[key] && styles.chipActive]} onPress={() => setEventFilters((p:any)=>({ ...p, [key]: !p[key] }))}>
-                      <Text style={[styles.chipText, (eventFilters as any)[key] && styles.chipTextActive]}>{label}</Text>
+                    <TouchableOpacity
+                      key={key}
+                      style={[
+                        styles.chip,
+                        (eventFilters as any)[key] && styles.chipActive,
+                      ]}
+                      onPress={() =>
+                        setEventFilters((p: any) => ({ ...p, [key]: !p[key] }))
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          (eventFilters as any)[key] && styles.chipTextActive,
+                        ]}
+                      >
+                        {label}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -170,11 +259,27 @@ const FilterModal: React.FC<FilterModalProps> = ({
                 <Text style={styles.sectionTitle}>Club Status</Text>
                 <View style={styles.chipsRow}>
                   {[
-                    { key: 'hasUpcomingEvents', label: 'Has Upcoming' },
-                    { key: 'mostPopular', label: 'Most Popular' },
+                    { key: "hasUpcomingEvents", label: "Has Upcoming" },
+                    { key: "mostPopular", label: "Most Popular" },
                   ].map(({ key, label }) => (
-                    <TouchableOpacity key={key} style={[styles.chip, (clubFilters as any)[key] && styles.chipActive]} onPress={() => setClubFilters((p:any)=>({ ...p, [key]: !p[key] }))}>
-                      <Text style={[styles.chipText, (clubFilters as any)[key] && styles.chipTextActive]}>{label}</Text>
+                    <TouchableOpacity
+                      key={key}
+                      style={[
+                        styles.chip,
+                        (clubFilters as any)[key] && styles.chipActive,
+                      ]}
+                      onPress={() =>
+                        setClubFilters((p: any) => ({ ...p, [key]: !p[key] }))
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          (clubFilters as any)[key] && styles.chipTextActive,
+                        ]}
+                      >
+                        {label}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -193,10 +298,15 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   style={styles.slider}
                   minimumValue={0}
                   maximumValue={10000}
-                  value={type === 'events' ? (eventFilters.maxPrice ?? 10000) : 10000}
+                  value={
+                    type === "events" ? eventFilters.maxPrice ?? 10000 : 10000
+                  }
                   onValueChange={(value) => {
-                    if (type === 'events') {
-                      setEventFilters((p) => ({ ...p, maxPrice: Math.round(value) }));
+                    if (type === "events") {
+                      setEventFilters((p) => ({
+                        ...p,
+                        maxPrice: Math.round(value),
+                      }));
                     }
                   }}
                   minimumTrackTintColor={Colors.primary}
@@ -204,27 +314,90 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   thumbTintColor={Colors.primary}
                 />
                 <Text style={styles.priceValue}>
-                  {formatPrice(type === 'events' ? (eventFilters.maxPrice ?? 10000) : 10000)}
+                  {formatPrice(
+                    type === "events" ? eventFilters.maxPrice ?? 10000 : 10000
+                  )}
                 </Text>
               </View>
             </View>
 
-            {/* Time Section (events only) */}
-            {type==='events' && (
+            {/* Date Range Section (events only) */}
+            {type === "events" && (
               <View style={[styles.section, styles.lastSection]}>
-                <Text style={styles.sectionTitle}>Date & Time</Text>
-                <View style={styles.chipsRow}>
-                  {['Today','Tomorrow','This Weekend','Next 7 Days','This Month'].map((label) => (
-                    <TouchableOpacity key={label} style={styles.chip}>
-                      <Text style={styles.chipText}>{label}</Text>
-                    </TouchableOpacity>
-                  ))}
+                <Text style={styles.sectionTitle}>Date Range</Text>
+                <View style={styles.dateRangeContainer}>
+                  <TouchableOpacity
+                    style={styles.dateRangeButton}
+                    onPress={() => setShowStartDatePicker(true)}
+                  >
+                    <Calendar size={16} color={Colors.primary} />
+                    <View style={styles.dateRangeTextContainer}>
+                      <Text style={styles.dateRangeLabel}>From</Text>
+                      <Text
+                        style={styles.dateRangeValue}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {eventFilters.startDate
+                          ? formatDate(eventFilters.startDate)
+                          : "Select start date"}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.dateRangeButton}
+                    onPress={() => setShowEndDatePicker(true)}
+                  >
+                    <Calendar size={16} color={Colors.primary} />
+                    <View style={styles.dateRangeTextContainer}>
+                      <Text style={styles.dateRangeLabel}>To</Text>
+                      <Text
+                        style={styles.dateRangeValue}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {eventFilters.endDate
+                          ? formatDate(eventFilters.endDate)
+                          : "Select end date"}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
                 </View>
               </View>
             )}
           </ScrollView>
         </View>
       </View>
+
+      {/* Date Pickers */}
+      {showStartDatePicker && (
+        <DateTimePicker
+          value={eventFilters.startDate || new Date()}
+          mode="date"
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+          onChange={(event, selectedDate) => {
+            setShowStartDatePicker(false);
+            if (selectedDate) {
+              setEventFilters((prev) => ({ ...prev, startDate: selectedDate }));
+            }
+          }}
+        />
+      )}
+
+      {showEndDatePicker && (
+        <DateTimePicker
+          value={eventFilters.endDate || new Date()}
+          mode="date"
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+          onChange={(event, selectedDate) => {
+            setShowEndDatePicker(false);
+            if (selectedDate) {
+              setEventFilters((prev) => ({ ...prev, endDate: selectedDate }));
+            }
+          }}
+        />
+      )}
     </Modal>
   );
 };
@@ -233,29 +406,29 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: Colors.overlay,
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
   },
   backdrop: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
   },
   sheet: {
-    height: '80%',
-    width: '100%',
+    height: "80%",
+    width: "100%",
     backgroundColor: Colors.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginHorizontal: 0,
     paddingBottom: 0,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 0.2,
@@ -264,11 +437,11 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Colors.textPrimary,
   },
   headerActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   primaryBtn: {
@@ -280,7 +453,7 @@ const styles = StyleSheet.create({
   primaryText: {
     color: Colors.button.text,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   secondaryBtn: {
     backgroundColor: Colors.backgroundTertiary,
@@ -291,7 +464,7 @@ const styles = StyleSheet.create({
   secondaryText: {
     color: Colors.textSecondary,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   scrollView: {
     flex: 1,
@@ -309,13 +482,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Colors.textPrimary,
     marginBottom: 12,
   },
   chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   chip: {
@@ -333,7 +506,7 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 14,
     color: Colors.textSecondary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   chipTextActive: {
     color: Colors.button.text,
@@ -342,25 +515,56 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sliderLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 8,
   },
   sliderLabel: {
     fontSize: 12,
     color: Colors.textSecondary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   slider: {
-    width: '100%',
+    width: "100%",
     height: 40,
   },
   priceValue: {
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Colors.primary,
     marginTop: 8,
+  },
+  dateRangeContainer: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  dateRangeButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: 8,
+    minHeight: 48,
+  },
+  dateRangeTextContainer: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  dateRangeLabel: {
+    fontSize: 10,
+    color: Colors.textSecondary,
+    fontWeight: "500",
+    marginBottom: 1,
+  },
+  dateRangeValue: {
+    fontSize: 12,
+    color: Colors.textPrimary,
+    fontWeight: "600",
   },
 });
 

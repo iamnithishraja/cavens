@@ -1,34 +1,28 @@
 import React, { useState, useEffect } from "react";
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  ActivityIndicator, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
   RefreshControl,
   SafeAreaView,
-  StatusBar 
+  StatusBar,
 } from "react-native";
-import { useFocusEffect } from '@react-navigation/native';
-import { router } from 'expo-router';
+import { useFocusEffect } from "@react-navigation/native";
+import { router } from "expo-router";
 import { Colors } from "@/constants/Colors";
 import BookingCard from "@/components/ui/BookingCard";
-import FloatingChatButton from "@/components/ui/FloatingChatButton";
+// import FloatingChatButton from "@/components/ui/FloatingChatButton";
 import type { Order } from "@/types/order";
 import { useBookingsPolling } from "@/hooks/useBookingsPolling";
-import { store } from '@/utils';
+import { store } from "@/utils";
 
 export default function BookingsScreen() {
   const [isScreenFocused, setIsScreenFocused] = useState(false);
 
-  const { 
-    bookings, 
-    loading, 
-    error, 
-    refresh, 
-    refreshing
-  } = useBookingsPolling({
-    status: 'paid',
+  const { bookings, loading, error, refresh, refreshing } = useBookingsPolling({
+    status: "paid",
     enabled: isScreenFocused, // Only poll when screen is focused
     interval: 3000, // Poll every 3 seconds
   });
@@ -36,11 +30,11 @@ export default function BookingsScreen() {
   // Handle screen focus/blur to control polling
   useFocusEffect(
     React.useCallback(() => {
-      console.log('📱 BookingsScreen focused - starting polling');
+      console.log("📱 BookingsScreen focused - starting polling");
       setIsScreenFocused(true);
-      
+
       return () => {
-        console.log('📱 BookingsScreen blurred - stopping polling');
+        console.log("📱 BookingsScreen blurred - stopping polling");
         setIsScreenFocused(false);
       };
     }, [])
@@ -57,24 +51,20 @@ export default function BookingsScreen() {
 
   const handleChatButtonPress = async () => {
     // Get the selected city from store, default to Dubai
-    const selectedCity = await store.get('selectedCity') || 'Dubai';
-    
+    const selectedCity = (await store.get("selectedCity")) || "Dubai";
+
     router.push({
-      pathname: '/chatbot',
-      params:{
-        Screen:'BOOKINGS',
+      pathname: "/chatbot",
+      params: {
+        Screen: "BOOKINGS",
         city: selectedCity,
-        hasBookings: bookings.length > 0 ? 'true' : 'false'
-      }
-    }
-    )
+        hasBookings: bookings.length > 0 ? "true" : "false",
+      },
+    });
   };
 
   const renderBookingCard = ({ item }: { item: Order }) => (
-    <BookingCard 
-      booking={item} 
-      onPress={() => handleBookingPress(item)}
-    />
+    <BookingCard booking={item} onPress={() => handleBookingPress(item)} />
   );
 
   const renderEmptyState = () => (
@@ -98,7 +88,10 @@ export default function BookingsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor={Colors.background} />
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={Colors.background}
+        />
         <View style={styles.header}>
           <Text style={styles.headerTitle}>My Bookings</Text>
         </View>
@@ -113,11 +106,11 @@ export default function BookingsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={Colors.background} />
-      
+
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Bookings</Text>
         <Text style={styles.headerSubtitle}>
-          {bookings.length} {bookings.length === 1 ? 'booking' : 'bookings'}
+          {bookings.length} {bookings.length === 1 ? "booking" : "bookings"}
         </Text>
       </View>
 
@@ -148,7 +141,7 @@ export default function BookingsScreen() {
         />
       )}
 
-      <FloatingChatButton onPress={handleChatButtonPress} /> 
+      {/** <FloatingChatButton onPress={handleChatButtonPress} /> **/}
     </SafeAreaView>
   );
 }
@@ -158,7 +151,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
     paddingBottom: 0, // Ensure no extra padding at bottom
-    minHeight: '100%', // Ensure container takes full height
+    minHeight: "100%", // Ensure container takes full height
   },
   header: {
     paddingHorizontal: 20,
@@ -171,21 +164,21 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.textPrimary,
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 16,
     color: Colors.textSecondary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 
   listContainer: {
     paddingVertical: 8,
     paddingBottom: 120, // Increased bottom padding to ensure last card is fully visible
     flexGrow: 1,
-    minHeight: '100%', // Ensure container takes full height
+    minHeight: "100%", // Ensure container takes full height
   },
   flatList: {
     flex: 1,
@@ -193,19 +186,19 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
     color: Colors.textSecondary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 40,
   },
   emptyIcon: {
@@ -214,21 +207,21 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.textPrimary,
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   emptySubtitle: {
     fontSize: 16,
     color: Colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 24,
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 40,
   },
   errorIcon: {
@@ -237,15 +230,15 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.textPrimary,
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   errorMessage: {
     fontSize: 16,
     color: Colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 24,
   },
 });

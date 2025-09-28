@@ -4,7 +4,7 @@ import { Colors } from "@/constants/Colors";
 import type { EventItem } from "./types";
 import type { City } from "@/components/ui/CityPickerModal";
 import type { TimelineTab } from "./TimelineFilterTabs";
-import { Calendar, Music2 } from "lucide-react-native";
+import { Calendar, Music2, MapPin } from "lucide-react-native";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -32,6 +32,16 @@ const EventsList: React.FC<EventsListProps> = ({
     const g = (event as any).genres || (event as any).musicGenres || "";
     if (Array.isArray(g)) return g.join(", ");
     return g as string;
+  };
+  const getDistance = (event: EventItem) => {
+    if (event.distanceInMeters != null) {
+      const km = event.distanceInMeters / 1000;
+      return `${km.toFixed(1)} km away`;
+    }
+    if (event.distance) {
+      return event.distance;
+    }
+    return null;
   };
   const getDayAndVenue = (event: EventItem) => {
     try {
@@ -124,6 +134,22 @@ const EventsList: React.FC<EventsListProps> = ({
                 />
                 <Text style={styles.metaText} numberOfLines={1}>
                   {getGenres(event)}
+                </Text>
+              </View>
+            )}
+
+            {getDistance(event) && (
+              <View style={styles.metaRow}>
+                <MapPin
+                  color={Colors.primary}
+                  size={16}
+                  style={styles.metaIcon}
+                />
+                <Text
+                  style={[styles.metaText, { color: Colors.primary }]}
+                  numberOfLines={1}
+                >
+                  {getDistance(event)}
                 </Text>
               </View>
             )}
