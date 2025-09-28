@@ -363,12 +363,12 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
             >
               <Svg width={cardSize.width || 0} height={cardSize.height || 0}>
                 <AnimatedSvgRect
-                  x={2}
-                  y={2}
-                  width={Math.max(0, cardSize.width - 4)}
-                  height={Math.max(0, cardSize.height - 4)}
-                  rx={cornerRadius - 1}
-                  ry={cornerRadius - 1}
+                  x={0.5}
+                  y={0.5}
+                  width={Math.max(0, cardSize.width - 3)}
+                  height={Math.max(0, cardSize.height - 3)}
+                  rx={cornerRadius - 0.5}
+                  ry={cornerRadius - 0.5}
                   fill="none"
                   stroke={Colors.primary}
                   strokeWidth={3}
