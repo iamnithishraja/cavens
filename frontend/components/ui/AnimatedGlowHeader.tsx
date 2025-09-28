@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     left: -100,
     right: -100,
     height: SCREEN_HEIGHT * 0.5,
-    zIndex: 0,
+    zIndex: 1,
   },
   svg: {
     position: "absolute",

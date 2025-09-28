@@ -2,31 +2,27 @@ import React, { useEffect, useRef } from "react";
 import { Tabs, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, View, Animated, Easing, Image } from "react-native";
-import Svg, { Circle } from "react-native-svg";
+import Svg, { Circle, Rect } from "react-native-svg";
 import { Colors } from "@/constants/Colors";
+
+const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 export default function UserTabs() {
   const pulse = useRef(new Animated.Value(0)).current;
+  const dashOffset = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 1400,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 0,
-          duration: 1400,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ])
+      Animated.timing(dashOffset, {
+        toValue: 200,
+        duration: 3000,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      })
     );
     loop.start();
     return () => loop.stop();
-  }, [pulse]);
+  }, [dashOffset]);
 
   const TabIcon = ({
     name,
@@ -116,7 +112,7 @@ export default function UserTabs() {
             tabBarItemStyle: { marginHorizontal: 18 },
             tabBarIcon: ({ color, focused }) => (
               <TabIcon
-                name={focused ? "calendar" : "calendar-outline"}
+                name={focused ? "receipt" : "receipt-outline"}
                 color={color}
                 focused={focused}
               />
@@ -140,36 +136,38 @@ export default function UserTabs() {
 
       {/* Center floating logo overlay (acts as AI button) */}
       <View style={styles.centerLogoWrapper}>
-        {/* Animated orbit ring */}
-        <Animated.View style={styles.centerRingWrapper}>
-          <Svg width={64} height={64}>
-            <Circle
-              cx={32}
-              cy={32}
-              r={31}
+        {/* Subtle border tracing effect */}
+        <View style={styles.centerBorderWrapper}>
+          <Svg width={66} height={66}>
+            {/* Regular lighter border */}
+            <Rect
+              x={1}
+              y={1}
+              width={64}
+              height={64}
+              rx={32}
+              ry={32}
               stroke="#011C51"
               strokeWidth={1.5}
+              strokeOpacity={0.4}
+              fill="none"
+            />
+            {/* Animated tracing border */}
+            <AnimatedRect
+              x={1}
+              y={1}
+              width={64}
+              height={64}
+              rx={32}
+              ry={32}
+              stroke="#011C51"
+              strokeWidth={1.5}
+              strokeDasharray="100 100"
+              strokeDashoffset={dashOffset}
               fill="none"
             />
           </Svg>
-          <Animated.View
-            style={[
-              styles.orbitDot,
-              {
-                transform: [
-                  {
-                    rotate: pulse.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ["0deg", "360deg"],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            <View style={styles.dot} />
-          </Animated.View>
-        </Animated.View>
+        </View>
         <View style={styles.centerLogoContainer}>
           <Image
             source={require("@/assets/images/adaptive-icon.png")}
@@ -266,40 +264,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  centerGlow: {
+  centerBorderWrapper: {
     position: "absolute",
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: "#011C51",
-  },
-  centerRing: {
-    position: "absolute",
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 1.5,
-    borderColor: "#011C51",
-  },
-  centerRingWrapper: {
-    position: "absolute",
-    width: 64,
-    height: 64,
+    width: 66,
+    height: 66,
     alignItems: "center",
     justifyContent: "center",
-  },
-  orbitDot: {
-    position: "absolute",
-    width: 64,
-    height: 64,
-    alignItems: "center",
-    justifyContent: "flex-start",
-  },
-  dot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#011C51",
   },
   centerLogoContainer: {
     width: 62,

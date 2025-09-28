@@ -208,11 +208,9 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
       { width: 0, height: 0 }
     );
     const cornerRadius = 17; // match styles.featuredCard borderRadius
-    const perimeter = Math.max(1, 2 * (cardSize.width + cardSize.height)); // approx perimeter
-    const dashLength = Math.max(
-      20,
-      Math.min(perimeter * 0.48, perimeter * 0.9)
-    );
+    // Simplified perimeter calculation - just use the basic rectangle perimeter
+    const perimeter = Math.max(1, 2 * (cardSize.width + cardSize.height));
+    const dashLength = Math.max(20, perimeter * 0.4); // 40% of perimeter for the dash
     const dashGap = Math.max(1, perimeter - dashLength); // ensure only one dash
     // Use local hardcoded video (overrides event data)
     const firstVideo = LOCAL_VIDEO_URI;
@@ -365,12 +363,12 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
             >
               <Svg width={cardSize.width || 0} height={cardSize.height || 0}>
                 <AnimatedSvgRect
-                  x={1}
-                  y={1}
-                  width={Math.max(0, cardSize.width - 2)}
-                  height={Math.max(0, cardSize.height - 2)}
-                  rx={cornerRadius}
-                  ry={cornerRadius}
+                  x={2}
+                  y={2}
+                  width={Math.max(0, cardSize.width - 4)}
+                  height={Math.max(0, cardSize.height - 4)}
+                  rx={cornerRadius - 1}
+                  ry={cornerRadius - 1}
                   fill="none"
                   stroke={Colors.primary}
                   strokeWidth={3}

@@ -52,6 +52,15 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
         </TouchableOpacity>
       </LinearGradient>
 
+      {/* Center: Dubai Skyline */}
+      <View style={styles.skylineContainer}>
+        <Image
+          source={require("@/assets/images/dubai-skyline.png")}
+          style={styles.skylineImage}
+          resizeMode="contain"
+        />
+      </View>
+
       {/* Right: Filter Button */}
       <TouchableOpacity
         style={styles.filterButton}
@@ -96,13 +105,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: Colors.withOpacity.black60,
-    paddingHorizontal: 14,
+    paddingHorizontal: 8,
     paddingVertical: 8,
     borderRadius: 999,
-    gap: 8,
+    gap: 6,
     borderWidth: 1,
     borderColor: Colors.withOpacity.white10,
     minHeight: 34,
+    maxWidth: 120,
   },
   locationIcon: {
     width: 14,
@@ -117,6 +127,21 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   chevron: { marginLeft: 2 },
+  skylineContainer: {
+    position: "absolute",
+    left: "65%",
+    top: "68%",
+    transform: [{ translateX: -100 }, { translateY: -20 }],
+    alignItems: "center",
+    justifyContent: "center",
+    height: 40,
+    zIndex: 1,
+  },
+  skylineImage: {
+    width: 200,
+    height: 40,
+    opacity: 0.75,
+  },
   filterButton: {
     width: 36,
     height: 36,
@@ -126,6 +151,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.withOpacity.black60,
     borderWidth: 1,
     borderColor: Colors.withOpacity.white10,
+    zIndex: 2,
   },
 });
 

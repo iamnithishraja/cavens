@@ -1,5 +1,12 @@
 import React from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
 import { Colors } from "@/constants/Colors";
 import type { EventItem } from "./types";
 import type { City } from "@/components/ui/CityPickerModal";
@@ -35,7 +42,12 @@ const EventsList: React.FC<EventsListProps> = ({
   };
   const getDistance = (event: EventItem) => {
     if (event.distanceInMeters != null) {
-      const km = event.distanceInMeters / 1000;
+      console.log("Distance in meters:", event.distanceInMeters);
+      // Check if the value is already in km (if it's less than 1000, it might be km)
+      const km =
+        event.distanceInMeters < 1000
+          ? event.distanceInMeters
+          : event.distanceInMeters / 1000;
       return `${km.toFixed(1)} km away`;
     }
     if (event.distance) {
@@ -81,7 +93,11 @@ const EventsList: React.FC<EventsListProps> = ({
   }
 
   return (
-    <View style={styles.listContainer}>
+    <ScrollView
+      style={styles.listContainer}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
       {filteredEvents.map((event, index) => (
         <TouchableOpacity
           key={`${event._id}-${index}`}
@@ -156,13 +172,17 @@ const EventsList: React.FC<EventsListProps> = ({
           </View>
         </TouchableOpacity>
       ))}
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   listContainer: {
+    flex: 1,
+  },
+  scrollContent: {
     paddingHorizontal: 16,
+    paddingBottom: 20,
     gap: 12,
   },
   card: {

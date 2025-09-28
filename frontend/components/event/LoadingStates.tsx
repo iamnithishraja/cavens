@@ -1,14 +1,14 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  StatusBar
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '@/constants/Colors';
+  StatusBar,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Colors } from "@/constants/Colors";
 
 interface LoadingStateProps {
   locationLoading: boolean;
@@ -19,15 +19,38 @@ interface ErrorStateProps {
   onRetry: () => void;
 }
 
-export const LoadingState: React.FC<LoadingStateProps> = ({ locationLoading }) => {
+export const LoadingState: React.FC<LoadingStateProps> = ({
+  locationLoading,
+}) => {
+  const getLoadingMessage = () => {
+    if (locationLoading) {
+      return "Finding your perfect party spot...";
+    }
+
+    const messages = [
+      "Your night starts here...",
+      "Preparing the ultimate night out...",
+      "Curating tonight's hottest spots...",
+      "Loading the party lineup...",
+      "Getting the night ready for you...",
+      "Setting up your nightlife adventure...",
+      "Preparing tonight's highlights...",
+      "Your night is about to begin...",
+    ];
+
+    return messages[Math.floor(Math.random() * messages.length)];
+  };
+
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
       <View style={[styles.fullBackground, styles.centerContent]}>
         <ActivityIndicator size="large" color={Colors.blueAccent} />
-        <Text style={styles.loadingText}>
-          {locationLoading ? "Getting your location..." : "Loading events..."}
-        </Text>
+        <Text style={styles.loadingText}>{getLoadingMessage()}</Text>
       </View>
     </SafeAreaView>
   );
@@ -35,8 +58,12 @@ export const LoadingState: React.FC<LoadingStateProps> = ({ locationLoading }) =
 
 export const ErrorState: React.FC<ErrorStateProps> = ({ error, onRetry }) => {
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
       <View style={[styles.fullBackground, styles.centerContent]}>
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
@@ -56,20 +83,20 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   centerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 32,
   },
   loadingText: {
     color: Colors.textSecondary,
     fontSize: 16,
     marginTop: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
   errorText: {
     color: Colors.textPrimary,
     fontSize: 18,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 24,
     lineHeight: 24,
   },
@@ -82,6 +109,6 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: Colors.button.text,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

@@ -365,31 +365,27 @@ const UserHomeScreen = () => {
           />
         </View>
 
-        <ScrollView
-          style={styles.container}
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingTop: 110, paddingBottom: insets.bottom + 120 },
-          ]}
-          stickyHeaderIndices={[1]}
-          scrollIndicatorInsets={{ top: 110, bottom: insets.bottom + 80 }}
-        >
-          {/* Featured Event Carousel */}
+        {/* Featured Event Carousel - Fixed */}
+        <View style={styles.featuredSection}>
           <FeaturedEventsCarousel
             featuredEvents={featuredEvents}
             selectedCity={selectedCity}
             onEventPress={handleEventPress}
           />
+        </View>
 
-          {/* Timeline Filter Tabs */}
+        {/* Timeline Filter Tabs - Fixed */}
+        <View style={styles.timelineSection}>
           <TimelineFilterTabs
             activeTab={activeTab}
             onTabChange={setActiveTab}
             allEvents={allEvents}
             loading={loading}
           />
+        </View>
 
-          {/* Events List */}
+        {/* Events List - Scrollable */}
+        <View style={styles.eventsSection}>
           <EventsList
             filteredEvents={filteredEvents}
             selectedCity={selectedCity}
@@ -398,7 +394,7 @@ const UserHomeScreen = () => {
             onEventPress={handleEventPress}
             onClearSearch={() => setSearch("")}
           />
-        </ScrollView>
+        </View>
 
         {/* City Picker Modal */}
         <CityPickerModal
@@ -429,11 +425,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  backgroundLayer: {
+    backgroundColor: Colors.background,
+    zIndex: -1,
+  },
   container: {
     flex: 1,
   },
-  scrollContent: {
-    paddingBottom: 24,
+  featuredSection: {
+    paddingTop: 110,
+    zIndex: 5,
+  },
+  timelineSection: {
+    zIndex: 5,
+  },
+  eventsSection: {
+    flex: 1,
+    zIndex: 5,
+    paddingBottom: 120,
   },
   // Fixed Header
   fixedHeader: {
@@ -441,7 +450,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 2,
+    zIndex: 10,
     backgroundColor: "transparent", // Transparent to show gradient
     paddingTop: 8,
     shadowColor: Colors.shadow,
