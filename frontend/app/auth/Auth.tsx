@@ -10,7 +10,8 @@ import {
   Platform,
   Linking,
   StatusBar,
-  Dimensions
+  Dimensions,
+  ScrollView
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import apiClient from "@/app/api/client";
@@ -70,9 +71,8 @@ const Auth = () => {
         />
       </View>
 
-      <KeyboardAvoidingView 
+      <ScrollView 
         style={styles.keyboardContainer} 
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         {/* Brand Header (hidden on OTP) */}
         {!showOtpScreen && (
@@ -191,7 +191,7 @@ const Auth = () => {
             </View>
           </View>
         )}
-      </KeyboardAvoidingView>
+      </ScrollView>
       <CountryPickerModal
         visible={showCountryModal}
         onClose={() => setShowCountryModal(false)}
