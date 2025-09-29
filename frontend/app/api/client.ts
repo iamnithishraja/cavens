@@ -1,7 +1,8 @@
 import { store } from "@/utils/index";
 import axios from "axios";
+import { BACKEND_URL } from "@/env.json";
 
-export const baseUrl = "https://square-goat-barely.ngrok-free.app"
+export const baseUrl = BACKEND_URL;
 console.log("baseUrl", baseUrl);
 const apiClient = axios.create({
     baseURL: baseUrl,
