@@ -8,6 +8,8 @@ export const Colors = {
   background: '#000000', // Pure black main background
   backgroundSecondary: '#1A1A1A', // Dark grey for cards/sections
   backgroundTertiary: '#2A2A2A', // Lighter grey for elevated elements
+  surface: '#1A1A1A', // Surface color (same as backgroundSecondary)
+  surfaceElevated: '#2A2A2A', // Elevated surface (same as backgroundTertiary)
   
   // Text Colors
   textPrimary: '#FFFFFF', // White for main text
@@ -18,6 +20,9 @@ export const Colors = {
   blueAccent: '#0066CC', // Deep blue from main image
   blueDark: '#004499', // Darker blue
   blueLight: '#3399FF', // Lighter blue accent
+  accentBlue: '#4EA2FF', // Bright blue accent
+  accentYellow: '#F9D65C', // Yellow accent
+  borderBlue: '#0066CC', // Blue border color
   
   // Status Colors
   success: '#00FF88', // Green for success states
@@ -38,6 +43,8 @@ export const Colors = {
     button: ['#FFD700', '#FFB800'], // Button gradient
     overlay: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.8)'], // Overlay gradient
     blue: ['#0066CC', '#003399', '#001a66'], // Multi-stop blue gradient
+    dark: ['#1A1A1A', '#000000'], // Dark gradient
+    blueGlow: ['rgba(78, 162, 255, 0.3)', 'rgba(0, 102, 204, 0.1)'], // Blue glow gradient
   },
   
   // Semantic Colors
@@ -85,6 +92,8 @@ export const Colors = {
     primary10: 'rgba(255, 215, 0, 0.1)',
     primary30: 'rgba(255, 215, 0, 0.3)',
     primary60: 'rgba(255, 215, 0, 0.6)',
+    error10: 'rgba(255, 59, 48, 0.1)',
+    error30: 'rgba(255, 59, 48, 0.3)',
     white10: 'rgba(255, 255, 255, 0.1)',
     white30: 'rgba(255, 255, 255, 0.3)',
     white60: 'rgba(255, 255, 255, 0.6)',

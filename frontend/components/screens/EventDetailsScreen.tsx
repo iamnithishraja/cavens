@@ -71,6 +71,43 @@ const EventDetailsScreen: React.FC<Props> = ({ eventId, onGoBack }) => {
     if (!event || !event.tickets || event.tickets.length === 0) return 0;
     return Math.min(...event.tickets.map((t) => t.price));
   }, [event]);
+  
+  // Calculate total tickets remaining
+  const ticketsRemaining = useMemo(() => {
+    if (!event || !event.tickets || event.tickets.length === 0) return 0;
+    return event.tickets.reduce((sum, t) => sum + (t.quantityAvailable - t.quantitySold), 0);
+  }, [event]);
+  
+  // Check if tickets are selling fast (less than 20% remaining)
+  const sellingFast = useMemo(() => {
+    if (!event || !event.tickets || event.tickets.length === 0) return false;
+    const totalAvailable = event.tickets.reduce((sum, t) => sum + t.quantityAvailable, 0);
+    const remaining = ticketsRemaining;
+    return totalAvailable > 0 && (remaining / totalAvailable) < 0.2;
+  }, [event, ticketsRemaining]);
+  
+  // Calculate total attendees (tickets sold)
+  const totalAttendees = useMemo(() => {
+    if (!event || !event.tickets || event.tickets.length === 0) return 0;
+    return event.tickets.reduce((sum, t) => sum + t.quantitySold, 0);
+  }, [event]);
+  
+  // Calculate crowd level (percentage of capacity filled)
+  const crowdLevel = useMemo(() => {
+    if (!event || !event.tickets || event.tickets.length === 0) return 0;
+    const totalCapacity = event.tickets.reduce((sum, t) => sum + t.quantityAvailable, 0);
+    if (totalCapacity === 0) return 0;
+    return Math.round((totalAttendees / totalCapacity) * 100);
+  }, [event, totalAttendees]);
+  
+  // Get crowd status
+  const getCrowdStatus = () => {
+    if (crowdLevel >= 80) return { text: '🔥 Almost Full', color: Colors.error };
+    if (crowdLevel >= 60) return { text: '⚡ Getting Busy', color: Colors.warning };
+    if (crowdLevel >= 30) return { text: '👥 Moderate Crowd', color: Colors.primary };
+    if (crowdLevel > 0) return { text: '✨ Just Started', color: Colors.accentBlue };
+    return { text: '🎉 Be the First!', color: Colors.textSecondary };
+  };
 
   // Determine if there are any explicit table options
   const hasTables = useMemo(() => {
@@ -99,12 +136,37 @@ const EventDetailsScreen: React.FC<Props> = ({ eventId, onGoBack }) => {
   const { width } = Dimensions.get("window");
   const carouselRef = useRef<ScrollView>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const autoRotateTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const onScroll = (e: any) => {
     const x = e.nativeEvent.contentOffset.x;
     const idx = Math.round(x / width);
     if (idx !== activeIndex) setActiveIndex(idx);
   };
+  
+  // Auto-rotate carousel every 5 seconds
+  useEffect(() => {
+    if (mediaItems.length <= 1) return; // Don't rotate if only one item
+    
+    // Clear existing timer
+    if (autoRotateTimerRef.current) {
+      clearTimeout(autoRotateTimerRef.current);
+    }
+    
+    // Set up auto-rotation
+    autoRotateTimerRef.current = setTimeout(() => {
+      const nextIndex = (activeIndex + 1) % mediaItems.length;
+      setActiveIndex(nextIndex);
+      carouselRef.current?.scrollTo({ x: nextIndex * width, animated: true });
+    }, 5000); // 5 seconds
+    
+    // Cleanup on unmount
+    return () => {
+      if (autoRotateTimerRef.current) {
+        clearTimeout(autoRotateTimerRef.current);
+      }
+    };
+  }, [activeIndex, mediaItems.length, width]);
 
   const openMaps = () => {
     if (!event) return;
@@ -292,7 +354,7 @@ const EventDetailsScreen: React.FC<Props> = ({ eventId, onGoBack }) => {
                   style={{ maxWidth: "70%" }}
                 >
                   <Text style={styles.venueLink} numberOfLines={1}>
-                    {clubName || "View on Maps"} →
+                    📍 {clubName || "View on Maps"} →
                   </Text>
                 </TouchableOpacity>
               )}
@@ -302,9 +364,75 @@ const EventDetailsScreen: React.FC<Props> = ({ eventId, onGoBack }) => {
                 </Text>
               )}
             </View>
+            
+            {/* Quick Highlights Row */}
+            <View style={styles.highlightsSection}>
+              {/* Starting Price */}
+              <View style={styles.highlightChip}>
+                <Text style={styles.highlightChipText}>💰 From د.إ {lowestTicket}</Text>
+              </View>
+              
+              {/* Dress Code */}
+              {!!event.guestExperience?.dressCode && (
+                <View style={styles.highlightChip}>
+                  <Text style={styles.highlightChipText}>👔 {event.guestExperience.dressCode}</Text>
+                </View>
+              )}
+              
+              {/* Happy Hour */}
+              {!!event.happyHourTimings && (
+                <View style={styles.highlightChip}>
+                  <Text style={styles.highlightChipText}>🍹 {event.happyHourTimings}</Text>
+                </View>
+              )}
+              
+              {/* Featured Badge */}
+              {event.isFeatured && (
+                <View style={[styles.highlightChip, styles.featuredChip]}>
+                  <Text style={styles.highlightChipText}>⭐ Featured</Text>
+                </View>
+              )}
+              
+              {/* Selling Fast */}
+              {sellingFast && (
+                <View style={[styles.highlightChip, styles.urgentChip]}>
+                  <Text style={styles.highlightChipText}>🔥 Only {ticketsRemaining} left!</Text>
+                </View>
+              )}
+            </View>
+            
+            {/* DJ/Artists Line-up */}
             {!!event.djArtists && (
-              <View style={{ marginTop: 4 }}>
-                <Text style={styles.djText}>DJ: {event.djArtists}</Text>
+              <View style={styles.lineupSection}>
+                <Text style={styles.lineupTitle}>🎧 Line-up</Text>
+                <Text style={styles.djText}>{event.djArtists}</Text>
+              </View>
+            )}
+            
+            {/* Crowd Info */}
+            {totalAttendees > 0 && (
+              <View style={styles.crowdSection}>
+                <View style={styles.crowdHeader}>
+                  <Text style={styles.crowdTitle}>👥 Crowd Status</Text>
+                  <Text style={[styles.crowdStatus, { color: getCrowdStatus().color }]}>
+                    {getCrowdStatus().text}
+                  </Text>
+                </View>
+                
+                {/* Heat Map Bar */}
+                <View style={styles.heatMapContainer}>
+                  <View style={styles.heatMapBackground}>
+                    <View style={[styles.heatMapFill, { width: `${crowdLevel}%` }]} />
+                  </View>
+                  <Text style={styles.heatMapText}>{crowdLevel}% capacity</Text>
+                </View>
+                
+                {/* Attendees Count */}
+                <View style={styles.attendeesRow}>
+                  <Text style={styles.attendeesText}>
+                    🎫 {totalAttendees} {totalAttendees === 1 ? 'person' : 'people'} attending
+                  </Text>
+                </View>
               </View>
             )}
           </View>
@@ -312,11 +440,36 @@ const EventDetailsScreen: React.FC<Props> = ({ eventId, onGoBack }) => {
           {/* Description */}
           {!!event.description && (
             <View style={styles.section}>
+              <Text style={styles.sectionTitle}>About This Event</Text>
               <Text style={styles.sectionText}>{event.description}</Text>
             </View>
           )}
+          
+          {/* Gallery Section */}
+          {event.galleryPhotos && event.galleryPhotos.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>📸 Gallery</Text>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                style={styles.galleryScroll}
+                contentContainerStyle={styles.galleryContent}
+              >
+                {event.galleryPhotos.map((photo, idx) => (
+                  <Image 
+                    key={`gallery-${idx}`}
+                    source={{ uri: photo }} 
+                    style={styles.galleryImage}
+                    resizeMode="cover"
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
+          {/* Event Map/Layout */}
           <View style={styles.section}>
+            <Text style={styles.sectionTitle}>🗺️ Venue Layout</Text>
             {event.eventMap ? (
               <Image
                 source={{ uri: event.eventMap }}
@@ -331,6 +484,38 @@ const EventDetailsScreen: React.FC<Props> = ({ eventId, onGoBack }) => {
               />
             )}
           </View>
+          
+          {/* Extra Details */}
+          {(event.guestExperience?.parkingInfo || event.guestExperience?.accessibilityInfo) && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>ℹ️ Important Info</Text>
+              
+              <View style={styles.infoGrid}>
+                {/* Row 1 */}
+                <View style={styles.infoGridRow}>
+                  {!!event.guestExperience.parkingInfo && (
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoIcon}>🅿️</Text>
+                      <View style={styles.infoContent}>
+                        <Text style={styles.infoLabel}>Parking</Text>
+                        <Text style={styles.infoText}>{event.guestExperience.parkingInfo}</Text>
+                      </View>
+                    </View>
+                  )}
+                  
+                  {!!event.guestExperience.accessibilityInfo && (
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoIcon}>♿</Text>
+                      <View style={styles.infoContent}>
+                        <Text style={styles.infoLabel}>Accessibility</Text>
+                        <Text style={styles.infoText}>{event.guestExperience.accessibilityInfo}</Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </View>
+          )}
 
           {/* Actions Row */}
           <View style={styles.actionsRow}>
@@ -359,7 +544,7 @@ const EventDetailsScreen: React.FC<Props> = ({ eventId, onGoBack }) => {
                 activeOpacity={0.9}
               >
                 <Text style={styles.bookText}>🎫 Book Tickets</Text>
-                <Text style={styles.bookSubText}>from AED {lowestTicket}</Text>
+                <Text style={styles.bookSubText}>from د.إ {lowestTicket}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.bookBtn, !hasTables && { opacity: 0.5 }]}
@@ -368,7 +553,7 @@ const EventDetailsScreen: React.FC<Props> = ({ eventId, onGoBack }) => {
                 activeOpacity={0.9}
               >
                 <Text style={styles.bookText}>🍽️ Book Tables</Text>
-                <Text style={styles.bookSubText}>from AED {lowestTicket}</Text>
+                <Text style={styles.bookSubText}>from د.إ {lowestTicket}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -487,12 +672,108 @@ const styles = StyleSheet.create({
   djText: {
     color: Colors.textSecondary,
     fontWeight: "600",
+    fontSize: 14,
   },
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
+  },
+  highlightsSection: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+  },
+  highlightChip: {
+    backgroundColor: Colors.withOpacity.white10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.withOpacity.white10,
+  },
+  featuredChip: {
+    backgroundColor: Colors.withOpacity.primary10,
+    borderColor: Colors.primary,
+  },
+  urgentChip: {
+    backgroundColor: Colors.withOpacity.error10,
+    borderColor: Colors.error,
+  },
+  highlightChipText: {
+    color: Colors.textPrimary,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  lineupSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.withOpacity.white10,
+  },
+  lineupTitle: {
+    color: Colors.textPrimary,
+    fontSize: 14,
+    fontWeight: "800",
+    marginBottom: 6,
+  },
+  crowdSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.withOpacity.white10,
+    backgroundColor: Colors.withOpacity.white10,
+    borderRadius: 12,
+  },
+  crowdHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  crowdTitle: {
+    color: Colors.textPrimary,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  crowdStatus: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  heatMapContainer: {
+    marginBottom: 8,
+  },
+  heatMapBackground: {
+    height: 8,
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: 4,
+    overflow: "hidden",
+    marginBottom: 6,
+  },
+  heatMapFill: {
+    height: "100%",
+    backgroundColor: Colors.primary,
+    borderRadius: 4,
+  },
+  heatMapText: {
+    color: Colors.textSecondary,
+    fontSize: 11,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  attendeesRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  attendeesText: {
+    color: Colors.textPrimary,
+    fontSize: 13,
+    fontWeight: "600",
   },
   section: {
     paddingHorizontal: 16,
@@ -501,11 +782,59 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: Colors.textPrimary,
     fontWeight: "800",
-    marginBottom: 8,
-    fontSize: 16,
+    marginBottom: 12,
+    fontSize: 18,
   },
   sectionText: {
     color: Colors.textSecondary,
+    lineHeight: 22,
+    fontSize: 15,
+  },
+  galleryScroll: {
+    marginTop: 8,
+  },
+  galleryContent: {
+    gap: 12,
+    paddingRight: 16,
+  },
+  galleryImage: {
+    width: 240,
+    height: 160,
+    borderRadius: 12,
+    backgroundColor: Colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: Colors.withOpacity.white10,
+  },
+  infoGrid: {
+    marginTop: 8,
+  },
+  infoGridRow: {
+    flexDirection: "row",
+    gap: 16,
+    marginBottom: 16,
+  },
+  infoItem: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  infoIcon: {
+    fontSize: 24,
+    marginTop: 2,
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoLabel: {
+    color: Colors.textPrimary,
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  infoText: {
+    color: Colors.textSecondary,
+    fontSize: 14,
     lineHeight: 20,
   },
   mapImage: {

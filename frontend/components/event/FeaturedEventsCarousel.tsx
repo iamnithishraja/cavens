@@ -11,7 +11,12 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { VideoView, useVideoPlayer } from "expo-video";
-import Svg, { Rect as SvgRect } from "react-native-svg";
+import Svg, {
+  Rect as SvgRect,
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  Stop,
+} from "react-native-svg";
 import Reanimated, {
   useSharedValue,
   withRepeat,
@@ -362,6 +367,18 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
               style={StyleSheet.absoluteFill}
             >
               <Svg width={cardSize.width || 0} height={cardSize.height || 0}>
+                <Defs>
+                  <SvgLinearGradient
+                    id="featuredDashGradient"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="0%"
+                  >
+                    <Stop offset="0%" stopColor={Colors.primary} />
+                    <Stop offset="100%" stopColor="#011C51" />
+                  </SvgLinearGradient>
+                </Defs>
                 <AnimatedSvgRect
                   x={0.5}
                   y={0.5}
@@ -370,8 +387,10 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
                   rx={cornerRadius - 0.5}
                   ry={cornerRadius - 0.5}
                   fill="none"
-                  stroke={Colors.primary}
+                  stroke="url(#featuredDashGradient)"
                   strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   strokeDasharray={`${dashLength} ${dashGap}`}
                   animatedProps={animatedStrokeProps}
                 />

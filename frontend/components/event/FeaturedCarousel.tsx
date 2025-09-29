@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, FlatList, StyleSheet, useWindowDimensions, ViewToken, NativeSyntheticEvent, NativeScrollEvent, Image } from "react-native";
+import { View, Text, FlatList, StyleSheet, useWindowDimensions, ViewToken, NativeSyntheticEvent, NativeScrollEvent, Image, Animated } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
 import { Colors } from "@/constants/Colors";
 import { VideoView, useVideoPlayer } from "expo-video";
 import type { EventItem } from "./types";
@@ -25,6 +26,24 @@ const CarouselVideoItem: React.FC<{
   index: number; 
   onVideoComplete?: () => void 
 }> = ({ event, width, active, idKey, index, onVideoComplete }) => {
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  
+  // Animate the glow rotation
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 3000, // 3 seconds for full rotation
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+  
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+  
   const uniqueUri = `${event.promoVideos[0]}${event.promoVideos[0].includes("?") ? "&" : "?"}vuid=${encodeURIComponent(idKey)}`;
   const player = useVideoPlayer(uniqueUri, (player) => {
     player.loop = false; // Don't loop - we want to know when it completes
@@ -85,13 +104,36 @@ const CarouselVideoItem: React.FC<{
     togglePlayback();
   }, [active, uniqueUri, player]);
 
+  const cardHeight = Math.round(width * 0.6);
+  
   return (
-    <LinearGradient
-      colors={['#4F46E5', '#7C3AED', '#EC4899']} // bluish-purplish gradient
-      style={[styles.gradientBorder, { width, height: Math.round(width * 0.6) }]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
+    <View style={[styles.cardWrapper, { width, height: cardHeight }]}>
+      {/* Animated Glow Border with Blur */}
+      <Animated.View 
+        style={[
+          styles.glowBorder,
+          {
+            transform: [{ rotate }],
+          },
+        ]}
+      >
+        {/* Gradient ring */}
+        <LinearGradient
+          colors={['#A78BFA', '#F472B6', '#6366F1', '#A78BFA']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.glowGradientRing}
+        >
+          {/* Blur overlay for glow effect */}
+          <BlurView
+            intensity={80}
+            tint="light"
+            style={styles.blurOverlay}
+          />
+        </LinearGradient>
+      </Animated.View>
+      
+      {/* Content Container */}
       <View style={styles.videoContainer}>
         {active ? (
           <VideoView
@@ -136,7 +178,7 @@ const CarouselVideoItem: React.FC<{
           </Text>
         </View>
       </LinearGradient>
-    </LinearGradient>
+    </View>
   );
 };
 
@@ -274,8 +316,8 @@ const FeaturedCarousel: React.FC<Props> = ({ events }) => {
         snapToAlignment="start"
       />
       
-      {/* Navigation Dots */}
-      <View style={styles.dotsContainer}>
+      {/* Navigation Dots - COMMENTED OUT */}
+      {/* <View style={styles.dotsContainer}>
         {featured.map((_, index) => (
           <View
             key={index}
@@ -285,7 +327,7 @@ const FeaturedCarousel: React.FC<Props> = ({ events }) => {
             ]}
           />
         ))}
-      </View>
+      </View> */}
     </View>
   );
 };
@@ -299,16 +341,36 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginLeft: 16,
   },
-  gradientBorder: {
+  cardWrapper: {
+    position: 'relative',
     borderRadius: 20,
-    padding: 3, // Creates the border width
+    overflow: 'hidden',
+  },
+  glowBorder: {
+    position: 'absolute',
+    top: -60,
+    left: -60,
+    right: -60,
+    bottom: -60,
+  },
+  glowGradientRing: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 100,
+    opacity: 0.9,
+  },
+  blurOverlay: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 100,
   },
   videoContainer: {
-    borderRadius: 17, // Slightly smaller to show the gradient border
+    borderRadius: 20,
     overflow: 'hidden',
     position: 'relative',
     backgroundColor: Colors.surfaceElevated,
     flex: 1,
+    margin: 3, // Space for glow border
   },
   video: {
     width: '100%',
@@ -318,7 +380,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: Colors.surfaceElevated,
-    borderRadius: 17,
+    borderRadius: 20,
   },
   detailsOverlay: {
     position: 'absolute',

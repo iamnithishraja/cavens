@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,8 @@ import {
   Linking,
   StatusBar,
   Dimensions,
-  ScrollView
+  Animated,
+  ScrollView,
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import apiClient from "@/app/api/client";
@@ -32,6 +33,17 @@ const Auth = () => {
   const [showCountryModal, setShowCountryModal] = useState(false);
   const [showOtpScreen, setShowOtpScreen] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  
+  // Fade in animation
+  React.useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   const handleGetOtp = async () => {
     if (isSendingOtp || phoneNumber.trim().length === 0) return;
@@ -85,37 +97,45 @@ const Auth = () => {
           </View>
         )}
 
-        {/* Main Content */}
-        <View
-          style={
-            showOtpScreen ? styles.contentContainerOtp : styles.contentContainer
-          }
+        {/* Main Content - ScrollView to prevent overlap */}
+        <ScrollView 
+          style={{ flex: 1 }}
+          contentContainerStyle={{ flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
         >
+          <View
+            style={
+              showOtpScreen ? styles.contentContainerOtp : styles.contentContainer
+            }
+          >
           {showOtpScreen ? (
             <OtpScreen
               phoneNumber={phoneNumber}
               onBack={() => setShowOtpScreen(false)}
             />
           ) : (
-            <View style={styles.authContent}>
+            <Animated.View style={[styles.authContent, { opacity: fadeAnim }]}>
               {/* Welcome Section */}
               <View style={styles.welcomeSection}>
-                <Text style={styles.welcomeText}>Welcome back</Text>
+                <Text style={styles.welcomeText}>Welcome to</Text>
+                <Text style={styles.welcomeTextBrand}>Cavens</Text>
                 {/* Decorative cursive underline */}
-                <Svg width={180} height={22} style={styles.cursiveUnderline}>
+                <Svg width={200} height={24} style={styles.cursiveUnderline}>
                   <Path
-                    d="M2 12 C 40 24, 80 0, 118 10 S 178 22, 178 10"
+                    d="M2 12 C 50 24, 100 0, 150 12 S 198 24, 198 12"
                     stroke={Colors.primary}
-                    strokeWidth={2}
+                    strokeWidth={2.5}
                     fill="none"
                     strokeLinecap="round"
-                    opacity={0.6}
+                    opacity={0.7}
                   />
                 </Svg>
                 <View style={styles.subtitleContainer}>
                   <View style={styles.subtitleDot} />
                   <Text style={styles.subtitle}>
-                    Enter your mobile number to continue
+                    Sign in with your mobile number
                   </Text>
                 </View>
               </View>
@@ -142,16 +162,21 @@ const Auth = () => {
                   </Pressable>
 
                   <View style={styles.phoneInputWrapper}>
-                    <View style={styles.inputContainerMinimal}>
+                    <View style={[
+                      styles.inputContainerGlass,
+                      isInputFocused && styles.inputContainerFocused
+                    ]}>
                       <TextInput
                         style={styles.phoneInput}
-                        placeholder="Mobile number"
+                        placeholder="e.g. 501234567"
                         placeholderTextColor={Colors.textMuted}
                         keyboardType="phone-pad"
                         value={phoneNumber}
                         onChangeText={(text) =>
                           setPhoneNumber(text.replace(/[^0-9]/g, ""))
                         }
+                        onFocus={() => setIsInputFocused(true)}
+                        onBlur={() => setIsInputFocused(false)}
                         autoComplete="tel"
                         textContentType="telephoneNumber"
                         maxLength={12}
@@ -189,6 +214,44 @@ const Auth = () => {
                 <Text style={styles.otpText}>
                   We&apos;ll send you a one-time password
                 </Text>
+              </View>
+            </Animated.View>
+          )}
+          </View>
+          
+          {/* Bottom Terms Section (hidden on OTP) */}
+          {!showOtpScreen && (
+            <View style={styles.bottomSection}>
+              <LinearGradient
+                colors={Colors.gradients.button as [string, string]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.footerDivider}
+              />
+              <Text style={styles.termsIntro}>
+                By continuing, you agree to our
+              </Text>
+              <View style={styles.termsLinks}>
+                <Pressable
+                  onPress={() => openLink("https://example.com/terms")}
+                  style={styles.termsPressable}
+                >
+                  <Text style={styles.termsLink}>Terms of Service</Text>
+                </Pressable>
+                <View style={styles.termsDot} />
+                <Pressable
+                  onPress={() => openLink("https://example.com/privacy")}
+                  style={styles.termsPressable}
+                >
+                  <Text style={styles.termsLink}>Privacy Policy</Text>
+                </Pressable>
+                <View style={styles.termsDot} />
+                <Pressable
+                  onPress={() => openLink("https://example.com/content-policies")}
+                  style={styles.termsPressable}
+                >
+                  <Text style={styles.termsLink}>Content Policies</Text>
+                </Pressable>
               </View>
             </View>
           )}
@@ -277,17 +340,15 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   contentContainer: {
-    flex: 1,
     paddingHorizontal: 24,
-    justifyContent: "flex-start",
-    paddingTop: 24,
+    paddingBottom: 20,
   },
   contentContainerOtp: {
     flex: 1,
     justifyContent: "center",
   },
   authContent: {
-    paddingVertical: 24,
+    paddingVertical: 12,
   },
   formCard: {
     backgroundColor: "rgba(255,255,255,0.04)",
@@ -302,15 +363,24 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   welcomeSection: {
-    marginBottom: 32,
+    marginBottom: 36,
     alignItems: "flex-start",
   },
   welcomeText: {
-    fontSize: 36,
+    fontSize: 32,
+    color: Colors.textSecondary,
+    fontWeight: "600",
+    marginBottom: 4,
+    letterSpacing: -0.5,
+    textAlign: "left",
+    fontFamily: Platform.OS === "ios" ? "System" : "Roboto",
+  },
+  welcomeTextBrand: {
+    fontSize: 48,
     color: Colors.textPrimary,
     fontWeight: "800",
-    marginBottom: 6,
-    letterSpacing: -1.2,
+    marginBottom: 8,
+    letterSpacing: -2,
     textAlign: "left",
     fontFamily: Platform.OS === "ios" ? "System" : "Roboto",
   },
@@ -336,7 +406,7 @@ const styles = StyleSheet.create({
     fontWeight: "400",
   },
   inputSection: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   inputLabel: {
     fontSize: 11,
@@ -395,30 +465,54 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: Colors.withOpacity.white10,
   },
+  inputContainerGlass: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: Colors.withOpacity.white10,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    transition: 'all 0.3s ease',
+  },
+  inputContainerFocused: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: Colors.primary,
+    borderWidth: 2,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
   phoneInput: {
-    fontSize: 20,
+    fontSize: 18,
     color: Colors.textPrimary,
-    paddingVertical: 22,
-    paddingHorizontal: 4,
+    paddingVertical: 20,
+    paddingHorizontal: 0,
     fontWeight: "600",
     backgroundColor: "transparent",
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
 
   continueButton: {
     backgroundColor: "transparent",
     paddingVertical: 18,
     paddingHorizontal: 22,
-    borderRadius: 20,
+    borderRadius: 24,
     alignItems: "center",
     marginBottom: 20,
-    minHeight: 60,
+    marginTop: 12,
+    minHeight: 64,
     justifyContent: "center",
     overflow: "hidden",
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 12,
   },
   buttonGradient: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 19,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
@@ -427,16 +521,17 @@ const styles = StyleSheet.create({
   },
   continueButtonText: {
     color: Colors.button.text,
-    fontSize: 17,
-    fontWeight: "700",
-    letterSpacing: 0.5,
+    fontSize: 18,
+    fontWeight: "800",
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   otpInfo: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    paddingVertical: 6,
+    paddingVertical: 0,
   },
   otpDot: {
     width: 5,
