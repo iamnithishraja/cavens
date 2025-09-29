@@ -8,13 +8,14 @@ import {
   StyleSheet,
   Dimensions,
   Animated,
+  ScrollView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/Colors";
 import apiClient from "@/app/api/client";
 import { useRouter } from "expo-router";
 import { store } from "@/utils";
-import { KeyboardAvoidingView, Platform } from "react-native";
+import { Platform } from "react-native";
 import BrandHeader from "@/components/common/BrandHeader";
 import { Ionicons } from "@expo/vector-icons";
 import AnimatedGlowHeader from "@/components/ui/AnimatedGlowHeader";
@@ -30,21 +31,13 @@ const OtpScreen = ({
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const router = useRouter();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnims = useRef([...Array(4)].map(() => new Animated.Value(1))).current;
   
-  // Fade in animation
+  // Auto focus first input
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 600,
-      useNativeDriver: true,
-    }).start();
-    
-    // Auto focus first input
     setTimeout(() => {
       inputRefs.current[0]?.focus();
-    }, 400);
+    }, 100);
   }, []);
 
   // Function to mask phone number (show first 2 and last 2 digits)
@@ -152,38 +145,41 @@ const OtpScreen = ({
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <View style={styles.container}>
       {/* Animated background glow */}
       <View style={styles.patternOverlay} pointerEvents="none">
         <AnimatedGlowHeader />
       </View>
-      <View style={styles.container}>
-        <BrandHeader />
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={onBack}
-            style={styles.backButton}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-          >
-            <View style={styles.backPill}>
-              <Ionicons
-                name="chevron-back"
-                size={18}
-                color={Colors.textPrimary}
-              />
-            </View>
-            <Text style={styles.backText}>Back to sign-in</Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* Content */}
-        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+      <BrandHeader />
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={onBack}
+          style={styles.backButton}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <View style={styles.backPill}>
+            <Ionicons
+              name="chevron-back"
+              size={18}
+              color={Colors.textPrimary}
+            />
+          </View>
+          <Text style={styles.backText}>Back to sign-in</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Main Content - ScrollView to prevent overlap */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.content}>
           <View style={styles.titleSection}>
             <Text style={styles.titleSmall}>Verify your number</Text>
             <Text style={styles.title}>Enter Code</Text>
@@ -260,9 +256,9 @@ const OtpScreen = ({
               <Text style={styles.resendLink}>Send again</Text>
             </TouchableOpacity>
           </View>
-        </Animated.View>
-      </View>
-    </KeyboardAvoidingView>
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 
@@ -369,6 +365,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 8,
+    gap: 12,
   },
   otpInput: {
     width: "100%",
@@ -379,7 +376,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: Colors.textPrimary,
     textAlign: "center",
-    marginHorizontal: 6,
+    marginHorizontal: 0,
     borderWidth: 1.5,
     borderColor: Colors.withOpacity.white10,
     shadowColor: "#000",

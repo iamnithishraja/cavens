@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,12 +6,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   Pressable,
-  KeyboardAvoidingView,
   Platform,
   Linking,
   StatusBar,
   Dimensions,
-  Animated,
   ScrollView,
 } from "react-native";
 import { Colors } from "@/constants/Colors";
@@ -33,17 +31,6 @@ const Auth = () => {
   const [showCountryModal, setShowCountryModal] = useState(false);
   const [showOtpScreen, setShowOtpScreen] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [isInputFocused, setIsInputFocused] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  
-  // Fade in animation
-  React.useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 800,
-      useNativeDriver: true,
-    }).start();
-  }, []);
 
   const handleGetOtp = async () => {
     if (isSendingOtp || phoneNumber.trim().length === 0) return;
@@ -96,15 +83,26 @@ const Auth = () => {
             />
           </View>
         )}
+      {/* Brand Header (hidden on OTP) */}
+      {!showOtpScreen && (
+        <View style={styles.headerSection}>
+          <BrandHeader />
+          <LinearGradient
+            colors={Colors.gradients.button as [string, string]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.decorativeLine}
+          />
+        </View>
+      )}
 
-        {/* Main Content - ScrollView to prevent overlap */}
-        <ScrollView 
-          style={{ flex: 1 }}
-          contentContainerStyle={{ flexGrow: 1 }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          bounces={false}
-        >
+      {/* Main Content - ScrollView to prevent overlap */}
+      <ScrollView 
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
           <View
             style={
               showOtpScreen ? styles.contentContainerOtp : styles.contentContainer
@@ -116,7 +114,7 @@ const Auth = () => {
               onBack={() => setShowOtpScreen(false)}
             />
           ) : (
-            <Animated.View style={[styles.authContent, { opacity: fadeAnim }]}>
+            <View style={styles.authContent}>
               {/* Welcome Section */}
               <View style={styles.welcomeSection}>
                 <Text style={styles.welcomeText}>Welcome to</Text>
@@ -161,27 +159,23 @@ const Auth = () => {
                     </LinearGradient>
                   </Pressable>
 
-                  <View style={styles.phoneInputWrapper}>
-                    <View style={[
-                      styles.inputContainerGlass,
-                      isInputFocused && styles.inputContainerFocused
-                    ]}>
-                      <TextInput
-                        style={styles.phoneInput}
-                        placeholder="e.g. 501234567"
-                        placeholderTextColor={Colors.textMuted}
-                        keyboardType="phone-pad"
-                        value={phoneNumber}
-                        onChangeText={(text) =>
-                          setPhoneNumber(text.replace(/[^0-9]/g, ""))
-                        }
-                        onFocus={() => setIsInputFocused(true)}
-                        onBlur={() => setIsInputFocused(false)}
-                        autoComplete="tel"
-                        textContentType="telephoneNumber"
-                        maxLength={12}
-                      />
-                    </View>
+                  <View style={[
+                    styles.phoneInputWrapper,
+                    styles.inputContainerGlass,
+                  ]}>
+                    <TextInput
+                      style={styles.phoneInput}
+                      placeholder="e.g. 501234567"
+                      placeholderTextColor={Colors.textMuted}
+                      keyboardType="phone-pad"
+                      value={phoneNumber}
+                      onChangeText={(text) =>
+                        setPhoneNumber(text.replace(/[^0-9]/g, ""))
+                      }
+                      autoComplete="tel"
+                      textContentType="telephoneNumber"
+                      maxLength={12}
+                    />
                   </View>
                 </View>
               </View>
@@ -215,7 +209,7 @@ const Auth = () => {
                   We&apos;ll send you a one-time password
                 </Text>
               </View>
-            </Animated.View>
+            </View>
           )}
           </View>
           
@@ -323,9 +317,6 @@ const styles = StyleSheet.create({
     right: 0,
     height: height * 0.5,
     borderRadius: 0,
-  },
-  keyboardContainer: {
-    flex: 1,
   },
   headerSection: {
     paddingTop: Platform.OS === "ios" ? 48 : 32,
