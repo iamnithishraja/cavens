@@ -18,13 +18,14 @@ import apiClient from "@/app/api/client";
 import { Country, DEFAULT_COUNTRY } from "@/constants/country";
 import BrandHeader from "@/components/common/BrandHeader";
 import OtpScreen from "@/components/OtpScreen";
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradient } from "expo-linear-gradient";
 import CountryPickerModal from "@/components/ui/CountryPickerModal";
+import AnimatedGlowHeader from "@/components/ui/AnimatedGlowHeader";
+import Svg, { Path } from "react-native-svg";
 
-const { height } = Dimensions.get('window');
+const { height } = Dimensions.get("window");
 
 const Auth = () => {
-  
   const [phoneNumber, setPhoneNumber] = useState("");
   const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
   const [countryQuery] = useState("");
@@ -32,17 +33,16 @@ const Auth = () => {
   const [showOtpScreen, setShowOtpScreen] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
 
-
   const handleGetOtp = async () => {
     if (isSendingOtp || phoneNumber.trim().length === 0) return;
     try {
       setIsSendingOtp(true);
       const res = await apiClient.post("/api/user/onboarding", {
-        phone: phoneNumber.trim()
+        phone: phoneNumber.trim(),
       });
       if (res.status === 200 || res.status === 201) {
         setShowOtpScreen(true);
-      } 
+      }
     } catch (error) {
       console.error("Error sending OTP:", error);
     } finally {
@@ -56,19 +56,17 @@ const Auth = () => {
     } catch {}
   };
 
-
-
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-  
-      {/* Subtle Pattern Overlay - Top 20% Glow */}
-      <View style={styles.patternOverlay}>
-        <LinearGradient
-          colors={['rgba(43, 44, 20, 0.5)', 'transparent', 'transparent']}
-          locations={[0.1, 0.3, 1]}
-          style={styles.topGlow}
-        />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+      />
+
+      {/* Subtle Pattern Overlay with Animated Glow */}
+      <View style={styles.patternOverlay} pointerEvents="none">
+        <AnimatedGlowHeader />
       </View>
 
       <ScrollView 
@@ -79,7 +77,7 @@ const Auth = () => {
           <View style={styles.headerSection}>
             <BrandHeader />
             <LinearGradient
-              colors={[Colors.primary, Colors.primaryDark, Colors.primary]}
+              colors={Colors.gradients.button as [string, string]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.decorativeLine}
@@ -88,31 +86,54 @@ const Auth = () => {
         )}
 
         {/* Main Content */}
-        <View style={showOtpScreen ? styles.contentContainerOtp : styles.contentContainer}>
+        <View
+          style={
+            showOtpScreen ? styles.contentContainerOtp : styles.contentContainer
+          }
+        >
           {showOtpScreen ? (
-            <OtpScreen phoneNumber={phoneNumber} onBack={() => setShowOtpScreen(false)} />
+            <OtpScreen
+              phoneNumber={phoneNumber}
+              onBack={() => setShowOtpScreen(false)}
+            />
           ) : (
             <View style={styles.authContent}>
               {/* Welcome Section */}
               <View style={styles.welcomeSection}>
                 <Text style={styles.welcomeText}>Welcome back</Text>
+                {/* Decorative cursive underline */}
+                <Svg width={180} height={22} style={styles.cursiveUnderline}>
+                  <Path
+                    d="M2 12 C 40 24, 80 0, 118 10 S 178 22, 178 10"
+                    stroke={Colors.primary}
+                    strokeWidth={2}
+                    fill="none"
+                    strokeLinecap="round"
+                    opacity={0.6}
+                  />
+                </Svg>
                 <View style={styles.subtitleContainer}>
                   <View style={styles.subtitleDot} />
-                  <Text style={styles.subtitle}>Enter your mobile number to continue</Text>
+                  <Text style={styles.subtitle}>
+                    Enter your mobile number to continue
+                  </Text>
                 </View>
               </View>
 
-              {/* Phone Input Section */}
+              {/* Phone Input Section (minimal, unconstrained) */}
               <View style={styles.inputSection}>
                 <Text style={styles.inputLabel}>MOBILE NUMBER</Text>
-                
+
                 <View style={styles.phoneContainer}>
                   <Pressable
                     style={styles.countrySelector}
                     onPress={() => setShowCountryModal(true)}
                   >
                     <LinearGradient
-                      colors={[Colors.backgroundSecondary, Colors.backgroundTertiary]}
+                      colors={[
+                        Colors.backgroundSecondary,
+                        Colors.backgroundTertiary,
+                      ]}
                       style={styles.countrySelectorGradient}
                     >
                       <Text style={styles.countryFlag}>{country.flag}</Text>
@@ -121,14 +142,16 @@ const Auth = () => {
                   </Pressable>
 
                   <View style={styles.phoneInputWrapper}>
-                    <View style={styles.inputContainer}>
+                    <View style={styles.inputContainerMinimal}>
                       <TextInput
                         style={styles.phoneInput}
                         placeholder="Mobile number"
                         placeholderTextColor={Colors.textMuted}
                         keyboardType="phone-pad"
                         value={phoneNumber}
-                        onChangeText={(text) => setPhoneNumber(text.replace(/[^0-9]/g, ""))}
+                        onChangeText={(text) =>
+                          setPhoneNumber(text.replace(/[^0-9]/g, ""))
+                        }
                         autoComplete="tel"
                         textContentType="telephoneNumber"
                         maxLength={12}
@@ -139,8 +162,11 @@ const Auth = () => {
               </View>
 
               {/* Continue Button */}
-              <TouchableOpacity 
-                style={[styles.continueButton, isSendingOtp && { opacity: 0.6 }]} 
+              <TouchableOpacity
+                style={[
+                  styles.continueButton,
+                  isSendingOtp && { opacity: 0.6 },
+                ]}
                 onPress={handleGetOtp}
                 disabled={isSendingOtp || phoneNumber.length === 0}
                 activeOpacity={0.8}
@@ -160,7 +186,9 @@ const Auth = () => {
               {/* OTP Info */}
               <View style={styles.otpInfo}>
                 <View style={styles.otpDot} />
-                <Text style={styles.otpText}>We&apos;ll send you a one-time password</Text>
+                <Text style={styles.otpText}>
+                  We&apos;ll send you a one-time password
+                </Text>
               </View>
             </View>
           )}
@@ -170,22 +198,33 @@ const Auth = () => {
         {!showOtpScreen && (
           <View style={styles.bottomSection}>
             <LinearGradient
-              colors={[Colors.primary, 'transparent', Colors.primary]}
+              colors={Colors.gradients.button as [string, string]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={styles.divider}
+              style={styles.footerDivider}
             />
-            <Text style={styles.termsIntro}>By continuing, you agree to our</Text>
+            <Text style={styles.termsIntro}>
+              By continuing, you agree to our
+            </Text>
             <View style={styles.termsLinks}>
-              <Pressable onPress={() => openLink("https://example.com/terms")} style={styles.termsPressable}> 
+              <Pressable
+                onPress={() => openLink("https://example.com/terms")}
+                style={styles.termsPressable}
+              >
                 <Text style={styles.termsLink}>Terms of Service</Text>
               </Pressable>
               <View style={styles.termsDot} />
-              <Pressable onPress={() => openLink("https://example.com/privacy")} style={styles.termsPressable}> 
+              <Pressable
+                onPress={() => openLink("https://example.com/privacy")}
+                style={styles.termsPressable}
+              >
                 <Text style={styles.termsLink}>Privacy Policy</Text>
               </Pressable>
               <View style={styles.termsDot} />
-              <Pressable onPress={() => openLink("https://example.com/content-policies")} style={styles.termsPressable}>
+              <Pressable
+                onPress={() => openLink("https://example.com/content-policies")}
+                style={styles.termsPressable}
+              >
                 <Text style={styles.termsLink}>Content Policies</Text>
               </Pressable>
             </View>
@@ -212,56 +251,76 @@ const styles = StyleSheet.create({
   },
   patternOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   topGlow: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-    height: height * 0.5, 
+    height: height * 0.5,
     borderRadius: 0,
   },
   keyboardContainer: {
     flex: 1,
   },
   headerSection: {
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingTop: Platform.OS === "ios" ? 48 : 32,
+    alignItems: "center",
   },
+  // removed headerLogoWrapper/glow/ring/tagline styles
   decorativeLine: {
-    height: 2,
-    width: 60,
-    marginHorizontal: 24,
+    height: 1,
+    width: 84,
     marginTop: 12,
     borderRadius: 1,
+    opacity: 0.9,
   },
   contentContainer: {
     flex: 1,
     paddingHorizontal: 24,
-    justifyContent: 'center',
+    justifyContent: "flex-start",
+    paddingTop: 24,
   },
   contentContainerOtp: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   authContent: {
-    paddingVertical: 40,
+    paddingVertical: 24,
+  },
+  formCard: {
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.withOpacity.white10,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 10,
   },
   welcomeSection: {
-    marginBottom: 80,
+    marginBottom: 32,
+    alignItems: "flex-start",
   },
   welcomeText: {
-    fontSize: 42,
+    fontSize: 36,
     color: Colors.textPrimary,
-    fontWeight: '800',
-    marginBottom: 16,
+    fontWeight: "800",
+    marginBottom: 6,
     letterSpacing: -1.2,
-    textAlign: 'left',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    textAlign: "left",
+    fontFamily: Platform.OS === "ios" ? "System" : "Roboto",
+  },
+  cursiveUnderline: {
+    marginBottom: 10,
+    marginLeft: 2,
   },
   subtitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
   },
   subtitleDot: {
@@ -274,36 +333,38 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: Colors.textSecondary,
     lineHeight: 26,
-    fontWeight: '400',
+    fontWeight: "400",
   },
   inputSection: {
-    marginBottom: 50,
+    marginBottom: 20,
   },
   inputLabel: {
     fontSize: 11,
     color: Colors.primary,
-    fontWeight: '700',
-    marginBottom: 20,
+    fontWeight: "700",
+    marginBottom: 14,
     letterSpacing: 2,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   phoneContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 16,
   },
   countrySelector: {
     borderRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   countrySelectorGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 18,
     paddingHorizontal: 16,
-    minWidth: 100,
-    justifyContent: 'center',
+    minWidth: 96,
+    justifyContent: "center",
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.withOpacity.white10,
   },
   countryFlag: {
     fontSize: 22,
@@ -312,7 +373,7 @@ const styles = StyleSheet.create({
   countryCode: {
     color: Colors.textPrimary,
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 0.5,
   },
   phoneInputWrapper: {
@@ -323,48 +384,59 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     borderRadius: 16,
     backgroundColor: Colors.backgroundSecondary,
-    overflow: 'hidden',
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  inputContainerMinimal: {
+    borderBottomWidth: 1,
+    borderColor: Colors.withOpacity.white10,
   },
   phoneInput: {
-    fontSize: 19,
+    fontSize: 20,
     color: Colors.textPrimary,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    fontWeight: '600',
-    backgroundColor: 'transparent',
+    paddingVertical: 22,
+    paddingHorizontal: 4,
+    fontWeight: "600",
+    backgroundColor: "transparent",
     letterSpacing: 0.5,
   },
 
   continueButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: 20,
-    paddingHorizontal: 24,
+    backgroundColor: "transparent",
+    paddingVertical: 18,
+    paddingHorizontal: 22,
     borderRadius: 20,
-    alignItems: 'center',
-    marginBottom: 32,
-    minHeight: 64,
-    justifyContent: 'center',
-    overflow: 'hidden',
+    alignItems: "center",
+    marginBottom: 20,
+    minHeight: 60,
+    justifyContent: "center",
+    overflow: "hidden",
   },
   buttonGradient: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: Colors.withOpacity.white10,
   },
   continueButtonText: {
     color: Colors.button.text,
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 0.5,
   },
   otpInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 10,
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   otpDot: {
     width: 5,
@@ -375,30 +447,38 @@ const styles = StyleSheet.create({
   otpText: {
     color: Colors.textSecondary,
     fontSize: 15,
-    fontWeight: '400',
+    fontWeight: "400",
   },
   bottomSection: {
     paddingHorizontal: 24,
-    paddingBottom: Platform.OS === 'ios' ? 50 : 40,
-    alignItems: 'center',
+    paddingBottom: Platform.OS === "ios" ? 40 : 32,
+    alignItems: "center",
+  },
+  footerDivider: {
+    height: 1,
+    width: 120,
+    marginBottom: 16,
+    opacity: 0.9,
+    borderRadius: 1,
   },
   divider: {
     height: 1,
     width: 80,
-    marginBottom: 32,
+    marginBottom: 24,
   },
   termsIntro: {
     color: Colors.textMuted,
-    fontSize: 14,
-    marginBottom: 16,
-    textAlign: 'center',
-    fontWeight: '400',
+    fontSize: 13,
+    marginBottom: 10,
+    textAlign: "center",
+    fontWeight: "600",
+    letterSpacing: 0.2,
   },
   termsLinks: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    justifyContent: "center",
     gap: 12,
   },
   termsPressable: {
@@ -408,8 +488,8 @@ const styles = StyleSheet.create({
   termsLink: {
     color: Colors.primary,
     fontSize: 14,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+    fontWeight: "600",
+    textDecorationLine: "underline",
     textDecorationColor: Colors.primary,
   },
   termsDot: {
