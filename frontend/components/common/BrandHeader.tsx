@@ -7,11 +7,17 @@ type Props = {
   subtitle?: string;
 };
 
-const BrandHeader = ({ title = "caVén", subtitle = "Your nightlife, curated." }: Props) => {
+const BrandHeader = ({
+  title = "Caven",
+  subtitle = "Your nightlife, curated.",
+}: Props) => {
   return (
     <View style={styles.container}>
       <View style={styles.brandRow}>
-        <Image source={require("@/assets/images/adaptive-icon.png")} style={styles.logo} />
+        <Image
+          source={require("@/assets/images/adaptive-icon.png")}
+          style={styles.logo}
+        />
         <Text style={styles.brandText}>{title}</Text>
       </View>
       <Text style={styles.subtitle}>{subtitle}</Text>
@@ -45,9 +51,9 @@ const styles = StyleSheet.create({
   subtitle: {
     color: Colors.textSecondary,
     fontSize: 15,
-    fontWeight: '400',
+    fontWeight: "400",
     opacity: 0.8,
-  }
+  },
 });
 
 export default BrandHeader;

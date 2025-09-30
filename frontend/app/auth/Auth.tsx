@@ -68,21 +68,6 @@ const Auth = () => {
         <AnimatedGlowHeader />
       </View>
 
-      <ScrollView 
-        style={styles.keyboardContainer} 
-      >
-        {/* Brand Header (hidden on OTP) */}
-        {!showOtpScreen && (
-          <View style={styles.headerSection}>
-            <BrandHeader />
-            <LinearGradient
-              colors={Colors.gradients.button as [string, string]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.decorativeLine}
-            />
-          </View>
-        )}
       {/* Brand Header (hidden on OTP) */}
       {!showOtpScreen && (
         <View style={styles.headerSection}>
@@ -249,44 +234,6 @@ const Auth = () => {
               </View>
             </View>
           )}
-        </View>
-
-        {/* Bottom Terms Section (hidden on OTP) */}
-        {!showOtpScreen && (
-          <View style={styles.bottomSection}>
-            <LinearGradient
-              colors={Colors.gradients.button as [string, string]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.footerDivider}
-            />
-            <Text style={styles.termsIntro}>
-              By continuing, you agree to our
-            </Text>
-            <View style={styles.termsLinks}>
-              <Pressable
-                onPress={() => openLink("https://example.com/terms")}
-                style={styles.termsPressable}
-              >
-                <Text style={styles.termsLink}>Terms of Service</Text>
-              </Pressable>
-              <View style={styles.termsDot} />
-              <Pressable
-                onPress={() => openLink("https://example.com/privacy")}
-                style={styles.termsPressable}
-              >
-                <Text style={styles.termsLink}>Privacy Policy</Text>
-              </Pressable>
-              <View style={styles.termsDot} />
-              <Pressable
-                onPress={() => openLink("https://example.com/content-policies")}
-                style={styles.termsPressable}
-              >
-                <Text style={styles.termsLink}>Content Policies</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
       </ScrollView>
       <CountryPickerModal
         visible={showCountryModal}
@@ -317,6 +264,9 @@ const styles = StyleSheet.create({
     right: 0,
     height: height * 0.5,
     borderRadius: 0,
+  },
+  keyboardContainer: {
+    flex: 1,
   },
   headerSection: {
     paddingTop: Platform.OS === "ios" ? 48 : 32,

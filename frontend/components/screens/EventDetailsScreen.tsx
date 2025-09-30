@@ -71,42 +71,55 @@ const EventDetailsScreen: React.FC<Props> = ({ eventId, onGoBack }) => {
     if (!event || !event.tickets || event.tickets.length === 0) return 0;
     return Math.min(...event.tickets.map((t) => t.price));
   }, [event]);
-  
+
   // Calculate total tickets remaining
   const ticketsRemaining = useMemo(() => {
     if (!event || !event.tickets || event.tickets.length === 0) return 0;
-    return event.tickets.reduce((sum, t) => sum + (t.quantityAvailable - t.quantitySold), 0);
+    return event.tickets.reduce(
+      (sum, t) => sum + (t.quantityAvailable - t.quantitySold),
+      0
+    );
   }, [event]);
-  
+
   // Check if tickets are selling fast (less than 20% remaining)
   const sellingFast = useMemo(() => {
     if (!event || !event.tickets || event.tickets.length === 0) return false;
-    const totalAvailable = event.tickets.reduce((sum, t) => sum + t.quantityAvailable, 0);
+    const totalAvailable = event.tickets.reduce(
+      (sum, t) => sum + t.quantityAvailable,
+      0
+    );
     const remaining = ticketsRemaining;
-    return totalAvailable > 0 && (remaining / totalAvailable) < 0.2;
+    return totalAvailable > 0 && remaining / totalAvailable < 0.2;
   }, [event, ticketsRemaining]);
-  
+
   // Calculate total attendees (tickets sold)
   const totalAttendees = useMemo(() => {
     if (!event || !event.tickets || event.tickets.length === 0) return 0;
     return event.tickets.reduce((sum, t) => sum + t.quantitySold, 0);
   }, [event]);
-  
+
   // Calculate crowd level (percentage of capacity filled)
   const crowdLevel = useMemo(() => {
     if (!event || !event.tickets || event.tickets.length === 0) return 0;
-    const totalCapacity = event.tickets.reduce((sum, t) => sum + t.quantityAvailable, 0);
+    const totalCapacity = event.tickets.reduce(
+      (sum, t) => sum + t.quantityAvailable,
+      0
+    );
     if (totalCapacity === 0) return 0;
     return Math.round((totalAttendees / totalCapacity) * 100);
   }, [event, totalAttendees]);
-  
+
   // Get crowd status
   const getCrowdStatus = () => {
-    if (crowdLevel >= 80) return { text: '🔥 Almost Full', color: Colors.error };
-    if (crowdLevel >= 60) return { text: '⚡ Getting Busy', color: Colors.warning };
-    if (crowdLevel >= 30) return { text: '👥 Moderate Crowd', color: Colors.primary };
-    if (crowdLevel > 0) return { text: '✨ Just Started', color: Colors.accentBlue };
-    return { text: '🎉 Be the First!', color: Colors.textSecondary };
+    if (crowdLevel >= 80)
+      return { text: "🔥 Almost Full", color: Colors.error };
+    if (crowdLevel >= 60)
+      return { text: "⚡ Getting Busy", color: Colors.warning };
+    if (crowdLevel >= 30)
+      return { text: "👥 Moderate Crowd", color: Colors.primary };
+    if (crowdLevel > 0)
+      return { text: "✨ Just Started", color: Colors.accentBlue };
+    return { text: "🎉 Be the First!", color: Colors.textSecondary };
   };
 
   // Determine if there are any explicit table options
@@ -143,23 +156,23 @@ const EventDetailsScreen: React.FC<Props> = ({ eventId, onGoBack }) => {
     const idx = Math.round(x / width);
     if (idx !== activeIndex) setActiveIndex(idx);
   };
-  
+
   // Auto-rotate carousel every 5 seconds
   useEffect(() => {
     if (mediaItems.length <= 1) return; // Don't rotate if only one item
-    
+
     // Clear existing timer
     if (autoRotateTimerRef.current) {
       clearTimeout(autoRotateTimerRef.current);
     }
-    
+
     // Set up auto-rotation
     autoRotateTimerRef.current = setTimeout(() => {
       const nextIndex = (activeIndex + 1) % mediaItems.length;
       setActiveIndex(nextIndex);
       carouselRef.current?.scrollTo({ x: nextIndex * width, animated: true });
-    }, 5000); // 5 seconds
-    
+    }, 5000) as unknown as NodeJS.Timeout; // 5 seconds
+
     // Cleanup on unmount
     return () => {
       if (autoRotateTimerRef.current) {
@@ -364,43 +377,51 @@ const EventDetailsScreen: React.FC<Props> = ({ eventId, onGoBack }) => {
                 </Text>
               )}
             </View>
-            
+
             {/* Quick Highlights Row */}
             <View style={styles.highlightsSection}>
               {/* Starting Price */}
               <View style={styles.highlightChip}>
-                <Text style={styles.highlightChipText}>💰 From د.إ {lowestTicket}</Text>
+                <Text style={styles.highlightChipText}>
+                  💰 From د.إ {lowestTicket}
+                </Text>
               </View>
-              
+
               {/* Dress Code */}
               {!!event.guestExperience?.dressCode && (
                 <View style={styles.highlightChip}>
-                  <Text style={styles.highlightChipText}>👔 {event.guestExperience.dressCode}</Text>
+                  <Text style={styles.highlightChipText}>
+                    👔 {event.guestExperience.dressCode}
+                  </Text>
                 </View>
               )}
-              
+
               {/* Happy Hour */}
               {!!event.happyHourTimings && (
                 <View style={styles.highlightChip}>
-                  <Text style={styles.highlightChipText}>🍹 {event.happyHourTimings}</Text>
+                  <Text style={styles.highlightChipText}>
+                    🍹 {event.happyHourTimings}
+                  </Text>
                 </View>
               )}
-              
+
               {/* Featured Badge */}
               {event.isFeatured && (
                 <View style={[styles.highlightChip, styles.featuredChip]}>
                   <Text style={styles.highlightChipText}>⭐ Featured</Text>
                 </View>
               )}
-              
+
               {/* Selling Fast */}
               {sellingFast && (
                 <View style={[styles.highlightChip, styles.urgentChip]}>
-                  <Text style={styles.highlightChipText}>🔥 Only {ticketsRemaining} left!</Text>
+                  <Text style={styles.highlightChipText}>
+                    🔥 Only {ticketsRemaining} left!
+                  </Text>
                 </View>
               )}
             </View>
-            
+
             {/* DJ/Artists Line-up */}
             {!!event.djArtists && (
               <View style={styles.lineupSection}>
@@ -408,29 +429,37 @@ const EventDetailsScreen: React.FC<Props> = ({ eventId, onGoBack }) => {
                 <Text style={styles.djText}>{event.djArtists}</Text>
               </View>
             )}
-            
+
             {/* Crowd Info */}
             {totalAttendees > 0 && (
               <View style={styles.crowdSection}>
                 <View style={styles.crowdHeader}>
                   <Text style={styles.crowdTitle}>👥 Crowd Status</Text>
-                  <Text style={[styles.crowdStatus, { color: getCrowdStatus().color }]}>
+                  <Text
+                    style={[
+                      styles.crowdStatus,
+                      { color: getCrowdStatus().color },
+                    ]}
+                  >
                     {getCrowdStatus().text}
                   </Text>
                 </View>
-                
+
                 {/* Heat Map Bar */}
                 <View style={styles.heatMapContainer}>
                   <View style={styles.heatMapBackground}>
-                    <View style={[styles.heatMapFill, { width: `${crowdLevel}%` }]} />
+                    <View
+                      style={[styles.heatMapFill, { width: `${crowdLevel}%` }]}
+                    />
                   </View>
                   <Text style={styles.heatMapText}>{crowdLevel}% capacity</Text>
                 </View>
-                
+
                 {/* Attendees Count */}
                 <View style={styles.attendeesRow}>
                   <Text style={styles.attendeesText}>
-                    🎫 {totalAttendees} {totalAttendees === 1 ? 'person' : 'people'} attending
+                    🎫 {totalAttendees}{" "}
+                    {totalAttendees === 1 ? "person" : "people"} attending
                   </Text>
                 </View>
               </View>
@@ -444,21 +473,21 @@ const EventDetailsScreen: React.FC<Props> = ({ eventId, onGoBack }) => {
               <Text style={styles.sectionText}>{event.description}</Text>
             </View>
           )}
-          
+
           {/* Gallery Section */}
           {event.galleryPhotos && event.galleryPhotos.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>📸 Gallery</Text>
-              <ScrollView 
-                horizontal 
+              <ScrollView
+                horizontal
                 showsHorizontalScrollIndicator={false}
                 style={styles.galleryScroll}
                 contentContainerStyle={styles.galleryContent}
               >
                 {event.galleryPhotos.map((photo, idx) => (
-                  <Image 
+                  <Image
                     key={`gallery-${idx}`}
-                    source={{ uri: photo }} 
+                    source={{ uri: photo }}
                     style={styles.galleryImage}
                     resizeMode="cover"
                   />
@@ -484,12 +513,13 @@ const EventDetailsScreen: React.FC<Props> = ({ eventId, onGoBack }) => {
               />
             )}
           </View>
-          
+
           {/* Extra Details */}
-          {(event.guestExperience?.parkingInfo || event.guestExperience?.accessibilityInfo) && (
+          {(event.guestExperience?.parkingInfo ||
+            event.guestExperience?.accessibilityInfo) && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>ℹ️ Important Info</Text>
-              
+
               <View style={styles.infoGrid}>
                 {/* Row 1 */}
                 <View style={styles.infoGridRow}>
@@ -498,17 +528,21 @@ const EventDetailsScreen: React.FC<Props> = ({ eventId, onGoBack }) => {
                       <Text style={styles.infoIcon}>🅿️</Text>
                       <View style={styles.infoContent}>
                         <Text style={styles.infoLabel}>Parking</Text>
-                        <Text style={styles.infoText}>{event.guestExperience.parkingInfo}</Text>
+                        <Text style={styles.infoText}>
+                          {event.guestExperience.parkingInfo}
+                        </Text>
                       </View>
                     </View>
                   )}
-                  
+
                   {!!event.guestExperience.accessibilityInfo && (
                     <View style={styles.infoItem}>
                       <Text style={styles.infoIcon}>♿</Text>
                       <View style={styles.infoContent}>
                         <Text style={styles.infoLabel}>Accessibility</Text>
-                        <Text style={styles.infoText}>{event.guestExperience.accessibilityInfo}</Text>
+                        <Text style={styles.infoText}>
+                          {event.guestExperience.accessibilityInfo}
+                        </Text>
                       </View>
                     </View>
                   )}
@@ -539,20 +573,20 @@ const EventDetailsScreen: React.FC<Props> = ({ eventId, onGoBack }) => {
           <View style={styles.bookCtaWrap}>
             <View style={styles.bookButtonsRow}>
               <TouchableOpacity
-                style={styles.bookBtn}
+                style={styles.bookBtnSmall}
                 onPress={() => handleBook("tickets")}
                 activeOpacity={0.9}
               >
-                <Text style={styles.bookText}>🎫 Book Tickets</Text>
+                <Text style={styles.bookTextSmall}>Book Tickets</Text>
                 <Text style={styles.bookSubText}>from د.إ {lowestTicket}</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.bookBtn, !hasTables && { opacity: 0.5 }]}
+                style={[styles.bookBtnSmall, !hasTables && { opacity: 0.5 }]}
                 onPress={() => handleBook("tables")}
                 disabled={!hasTables}
                 activeOpacity={0.9}
               >
-                <Text style={styles.bookText}>🍽️ Book Tables</Text>
+                <Text style={styles.bookTextSmall}>Book Tables</Text>
                 <Text style={styles.bookSubText}>from د.إ {lowestTicket}</Text>
               </TouchableOpacity>
             </View>
@@ -886,10 +920,27 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
+  bookBtnSmall: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+    borderRadius: 16,
+    paddingVertical: 10,
+    alignItems: "center",
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
+  },
   bookText: {
     color: Colors.button.text,
     fontWeight: "900",
     fontSize: 16,
+  },
+  bookTextSmall: {
+    color: Colors.button.text,
+    fontWeight: "800",
+    fontSize: 14,
   },
   bookSubText: {
     color: Colors.button.text,

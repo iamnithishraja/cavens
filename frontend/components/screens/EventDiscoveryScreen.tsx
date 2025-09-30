@@ -61,6 +61,19 @@ const EventDiscoveryScreen: React.FC<Props> = ({ onSelectEvent }) => {
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                 >
+                  {/* Inner shine overlay */}
+                  <LinearGradient
+                    colors={[
+                      Colors.accentBlue + '25',
+                      Colors.accentBlue + '15',
+                      Colors.accentBlue + '08',
+                      'transparent'
+                    ]}
+                    locations={[0, 0.3, 0.7, 1]}
+                    style={styles.shineOverlay}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                  />
                   <Image 
                     source={{ uri: "https://img.icons8.com/ios/50/4EA2FF/marker.png" }} 
                     style={styles.locationIcon} 
@@ -96,6 +109,19 @@ const EventDiscoveryScreen: React.FC<Props> = ({ onSelectEvent }) => {
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                 >
+                  {/* Inner shine overlay */}
+                  <LinearGradient
+                    colors={[
+                      Colors.accentYellow + '28',
+                      Colors.accentYellow + '18',
+                      Colors.accentYellow + '0C',
+                      'transparent'
+                    ]}
+                    locations={[0, 0.3, 0.7, 1]}
+                    style={styles.shineOverlay}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                  />
                   <Image 
                     source={{ uri: "https://img.icons8.com/ios/50/F9D65C/filter.png" }} 
                     style={styles.filterIcon} 
@@ -196,16 +222,19 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: Colors.accentBlue,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: Colors.accentBlue + '30',
   },
   locationBtnGradient: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
+    position: 'relative',
   },
   locationIcon: { 
     width: 20, 
@@ -242,15 +271,26 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: Colors.accentYellow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: Colors.accentYellow + '30',
   },
   filterBtnGradient: {
     padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
+  },
+  shineOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 12,
   },
   filterIcon: { 
     width: 22, 

@@ -5,6 +5,7 @@ import type { City } from "@/components/ui/CityPickerModal";
 import { Filter as FilterIcon, MapPin } from "lucide-react-native";
 import { ChevronDown } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
 
 interface LocationHeaderProps {
   selectedCity: City;
@@ -38,6 +39,18 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
           onPress={onLocationPress}
           activeOpacity={0.85}
         >
+          <LinearGradient
+            colors={[
+              Colors.primary + '20',
+              Colors.primary + '12',
+              Colors.primary + '08',
+              'transparent'
+            ]}
+            locations={[0, 0.3, 0.7, 1]}
+            style={styles.shineOverlay}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+          />
           <MapPin
             color={Colors.primary}
             size={16}
@@ -62,13 +75,33 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
       </View>
 
       {/* Right: Filter Button */}
-      <TouchableOpacity
-        style={styles.filterButton}
-        onPress={onFilterPress}
-        activeOpacity={0.85}
+      <LinearGradient
+        colors={[Colors.withOpacity.white10, Colors.withOpacity.white10]}
+        style={styles.gradientPill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
       >
-        <FilterIcon color={Colors.primary} size={18} />
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={onFilterPress}
+          activeOpacity={0.85}
+        >
+          <BlurView style={styles.filterBlur} intensity={18} tint="dark" />
+          <LinearGradient
+            colors={[
+              Colors.primary + '18',
+              Colors.primary + '10',
+              Colors.primary + '08',
+              'transparent'
+            ]}
+            locations={[0, 0.3, 0.7, 1]}
+            style={styles.filterShineOverlay}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+          />
+          <FilterIcon color={Colors.primary} size={18} />
+        </TouchableOpacity>
+      </LinearGradient>
     </View>
   );
 };
@@ -100,6 +133,11 @@ const styles = StyleSheet.create({
   gradientPill: {
     borderRadius: 999,
     padding: 1,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 6,
   },
   locationSelector: {
     flexDirection: "row",
@@ -110,9 +148,23 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     gap: 6,
     borderWidth: 1,
-    borderColor: Colors.withOpacity.white10,
+    borderColor: "rgba(1,28,81,0.35)",
     minHeight: 34,
     maxWidth: 120,
+    position: "relative",
+    shadowColor: "#011C51",
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  shineOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 999,
   },
   locationIcon: {
     width: 14,
@@ -129,7 +181,7 @@ const styles = StyleSheet.create({
   chevron: { marginLeft: 2 },
   skylineContainer: {
     position: "absolute",
-    left: "65%",
+    left: "55%",
     top: "68%",
     transform: [{ translateX: -100 }, { translateY: -20 }],
     alignItems: "center",
@@ -138,9 +190,8 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   skylineImage: {
-    width: 200,
+    width: 400,
     height: 40,
-    opacity: 0.75,
   },
   filterButton: {
     width: 36,
@@ -150,8 +201,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: Colors.withOpacity.black60,
     borderWidth: 1,
-    borderColor: Colors.withOpacity.white10,
+    borderColor: "rgba(1,28,81,0.35)",
     zIndex: 2,
+    shadowColor: "#011C51",
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+    position: "relative",
+  },
+  filterBlur: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 18,
+  },
+  filterShineOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 18,
   },
 });
 
