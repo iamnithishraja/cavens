@@ -11,20 +11,13 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { VideoView, useVideoPlayer } from "expo-video";
-import Reanimated, {
-  useSharedValue,
-  withRepeat,
-  withTiming,
-  useAnimatedStyle,
-  Easing,
-  withSequence,
-  withDelay,
-} from "react-native-reanimated";
+import AnimatedGlow, { type PresetConfig } from 'react-native-animated-glow';
 import { Colors } from "@/constants/Colors";
 import { Asset } from "expo-asset";
 import type { EventItem } from "./types";
 import type { City } from "@/components/ui/CityPickerModal";
-import { CornerGlow } from "../ui/CornerGlow";
+import FeaturedItemPreset from "../ui/presets/featuredItem";
+import Reanimated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -224,7 +217,6 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
         opacity: pulseOpacity.value,
       };
     });
-
     const firstVideo = LOCAL_VIDEO_URI;
     const player = useVideoPlayer(firstVideo || "", (p) => {
       p.loop = true;
@@ -239,15 +231,7 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
 
     return (
       <View style={styles.carouselItem}>
-        <View style={styles.itemWrapper}>
-
-
-          {/* Corner glows OUTSIDE */}
-          <CornerGlow position="topLeft" />
-          <CornerGlow position="topRight" />
-          <CornerGlow position="bottomLeft" />
-          <CornerGlow position="bottomRight" />
-
+        <AnimatedGlow preset={FeaturedItemPreset}>
           {/* Enhanced spinning light with multiple gradients */}
           <Reanimated.View style={[styles.spinningLight, animatedBorderStyle]} pointerEvents="none">
             <LinearGradient
@@ -324,7 +308,6 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
             }}
             activeOpacity={0.9}
           >
-            
             <Image source={{ uri: item.coverImage }} style={styles.featuredImage} />
 
             {firstVideo && showingVideo[item._id || ""] && (
@@ -385,7 +368,7 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
               </View>
             </LinearGradient>
           </TouchableOpacity>
-        </View>
+        </AnimatedGlow>
       </View>
     );
   };
@@ -411,33 +394,92 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
 };
 
 const styles = StyleSheet.create({
-carouselContainer: {
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  marginTop: 16,
-  height: 330,
-  marginBottom: 10,
-  position: "relative", // ensure corner glows position correctly
-  overflow: "visible",
-},
+  carouselContainer: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 10,
+    height: 360,
+    marginBottom: 10,
+    position: "relative",
+    overflow: "visible",
+  },
   carouselItem: {
+    marginTop: 14,
     width: SCREEN_WIDTH,
     height: 316,
     paddingHorizontal: 16,
     position: "relative",
   },
-  itemWrapper: {
+  featuredCard: {
     height: "100%",
-    position: "relative",
-    borderRadius: 20,
-    padding: 4,
+    borderRadius: 12,
+    margin: 1,
     overflow: "hidden",
-    backgroundColor: "transparent",
+    backgroundColor: Colors.backgroundSecondary,
+    position: "relative",
+  },
+  featuredImage: {
+    width: "100%",
+    height: "100%",
+    position: "absolute",
+    resizeMode: "cover",
+  },
+  videoOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  featuredOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: "70%",
+    justifyContent: "flex-end",
+  },
+  featuredContent: {
+    padding: 20
+  },
+  bottomSection: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+  },
+  bottomLeftInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  bottomRightInfo: {
+    alignItems: "flex-end",
+    gap: 8,
+  },
+   eventDate: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "400",
+    textTransform: "uppercase",
+  },
+  venueName: {
+    color: "#FFFFFF",
+    fontSize: 38,
+    fontWeight: "900",
+    lineHeight: 44,
+    letterSpacing: -0.5,
+    textTransform: "uppercase",
+  },
+  clubLocation: {
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    flexShrink: 1,
   },
   spinningLight: {
     position: "absolute",
-    top: -80,
+    top: -100,
     left: -40,
     right: -40,
     bottom: -80,
@@ -462,72 +504,6 @@ carouselContainer: {
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 4,
-  },
-  featuredCard: {
-    height: "100%",
-    borderRadius: 18,
-    overflow: "hidden",
-    backgroundColor: Colors.backgroundSecondary,
-    position: "relative",
-    zIndex: 1,
-  },
-  featuredImage: {
-    width: "100%",
-    height: "100%",
-    position: "absolute",
-    resizeMode: "cover",
-  },
-  videoOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  featuredOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: "70%",
-    justifyContent: "flex-end",
-  },
-  featuredContent: {
-    padding: 20,
-  },
-  bottomSection: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-  },
-  bottomLeftInfo: {
-    flex: 1,
-    gap: 4,
-  },
-  bottomRightInfo: {
-    alignItems: "flex-end",
-    gap: 8,
-  },
-  eventDate: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "400",
-    textTransform: "uppercase",
-  },
-  venueName: {
-    color: "#FFFFFF",
-    fontSize: 38,
-    fontWeight: "900",
-    lineHeight: 44,
-    letterSpacing: -0.5,
-    textTransform: "uppercase",
-  },
-  clubLocation: {
-    color: "#FFFFFF",
-    fontSize: 24,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    flexShrink: 1,
   },
   distanceText: {
     color: "#FFFFFF",
