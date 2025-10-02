@@ -11,27 +11,23 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { VideoView, useVideoPlayer } from "expo-video";
-import Svg, {
-  Rect as SvgRect,
-  Defs,
-  LinearGradient as SvgLinearGradient,
-  Stop,
-} from "react-native-svg";
 import Reanimated, {
   useSharedValue,
   withRepeat,
   withTiming,
-  useAnimatedProps,
+  useAnimatedStyle,
   Easing,
+  withSequence,
+  withDelay,
 } from "react-native-reanimated";
 import { Colors } from "@/constants/Colors";
 import { Asset } from "expo-asset";
 import type { EventItem } from "./types";
 import type { City } from "@/components/ui/CityPickerModal";
+import { CornerGlow } from "../ui/CornerGlow";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-// Hardcoded local video asset for featured cards
 const LOCAL_VIDEO_URI = Asset.fromModule(
   require("@/assets/images/club.mp4")
 ).uri;
@@ -57,18 +53,13 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
   onEventPress,
 }) => {
   const [activeCarouselIndex, setActiveCarouselIndex] = useState(0);
-  const [showingVideo, setShowingVideo] = useState<{ [key: string]: boolean }>(
-    {}
-  );
+  const [showingVideo, setShowingVideo] = useState<{ [key: string]: boolean }>({});
   const carouselRef = useRef<FlatList>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const autoRotateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const videoTimerRefs = useRef<{
-    [key: string]: ReturnType<typeof setTimeout>;
-  }>({});
+  const videoTimerRefs = useRef<{ [key: string]: ReturnType<typeof setTimeout> }>({});
   const videoOpacityRefs = useRef<{ [key: string]: Animated.Value }>({});
 
-  // Auto-rotation functions
   const clearAutoRotation = useCallback(() => {
     if (autoRotateTimerRef.current) {
       clearTimeout(autoRotateTimerRef.current);
@@ -77,8 +68,7 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
   }, []);
 
   const startAutoRotation = useCallback(() => {
-    if (featuredEvents.length <= 1) return; // No need to rotate if only one item
-
+    if (featuredEvents.length <= 1) return;
     clearAutoRotation();
     autoRotateTimerRef.current = setTimeout(() => {
       setActiveCarouselIndex((prevIndex) => {
@@ -89,9 +79,8 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
         });
         return nextIndex;
       });
-      // Continue the rotation
       startAutoRotation();
-    }, 15000); // 15 seconds
+    }, 15000);
   }, [featuredEvents.length, clearAutoRotation]);
 
   const restartAutoRotation = useCallback(() => {
@@ -99,36 +88,27 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
     startAutoRotation();
   }, [clearAutoRotation, startAutoRotation]);
 
-  // Auto-rotation effect
   useEffect(() => {
     startAutoRotation();
-
     return () => {
       clearAutoRotation();
     };
   }, [startAutoRotation, clearAutoRotation]);
 
-  // Handle video timing based on active carousel item
   useEffect(() => {
-    // Clear existing timers
-    Object.values(videoTimerRefs.current).forEach((timer) =>
-      clearTimeout(timer)
-    );
+    Object.values(videoTimerRefs.current).forEach((timer) => clearTimeout(timer));
     videoTimerRefs.current = {};
 
-    // Initialize/reset opacity values for all events
     featuredEvents.forEach((event) => {
       if (event._id) {
         if (!videoOpacityRefs.current[event._id]) {
           videoOpacityRefs.current[event._id] = new Animated.Value(0);
         } else {
-          // Reset to 0 (hidden video) for all events
           videoOpacityRefs.current[event._id].setValue(0);
         }
       }
     });
 
-    // Reset all videos to show images first
     const newShowingVideo: { [key: string]: boolean } = {};
     featuredEvents.forEach((event) => {
       if (event._id) {
@@ -137,35 +117,23 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
     });
     setShowingVideo(newShowingVideo);
 
-    // Set up timer only for the currently active event
     const activeEvent = featuredEvents[activeCarouselIndex];
-    if (
-      activeEvent &&
-      activeEvent._id &&
-      activeEvent.promoVideos &&
-      activeEvent.promoVideos.length > 0
-    ) {
+    if (activeEvent && activeEvent._id && activeEvent.promoVideos && activeEvent.promoVideos.length > 0) {
       videoTimerRefs.current[activeEvent._id] = setTimeout(() => {
-        // Start fade-in animation
         Animated.timing(videoOpacityRefs.current[activeEvent._id!], {
           toValue: 1,
-          duration: 500, // 500ms fade transition
+          duration: 500,
           useNativeDriver: true,
         }).start();
-
         setShowingVideo((prev) => ({ ...prev, [activeEvent._id!]: true }));
       }, 1000);
     }
 
     return () => {
-      // Cleanup timers
-      Object.values(videoTimerRefs.current).forEach((timer) =>
-        clearTimeout(timer)
-      );
+      Object.values(videoTimerRefs.current).forEach((timer) => clearTimeout(timer));
     };
   }, [featuredEvents, activeCarouselIndex]);
 
-  // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -174,12 +142,10 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
     });
   };
 
-  // Get club name from event
   const getClubName = (event: EventItem) => {
     return event.venue || "Club Name";
   };
 
-  // Handle carousel pagination
   const handleCarouselScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { x: scrollX } } }],
     { useNativeDriver: false }
@@ -188,36 +154,77 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
   const handleMomentumScrollEnd = (e: any) => {
     const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     setActiveCarouselIndex(index);
-    restartAutoRotation(); // Restart auto-rotation when user manually scrolls
+    restartAutoRotation();
   };
 
   const handleTouchStart = () => {
-    clearAutoRotation(); // Pause auto-rotation when user touches
+    clearAutoRotation();
   };
 
   const handleTouchEnd = () => {
-    restartAutoRotation(); // Resume auto-rotation when user stops touching
+    restartAutoRotation();
   };
 
   if (featuredEvents.length === 0) {
     return null;
   }
 
-  // Child component to leverage expo-video hooks per item
-  const FeaturedItem: React.FC<{ item: FeaturedEventWithDistance }> = ({
-    item,
-  }) => {
-    const AnimatedSvgRect = Reanimated.createAnimatedComponent(SvgRect);
-    const dashOffset = useSharedValue(0);
-    const [cardSize, setCardSize] = useState<{ width: number; height: number }>(
-      { width: 0, height: 0 }
-    );
-    const cornerRadius = 17; // match styles.featuredCard borderRadius
-    // Simplified perimeter calculation - just use the basic rectangle perimeter
-    const perimeter = Math.max(1, 2 * (cardSize.width + cardSize.height));
-    const dashLength = Math.max(20, perimeter * 0.4); // 40% of perimeter for the dash
-    const dashGap = Math.max(1, perimeter - dashLength); // ensure only one dash
-    // Use local hardcoded video (overrides event data)
+  const FeaturedItem: React.FC<{ item: FeaturedEventWithDistance }> = ({ item }) => {
+    const angle = useSharedValue(0);
+    const scale = useSharedValue(1);
+    const pulseOpacity = useSharedValue(0.6);
+
+    useEffect(() => {
+      // Main spinning animation
+      angle.value = withRepeat(
+        withTiming(360, { duration: 3000, easing: Easing.linear }),
+        -1,
+        false
+      );
+
+      // Random speed changes for surprise effect
+      const speedVariation = setInterval(() => {
+        const randomDuration = Math.random() * 2000 + 2000; // 2-4 seconds
+        angle.value = withRepeat(
+          withTiming(360, { duration: randomDuration, easing: Easing.bezier(0.4, 0.0, 0.2, 1) }),
+          -1,
+          false
+        );
+      }, 8000);
+
+      // Pulsing scale effect
+      scale.value = withRepeat(
+        withSequence(
+          withTiming(1.05, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
+      );
+
+      // Opacity pulse for glow effect
+      pulseOpacity.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0.6, { duration: 1200, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
+      );
+
+      return () => clearInterval(speedVariation);
+    }, []);
+
+    const animatedBorderStyle = useAnimatedStyle(() => {
+      return {
+        transform: [
+          { rotate: `${-angle.value}deg` },
+          { scale: scale.value }
+        ],
+        opacity: pulseOpacity.value,
+      };
+    });
+
     const firstVideo = LOCAL_VIDEO_URI;
     const player = useVideoPlayer(firstVideo || "", (p) => {
       p.loop = true;
@@ -230,49 +237,96 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
       } catch {}
     }, [player]);
 
-    useEffect(() => {
-      if (perimeter <= 1) return;
-      dashOffset.value = 0;
-      dashOffset.value = withRepeat(
-        withTiming(perimeter, { duration: 3000, easing: Easing.linear }),
-        -1
-      );
-    }, [perimeter]);
-
-    const animatedStrokeProps = useAnimatedProps(
-      () =>
-        ({
-          // advance the dash so it appears to orbit the card
-          strokeDashoffset: dashOffset.value,
-        } as any)
-    );
-
-    // Track video opacity for internal fade, but don't crossfade image
-    const videoOpacity =
-      videoOpacityRefs.current[item._id || ""] || new Animated.Value(0);
-
     return (
       <View style={styles.carouselItem}>
-        <View style={styles.gradientBorder}>
+        <View style={styles.itemWrapper}>
+
+
+          {/* Corner glows OUTSIDE */}
+          <CornerGlow position="topLeft" />
+          <CornerGlow position="topRight" />
+          <CornerGlow position="bottomLeft" />
+          <CornerGlow position="bottomRight" />
+
+          {/* Enhanced spinning light with multiple gradients */}
+          <Reanimated.View style={[styles.spinningLight, animatedBorderStyle]} pointerEvents="none">
+            <LinearGradient
+              colors={[
+                'transparent',
+                'rgba(255, 182, 193, 0.8)',
+                // 'rgba(255, 105, 180, 1)',
+                'rgba(255, 203, 164, 1)',
+                'rgba(255, 215, 0, 0.9)',
+                'rgba(138, 43, 226, 0.8)',
+                'transparent',
+                'transparent',
+              ]}
+              start={{ x: 0.5, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={StyleSheet.absoluteFillObject}
+            />
+          </Reanimated.View>
+
+          {/* Secondary rotating effect in opposite direction */}
+          <Reanimated.View 
+            style={[
+              styles.spinningLight, 
+              useAnimatedStyle(() => ({
+                transform: [{ rotate: `${angle.value * 0.5}deg` }],
+                opacity: 0.4,
+              }))
+            ]} 
+            pointerEvents="none"
+          >
+            <LinearGradient
+              colors={[
+                'transparent',
+                'transparent',
+                'rgba(0, 255, 255, 0.6)',
+                'rgba(255, 20, 147, 0.6)',
+                'transparent',
+              ]}
+              start={{ x: 0.5, y: 0.5 }}
+              end={{ x: 0, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+            />
+          </Reanimated.View>
+
+          {/* Sparkle effect layer */}
+          <Reanimated.View 
+            style={[
+              styles.sparkleLayer,
+              useAnimatedStyle(() => ({
+                opacity: pulseOpacity.value * 0.7,
+              }))
+            ]} 
+            pointerEvents="none"
+          >
+            {[...Array(8)].map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.sparkle,
+                  {
+                    top: `${Math.random() * 100}%`,
+                    left: `${Math.random() * 100}%`,
+                  }
+                ]}
+              />
+            ))}
+          </Reanimated.View>
+
           <TouchableOpacity
             style={styles.featuredCard}
-            onLayout={(e) => {
-              const { width, height } = e.nativeEvent.layout;
-              setCardSize({ width, height });
-            }}
             onPress={() => {
               console.log("Featured event clicked:", item._id, item.name);
               onEventPress(item._id || "");
             }}
             activeOpacity={0.9}
           >
-            {/* Always show image as background */}
-            <Image
-              source={{ uri: item.coverImage }}
-              style={styles.featuredImage}
-            />
+            
+            <Image source={{ uri: item.coverImage }} style={styles.featuredImage} />
 
-            {/* Show video with fade transition if available */}
             {firstVideo && showingVideo[item._id || ""] && (
               <Animated.View
                 style={[
@@ -299,58 +353,28 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
               end={{ x: 0, y: 1 }}
             >
               <View style={styles.featuredContent}>
-                {/* Title at the top */}
-                <Text
-                  style={styles.venueName}
-                  adjustsFontSizeToFit
-                  numberOfLines={2}
-                  minimumFontScale={0.8}
-                >
+                <Text style={styles.venueName} adjustsFontSizeToFit numberOfLines={2} minimumFontScale={0.8}>
                   {item.name}
                 </Text>
 
-                {/* Bottom section */}
                 <View style={styles.bottomSection}>
-                  {/* Bottom left - Date and location */}
                   <View style={styles.bottomLeftInfo}>
-                    <Text
-                      style={styles.eventDate}
-                      adjustsFontSizeToFit
-                      numberOfLines={1}
-                      minimumFontScale={0.9}
-                    >
+                    <Text style={styles.eventDate} adjustsFontSizeToFit numberOfLines={1} minimumFontScale={0.9}>
                       {formatDate(item.date)}
                     </Text>
-                    <Text
-                      style={styles.clubLocation}
-                      adjustsFontSizeToFit
-                      numberOfLines={2}
-                      minimumFontScale={0.9}
-                    >
+                    <Text style={styles.clubLocation} adjustsFontSizeToFit numberOfLines={2} minimumFontScale={0.9}>
                       {getClubName(item)}
                     </Text>
                   </View>
 
-                  {/* Bottom right - Distance and Book button */}
                   <View style={styles.bottomRightInfo}>
-                    <Text
-                      style={styles.distanceText}
-                      adjustsFontSizeToFit
-                      numberOfLines={1}
-                      minimumFontScale={0.9}
-                    >
-                      {item.distance ||
-                        `${Math.floor(Math.random() * 20) + 1} km`}{" "}
-                      away
+                    <Text style={styles.distanceText} adjustsFontSizeToFit numberOfLines={1} minimumFontScale={0.9}>
+                      {item.distance || `${Math.floor(Math.random() * 20) + 1} km`} away
                     </Text>
                     <TouchableOpacity
                       style={styles.bookButton}
                       onPress={() => {
-                        console.log(
-                          "BOOK NOW clicked for event:",
-                          item._id,
-                          item.name
-                        );
+                        console.log("BOOK NOW clicked for event:", item._id, item.name);
                         onEventPress(item._id || "");
                       }}
                     >
@@ -360,42 +384,6 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
                 </View>
               </View>
             </LinearGradient>
-
-            {/* Animated tracing border overlay */}
-            <Reanimated.View
-              pointerEvents="none"
-              style={StyleSheet.absoluteFill}
-            >
-              <Svg width={cardSize.width || 0} height={cardSize.height || 0}>
-                <Defs>
-                  <SvgLinearGradient
-                    id="featuredDashGradient"
-                    x1="0%"
-                    y1="0%"
-                    x2="100%"
-                    y2="0%"
-                  >
-                    <Stop offset="0%" stopColor={Colors.primary} />
-                    <Stop offset="100%" stopColor="#011C51" />
-                  </SvgLinearGradient>
-                </Defs>
-                <AnimatedSvgRect
-                  x={0.5}
-                  y={0.5}
-                  width={Math.max(0, cardSize.width - 3)}
-                  height={Math.max(0, cardSize.height - 3)}
-                  rx={cornerRadius - 0.5}
-                  ry={cornerRadius - 0.5}
-                  fill="none"
-                  stroke="url(#featuredDashGradient)"
-                  strokeWidth={3}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeDasharray={`${dashLength} ${dashGap}`}
-                  animatedProps={animatedStrokeProps}
-                />
-              </Svg>
-            </Reanimated.View>
           </TouchableOpacity>
         </View>
       </View>
@@ -423,32 +411,65 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
 };
 
 const styles = StyleSheet.create({
-  carouselContainer: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 16,
-    height: 330,
-    marginBottom: 10,
-  },
+carouselContainer: {
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  marginTop: 16,
+  height: 330,
+  marginBottom: 10,
+  position: "relative", // ensure corner glows position correctly
+  overflow: "visible",
+},
   carouselItem: {
     width: SCREEN_WIDTH,
     height: 316,
     paddingHorizontal: 16,
     position: "relative",
   },
-  gradientBorder: {
+  itemWrapper: {
     height: "100%",
+    position: "relative",
     borderRadius: 20,
-    padding: 3, // Creates the border width
+    padding: 4,
+    overflow: "hidden",
+    backgroundColor: "transparent",
+  },
+  spinningLight: {
+    position: "absolute",
+    top: -80,
+    left: -40,
+    right: -40,
+    bottom: -80,
+    borderRadius: 2,
+    zIndex: 0,
+  },
+  sparkleLayer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 0,
+  },
+  sparkle: {
+    position: "absolute",
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    shadowColor: '#fff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
   },
   featuredCard: {
     height: "100%",
-    borderRadius: 17, // Slightly smaller to show the gradient border
+    borderRadius: 18,
     overflow: "hidden",
     backgroundColor: Colors.backgroundSecondary,
-    borderWidth: 1,
-    borderColor: "rgba(1,28,81,0.35)",
+    position: "relative",
+    zIndex: 1,
   },
   featuredImage: {
     width: "100%",
