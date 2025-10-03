@@ -356,13 +356,13 @@ const UserHomeScreen = () => {
             onLocationPress={() => setCityPickerVisible(true)}
             userLocation={userLocation}
             locationLoading={locationLoading}
-            onFilterPress={() => setFiltersVisible(true)}
           />
           <SearchSection
-            value={search}
-            onChangeText={setSearch}
-            cityName={selectedCity.name}
-          />
+              value={search}
+              onChangeText={setSearch}
+              cityName={selectedCity.name}
+              onFilterPress={() => setFiltersVisible(true)}
+            />
         </View>
 
         {/* Featured Event Carousel - Fixed */}

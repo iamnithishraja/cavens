@@ -281,7 +281,9 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
                 <VideoView
                   style={styles.featuredImage}
                   player={player}
-                  allowsFullscreen={false}
+                  fullscreenOptions={{
+                    enabled: false,
+                  }}
                   allowsPictureInPicture={false}
                   nativeControls={false}
                   contentFit="cover"

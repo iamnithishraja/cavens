@@ -3,6 +3,8 @@ import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import SearchBar from "./SearchBar";
 import { Colors } from "@/constants/Colors";
+import AnimatedGlow from "react-native-animated-glow";
+import SearchFilterPreset from "@/components/ui/presets/searchFilter";
 
 interface SearchSectionProps {
   value: string;
@@ -21,17 +23,20 @@ const SearchSection: React.FC<SearchSectionProps> = ({
   return (
     <View style={styles.row}>
       <View style={styles.searchContainerFull}>
-        <SearchBar
-          value={value}
-          onChangeText={onChangeText}
-          onFocusNavigate={() =>
-            router.push(
-              `/search?mode=events${
-                cityName ? `&city=${encodeURIComponent(cityName)}` : ""
-              }`
-            )
-          }
-        />
+        <AnimatedGlow preset={SearchFilterPreset}>
+          <SearchBar
+            value={value}
+            onChangeText={onChangeText}
+            onFocusNavigate={() =>
+              router.push(
+                `/search?mode=events${
+                  cityName ? `&city=${encodeURIComponent(cityName)}` : ""
+                }`
+              )
+            }
+            onFilterPress={onFilterPress}
+          />
+        </AnimatedGlow>
       </View>
     </View>
   );
