@@ -1,47 +1,57 @@
 import { type PresetConfig } from "react-native-animated-glow";
+import { Colors } from "@/constants/Colors";
 
-const FeaturedItemPreset: PresetConfig = {
-  metadata: {
-    name: "FeaturedGlowBorder",
-    textColor: "#FFFFFF",
-    category: "Custom",
-    tags: ["glow", "ethereal", "border"],
-  },
+export const FeaturedItemPreset: PresetConfig = {
   states: [
     {
       name: "default",
       preset: {
-        cornerRadius: 12,
-        outlineWidth: 0.1, // thinnest outline
-        borderColor: ["#222222"], // almost invisible border
+        cornerRadius: 10,
+        outlineWidth: 4,
+        borderColor: [
+          Colors.primary,
+          Colors.blueAccent,
+          Colors.blueAccent,
+          Colors.primary,
+        ],
+        backgroundColor: "rgba(21, 21, 21, 1)",
+        animationSpeed: 2,
+        borderSpeedMultiplier: 1,
         glowLayers: [
           {
-            colors: ["#1e90ff", "#00bfff"],
-            glowSize: 8,
-            opacity: 0.2,
+            glowPlacement: "behind",
+            colors: [Colors.primary, Colors.blueAccent, Colors.blueAccent, Colors.primary],
+            glowSize: 20,
+            opacity: 0.1,
+            speedMultiplier: 1,
             coverage: 1,
           },
           {
-            colors: ["#ff00ff", "#8a2be2"], // magenta → violet
+            glowPlacement: "behind",
+            colors: [Colors.blueAccent, Colors.primary, Colors.primary, Colors.blueAccent],
             glowSize: 8,
-            opacity: 0.2,
+            opacity: 0.5,
+            speedMultiplier: 1,
             coverage: 1,
-          }
+          },
         ],
       },
     },
     {
       name: "hover",
-      transition: 250,
+      transition: 300,
       preset: {
-        glowLayers: [{ glowSize: 14, opacity: 0.12 }],
-      },
-    },
-    {
-      name: "press",
-      transition: 150,
-      preset: {
-        glowLayers: [{ glowSize: 16, opacity: 0.15 }],
+        animationSpeed: 3,
+        glowLayers: [
+          {
+            glowSize: 24,
+            opacity: 0.12,
+          },
+          {
+            glowSize: 10,
+            opacity: 0.6,
+          },
+        ],
       },
     },
   ],

@@ -1,7 +1,7 @@
 import React from "react";
 import { View, TextInput, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
-import { Search, X } from "lucide-react-native";
+import { Search, X, Filter } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 
@@ -10,6 +10,7 @@ type Props = {
   onChangeText: (text: string) => void;
   placeholder?: string;
   onFocusNavigate?: () => void;
+  onFilterPress?: () => void;
 };
 
 const SearchBar: React.FC<Props> = ({
@@ -17,6 +18,7 @@ const SearchBar: React.FC<Props> = ({
   onChangeText,
   placeholder,
   onFocusNavigate,
+  onFilterPress,
 }) => {
   return (
     <View>
@@ -64,6 +66,12 @@ const SearchBar: React.FC<Props> = ({
               <X color={Colors.textMuted} size={16} />
             </TouchableOpacity>
           )}
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={onFilterPress}
+          >
+            <Filter color={Colors.accentYellow} size={16} />
+          </TouchableOpacity>
         </View>
       </LinearGradient>
     </View>
@@ -81,7 +89,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 4,
     borderWidth: 1,
     borderColor: "rgba(1,28,81,0.35)",
     position: "relative",
@@ -114,6 +122,14 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     padding: 4,
+  },
+  filterButton: {
+    padding: 8,
+    marginLeft: 4,
+    borderRadius: 4,
+    backgroundColor: Colors.accentYellow + '20',
+    borderWidth: 1,
+    borderColor: Colors.accentYellow + '50',
   },
 });
 

@@ -11,13 +11,20 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { VideoView, useVideoPlayer } from "expo-video";
-import AnimatedGlow, { type PresetConfig } from 'react-native-animated-glow';
+import AnimatedGlow, { type PresetConfig } from "react-native-animated-glow";
 import { Colors } from "@/constants/Colors";
 import { Asset } from "expo-asset";
 import type { EventItem } from "./types";
 import type { City } from "@/components/ui/CityPickerModal";
 import FeaturedItemPreset from "../ui/presets/featuredItem";
-import Reanimated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
+import Reanimated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -46,11 +53,15 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
   onEventPress,
 }) => {
   const [activeCarouselIndex, setActiveCarouselIndex] = useState(0);
-  const [showingVideo, setShowingVideo] = useState<{ [key: string]: boolean }>({});
+  const [showingVideo, setShowingVideo] = useState<{ [key: string]: boolean }>(
+    {}
+  );
   const carouselRef = useRef<FlatList>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const autoRotateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const videoTimerRefs = useRef<{ [key: string]: ReturnType<typeof setTimeout> }>({});
+  const videoTimerRefs = useRef<{
+    [key: string]: ReturnType<typeof setTimeout>;
+  }>({});
   const videoOpacityRefs = useRef<{ [key: string]: Animated.Value }>({});
 
   const clearAutoRotation = useCallback(() => {
@@ -89,7 +100,9 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
   }, [startAutoRotation, clearAutoRotation]);
 
   useEffect(() => {
-    Object.values(videoTimerRefs.current).forEach((timer) => clearTimeout(timer));
+    Object.values(videoTimerRefs.current).forEach((timer) =>
+      clearTimeout(timer)
+    );
     videoTimerRefs.current = {};
 
     featuredEvents.forEach((event) => {
@@ -111,7 +124,12 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
     setShowingVideo(newShowingVideo);
 
     const activeEvent = featuredEvents[activeCarouselIndex];
-    if (activeEvent && activeEvent._id && activeEvent.promoVideos && activeEvent.promoVideos.length > 0) {
+    if (
+      activeEvent &&
+      activeEvent._id &&
+      activeEvent.promoVideos &&
+      activeEvent.promoVideos.length > 0
+    ) {
       videoTimerRefs.current[activeEvent._id] = setTimeout(() => {
         Animated.timing(videoOpacityRefs.current[activeEvent._id!], {
           toValue: 1,
@@ -123,7 +141,9 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
     }
 
     return () => {
-      Object.values(videoTimerRefs.current).forEach((timer) => clearTimeout(timer));
+      Object.values(videoTimerRefs.current).forEach((timer) =>
+        clearTimeout(timer)
+      );
     };
   }, [featuredEvents, activeCarouselIndex]);
 
@@ -162,7 +182,9 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
     return null;
   }
 
-  const FeaturedItem: React.FC<{ item: FeaturedEventWithDistance }> = ({ item }) => {
+  const FeaturedItem: React.FC<{ item: FeaturedEventWithDistance }> = ({
+    item,
+  }) => {
     const angle = useSharedValue(0);
     const scale = useSharedValue(1);
     const pulseOpacity = useSharedValue(0.6);
@@ -179,7 +201,10 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
       const speedVariation = setInterval(() => {
         const randomDuration = Math.random() * 2000 + 2000; // 2-4 seconds
         angle.value = withRepeat(
-          withTiming(360, { duration: randomDuration, easing: Easing.bezier(0.4, 0.0, 0.2, 1) }),
+          withTiming(360, {
+            duration: randomDuration,
+            easing: Easing.bezier(0.4, 0.0, 0.2, 1),
+          }),
           -1,
           false
         );
@@ -188,7 +213,10 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
       // Pulsing scale effect
       scale.value = withRepeat(
         withSequence(
-          withTiming(1.05, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1.05, {
+            duration: 1500,
+            easing: Easing.inOut(Easing.ease),
+          }),
           withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) })
         ),
         -1,
@@ -210,10 +238,7 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
 
     const animatedBorderStyle = useAnimatedStyle(() => {
       return {
-        transform: [
-          { rotate: `${-angle.value}deg` },
-          { scale: scale.value }
-        ],
+        transform: [{ rotate: `${-angle.value}deg` }, { scale: scale.value }],
         opacity: pulseOpacity.value,
       };
     });
@@ -232,74 +257,6 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
     return (
       <View style={styles.carouselItem}>
         <AnimatedGlow preset={FeaturedItemPreset}>
-          {/* Enhanced spinning light with multiple gradients */}
-          <Reanimated.View style={[styles.spinningLight, animatedBorderStyle]} pointerEvents="none">
-            <LinearGradient
-              colors={[
-                'transparent',
-                'rgba(255, 182, 193, 0.8)',
-                // 'rgba(255, 105, 180, 1)',
-                'rgba(255, 203, 164, 1)',
-                'rgba(255, 215, 0, 0.9)',
-                'rgba(138, 43, 226, 0.8)',
-                'transparent',
-                'transparent',
-              ]}
-              start={{ x: 0.5, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={StyleSheet.absoluteFillObject}
-            />
-          </Reanimated.View>
-
-          {/* Secondary rotating effect in opposite direction */}
-          <Reanimated.View 
-            style={[
-              styles.spinningLight, 
-              useAnimatedStyle(() => ({
-                transform: [{ rotate: `${angle.value * 0.5}deg` }],
-                opacity: 0.4,
-              }))
-            ]} 
-            pointerEvents="none"
-          >
-            <LinearGradient
-              colors={[
-                'transparent',
-                'transparent',
-                'rgba(0, 255, 255, 0.6)',
-                'rgba(255, 20, 147, 0.6)',
-                'transparent',
-              ]}
-              start={{ x: 0.5, y: 0.5 }}
-              end={{ x: 0, y: 1 }}
-              style={StyleSheet.absoluteFillObject}
-            />
-          </Reanimated.View>
-
-          {/* Sparkle effect layer */}
-          <Reanimated.View 
-            style={[
-              styles.sparkleLayer,
-              useAnimatedStyle(() => ({
-                opacity: pulseOpacity.value * 0.7,
-              }))
-            ]} 
-            pointerEvents="none"
-          >
-            {[...Array(8)].map((_, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.sparkle,
-                  {
-                    top: `${Math.random() * 100}%`,
-                    left: `${Math.random() * 100}%`,
-                  }
-                ]}
-              />
-            ))}
-          </Reanimated.View>
-
           <TouchableOpacity
             style={styles.featuredCard}
             onPress={() => {
@@ -308,7 +265,10 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
             }}
             activeOpacity={0.9}
           >
-            <Image source={{ uri: item.coverImage }} style={styles.featuredImage} />
+            <Image
+              source={{ uri: item.coverImage }}
+              style={styles.featuredImage}
+            />
 
             {firstVideo && showingVideo[item._id || ""] && (
               <Animated.View
@@ -336,28 +296,54 @@ const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
               end={{ x: 0, y: 1 }}
             >
               <View style={styles.featuredContent}>
-                <Text style={styles.venueName} adjustsFontSizeToFit numberOfLines={2} minimumFontScale={0.8}>
+                <Text
+                  style={styles.venueName}
+                  adjustsFontSizeToFit
+                  numberOfLines={2}
+                  minimumFontScale={0.8}
+                >
                   {item.name}
                 </Text>
 
                 <View style={styles.bottomSection}>
                   <View style={styles.bottomLeftInfo}>
-                    <Text style={styles.eventDate} adjustsFontSizeToFit numberOfLines={1} minimumFontScale={0.9}>
+                    <Text
+                      style={styles.eventDate}
+                      adjustsFontSizeToFit
+                      numberOfLines={1}
+                      minimumFontScale={0.9}
+                    >
                       {formatDate(item.date)}
                     </Text>
-                    <Text style={styles.clubLocation} adjustsFontSizeToFit numberOfLines={2} minimumFontScale={0.9}>
+                    <Text
+                      style={styles.clubLocation}
+                      adjustsFontSizeToFit
+                      numberOfLines={2}
+                      minimumFontScale={0.9}
+                    >
                       {getClubName(item)}
                     </Text>
                   </View>
 
                   <View style={styles.bottomRightInfo}>
-                    <Text style={styles.distanceText} adjustsFontSizeToFit numberOfLines={1} minimumFontScale={0.9}>
-                      {item.distance || `${Math.floor(Math.random() * 20) + 1} km`} away
+                    <Text
+                      style={styles.distanceText}
+                      adjustsFontSizeToFit
+                      numberOfLines={1}
+                      minimumFontScale={0.9}
+                    >
+                      {item.distance ||
+                        `${Math.floor(Math.random() * 20) + 1} km`}{" "}
+                      away
                     </Text>
                     <TouchableOpacity
                       style={styles.bookButton}
                       onPress={() => {
-                        console.log("BOOK NOW clicked for event:", item._id, item.name);
+                        console.log(
+                          "BOOK NOW clicked for event:",
+                          item._id,
+                          item.name
+                        );
                         onEventPress(item._id || "");
                       }}
                     >
@@ -398,23 +384,24 @@ const styles = StyleSheet.create({
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 10,
-    height: 360,
-    marginBottom: 10,
+    marginTop: 0,
+    height: 420,
+    marginBottom: 0,
     position: "relative",
     overflow: "visible",
   },
   carouselItem: {
-    marginTop: 14,
+    marginTop: 10,
     width: SCREEN_WIDTH,
-    height: 316,
+    height: "100%",
     paddingHorizontal: 16,
+    paddingVertical: 20,
     position: "relative",
+    top: -10,
   },
   featuredCard: {
     height: "100%",
     borderRadius: 12,
-    margin: 1,
     overflow: "hidden",
     backgroundColor: Colors.backgroundSecondary,
     position: "relative",
@@ -441,7 +428,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   featuredContent: {
-    padding: 20
+    padding: 20,
   },
   bottomSection: {
     flexDirection: "row",
@@ -456,7 +443,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     gap: 8,
   },
-   eventDate: {
+  eventDate: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "400",
@@ -482,7 +469,7 @@ const styles = StyleSheet.create({
     top: -100,
     left: -40,
     right: -40,
-    bottom: -80,
+    bottom: -120,
     borderRadius: 2,
     zIndex: 0,
   },
@@ -499,8 +486,8 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    shadowColor: '#fff',
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    shadowColor: "#fff",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 4,

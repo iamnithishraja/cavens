@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { View, Text, FlatList, StyleSheet, useWindowDimensions, ViewToken, NativeSyntheticEvent, NativeScrollEvent, Image, Animated } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -44,45 +44,48 @@ const CarouselVideoItem: React.FC<{
     outputRange: ['0deg', '360deg'],
   });
   
-  const uniqueUri = `${event.promoVideos[0]}${event.promoVideos[0].includes("?") ? "&" : "?"}vuid=${encodeURIComponent(idKey)}`;
-  const player = useVideoPlayer(uniqueUri, (player) => {
+  // Use a stable URI to prevent recreating the player
+  const videoUri = event.promoVideos[0] || "";
+  const player = useVideoPlayer(videoUri, (player) => {
     player.loop = false; // Don't loop - we want to know when it completes
     player.muted = true; // Ensure videos can autoplay
-    
-    // Set up status listener to detect when video ends
-    player.addListener('statusChange', (status) => {
-      console.log(`[Video ${index}] Status changed:`, status.status);
-      if (status.status === 'idle' && active) {
-        console.log(`[Video ${index}] Video completed for ${idKey}`);
-        onVideoComplete?.();
-      }
-    });
 
     // Start paused; we'll control playback based on visibility
-    try { 
-      player.pause(); 
+    try {
+      player.pause();
       console.log(`[Video ${index}] Player initialized for ${idKey}`);
     } catch (e) {
       console.log(`[Video ${index}] Error initializing player:`, e);
     }
   });
 
+  // Handle video completion with proper cleanup
+  useEffect(() => {
+    const handleStatusChange = (status: any) => {
+      console.log(`[Video ${index}] Status changed:`, status.status);
+      if (status.status === 'idle' && active) {
+        console.log(`[Video ${index}] Video completed for ${idKey}`);
+        onVideoComplete?.();
+      }
+    };
+
+    const subscription = player.addListener('statusChange', handleStatusChange);
+
+    return () => {
+      subscription?.remove();
+    };
+  }, [player, active, idKey, index, onVideoComplete]);
+
   useEffect(() => {
     const togglePlayback = async () => {
       try {
-        if (active) {
+        if (active && videoUri) {
           console.log(`[Video ${index}] Activating video ${idKey}`);
-          try { 
-            player.replace(uniqueUri); 
-            console.log(`[Video ${index}] Source replaced`);
-          } catch (e) {
-            console.log(`[Video ${index}] Error replacing source:`, e);
-          }
-          
+
           // Start playing immediately
-          setTimeout(async () => { 
-            try { 
-              await player.play(); 
+          setTimeout(async () => {
+            try {
+              await player.play();
               console.log(`[Video ${index}] Playback started immediately`);
             } catch (e) {
               console.log(`[Video ${index}] Error starting playback:`, e);
@@ -101,8 +104,21 @@ const CarouselVideoItem: React.FC<{
         console.log(`[Video ${index}] Error toggling video playback:`, error);
       }
     };
+
     togglePlayback();
-  }, [active, uniqueUri, player]);
+
+    // Cleanup function to pause video when component unmounts or becomes inactive
+    return () => {
+      if (player) {
+        try {
+          player.pause();
+          console.log(`[Video ${index}] Cleaned up player for ${idKey}`);
+        } catch (e) {
+          console.log(`[Video ${index}] Error during cleanup:`, e);
+        }
+      }
+    };
+  }, [active, videoUri, player, idKey, index]);
 
   const cardHeight = Math.round(width * 0.6);
   
@@ -135,7 +151,7 @@ const CarouselVideoItem: React.FC<{
       
       {/* Content Container */}
       <View style={styles.videoContainer}>
-        {active ? (
+        {active && videoUri ? (
           <VideoView
             key={`video-${idKey}`}
             style={styles.video}
@@ -144,9 +160,9 @@ const CarouselVideoItem: React.FC<{
             nativeControls={false}
           />
         ) : (
-          <Image 
-            key={`thumb-${idKey}`} 
-            source={{ uri: event.coverImage }} 
+          <Image
+            key={`thumb-${idKey}`}
+            source={{ uri: event.coverImage }}
             style={styles.videoPlaceholder}
             resizeMode="cover"
           />

@@ -1,11 +1,10 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Colors } from "@/constants/Colors";
 import type { City } from "@/components/ui/CityPickerModal";
-import { Filter as FilterIcon, MapPin } from "lucide-react-native";
+import { MapPin } from "lucide-react-native";
 import { ChevronDown } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { BlurView } from "expo-blur";
 
 interface LocationHeaderProps {
   selectedCity: City;
@@ -15,7 +14,6 @@ interface LocationHeaderProps {
     longitude: number;
   } | null;
   locationLoading: boolean;
-  onFilterPress?: () => void;
 }
 
 const LocationHeader: React.FC<LocationHeaderProps> = ({
@@ -23,7 +21,6 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
   onLocationPress,
   userLocation,
   locationLoading,
-  onFilterPress,
 }) => {
   return (
     <View style={styles.locationHeader}>
@@ -65,44 +62,7 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
         </TouchableOpacity>
       </LinearGradient>
 
-      {/* Center: Dubai Skyline */}
-      <View style={styles.skylineContainer}>
-        <Image
-          source={require("@/assets/images/dubai-skyline.png")}
-          style={styles.skylineImage}
-          resizeMode="contain"
-        />
       </View>
-
-      {/* Right: Filter Button */}
-      <LinearGradient
-        colors={[Colors.withOpacity.white10, Colors.withOpacity.white10]}
-        style={styles.gradientPill}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={onFilterPress}
-          activeOpacity={0.85}
-        >
-          <BlurView style={styles.filterBlur} intensity={18} tint="dark" />
-          <LinearGradient
-            colors={[
-              Colors.primary + '18',
-              Colors.primary + '10',
-              Colors.primary + '08',
-              'transparent'
-            ]}
-            locations={[0, 0.3, 0.7, 1]}
-            style={styles.filterShineOverlay}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-          />
-          <FilterIcon color={Colors.primary} size={18} />
-        </TouchableOpacity>
-      </LinearGradient>
-    </View>
   );
 };
 
@@ -179,53 +139,6 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   chevron: { marginLeft: 2 },
-  skylineContainer: {
-    position: "absolute",
-    left: "55%",
-    top: "68%",
-    transform: [{ translateX: -100 }, { translateY: -20 }],
-    alignItems: "center",
-    justifyContent: "center",
-    height: 40,
-    zIndex: 1,
-  },
-  skylineImage: {
-    width: 400,
-    height: 40,
-  },
-  filterButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Colors.withOpacity.black60,
-    borderWidth: 1,
-    borderColor: "rgba(1,28,81,0.35)",
-    zIndex: 2,
-    shadowColor: "#011C51",
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
-    position: "relative",
-  },
-  filterBlur: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 18,
-  },
-  filterShineOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 18,
-  },
 });
 
 export default LocationHeader;

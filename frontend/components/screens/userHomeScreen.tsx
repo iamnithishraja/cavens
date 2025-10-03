@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   featuredSection: {
-    paddingTop: 110,
+    paddingTop: 120,
     zIndex: 5,
   },
   timelineSection: {
