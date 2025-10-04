@@ -15,7 +15,7 @@ export const SearchFilterPreset: PresetConfig = {
         glowLayers: [
           {
             glowPlacement: "behind",
-            colors: [Colors.primary, Colors.accentBlue],
+            colors: [Colors.primary, Colors.blueDark],
             glowSize: [30, 40, 30],
             opacity: 0.1,
             speedMultiplier: 1,
@@ -24,7 +24,7 @@ export const SearchFilterPreset: PresetConfig = {
           },
           {
             glowPlacement: "behind",
-            colors: [Colors.accentBlue, Colors.primary],
+            colors: [Colors.blueDark, Colors.primary],
             glowSize: 1,
             opacity: 0.5,
             speedMultiplier: 1,
@@ -33,7 +33,7 @@ export const SearchFilterPreset: PresetConfig = {
           },
           {
             glowPlacement: "over",
-            colors: [Colors.accentBlue, Colors.primary],
+            colors: [Colors.blueDark, Colors.primary],
             glowSize: [0, 30],
             opacity: 0.05,
             speedMultiplier: 2,
@@ -42,7 +42,7 @@ export const SearchFilterPreset: PresetConfig = {
           },
           {
             glowPlacement: "behind",
-            colors: [Colors.accentBlue, Colors.primary],
+            colors: [Colors.blueDark, Colors.primary],
             glowSize: [0, 1],
             opacity: 1,
             speedMultiplier: 2,
