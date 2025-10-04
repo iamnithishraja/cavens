@@ -10,9 +10,9 @@ export const FeaturedItemPreset: PresetConfig = {
         outlineWidth: 4,
         borderColor: [
           Colors.primary,
-          Colors.blueDark,
-          Colors.blueDark,
+          Colors.blueAccent,
           Colors.primary,
+          Colors.blueAccent,
         ],
         backgroundColor: "rgba(21, 21, 21, 1)",
         animationSpeed: 2,
@@ -20,7 +20,7 @@ export const FeaturedItemPreset: PresetConfig = {
         glowLayers: [
           {
             glowPlacement: "behind",
-            colors: [Colors.primary, Colors.blueDark, Colors.blueDark, Colors.primary],
+            colors: [Colors.blueDark, Colors.blueDark],
             glowSize: 20,
             opacity: 0.1,
             speedMultiplier: 1,
@@ -28,7 +28,7 @@ export const FeaturedItemPreset: PresetConfig = {
           },
           {
             glowPlacement: "behind",
-            colors: [Colors.blueDark, Colors.primary, Colors.primary, Colors.blueDark],
+            colors: [Colors.primary, Colors.blueDark],
             glowSize: 8,
             opacity: 0.5,
             speedMultiplier: 1,
