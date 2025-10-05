@@ -6,7 +6,7 @@ export const FeaturedItemPreset: PresetConfig = {
     {
       name: "default",
       preset: {
-        cornerRadius: 10,
+        cornerRadius: 8,
         outlineWidth: 4,
         borderColor: [
           Colors.primary,

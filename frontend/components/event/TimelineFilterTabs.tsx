@@ -8,7 +8,10 @@ import {
   ScrollView,
 } from "react-native";
 import { Colors } from "@/constants/Colors";
+import AnimatedGlow from "react-native-animated-glow";
+import { SearchFilterPreset } from "@/components/ui/presets/searchFilter";
 import type { EventItem } from "./types";
+import TimelineTabs from "../ui/presets/timelinetabs";
 
 export type TimelineTab = "tonight" | "this_week" | "next_week" | "upcoming";
 
@@ -42,25 +45,33 @@ const TimelineFilterTabs: React.FC<TimelineFilterTabsProps> = ({
       {tabs.map((tab, idx) => {
         const isActive = activeTab === tab.key;
         return (
-          <TouchableOpacity
-            key={tab.key}
+          <AnimatedGlow
+            preset={TimelineTabs}
             style={[
-              styles.tab,
-              isActive && styles.activeTab,
-              idx === 0 && styles.firstTab,
+              styles.tabGlow,
+              idx === 0 && styles.firstGlow,
+              styles.regularGlow
             ]}
-            onPress={() => onTabChange(tab.key)}
-            activeOpacity={0.9}
           >
-            <Text
-              style={[styles.tabText, isActive && styles.activeTabText]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-              allowFontScaling={false}
+            <TouchableOpacity
+              key={tab.key}
+              style={[
+                styles.tab,
+                isActive && styles.activeTab,
+              ]}
+              onPress={() => onTabChange(tab.key)}
+              activeOpacity={0.9}
             >
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={[styles.tabText, isActive && styles.activeTabText]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                allowFontScaling={false}
+              >
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          </AnimatedGlow>
         );
       })}
     </ScrollView>
@@ -74,6 +85,10 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 12,
   },
+  tabGlow: {
+    marginHorizontal: 0,
+    padding: 0,
+  },
   tab: {
     alignSelf: "flex-start",
     alignItems: "center",
@@ -84,10 +99,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 999,
-    marginRight: 8,
   },
-  firstTab: {
+  firstGlow: {
     marginLeft: 4,
+  },
+  regularGlow: {
+    marginRight: 8,
   },
   activeTab: {
     backgroundColor: Colors.backgroundSecondary,

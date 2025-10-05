@@ -1,12 +1,12 @@
 import { type PresetConfig } from "react-native-animated-glow";
 import { Colors } from "@/constants/Colors";
 
-export const SearchFilterPreset: PresetConfig = {
+export const TimelineTabs: PresetConfig = {
   states: [
     {
       name: "default",
       preset: {
-        cornerRadius: 12,
+        cornerRadius: 999,
         outlineWidth: 0,
         borderColor: "rgba(0, 0, 0, 1)",
         backgroundColor: "rgba(10, 10, 10, 1)",
@@ -16,8 +16,8 @@ export const SearchFilterPreset: PresetConfig = {
           {
             glowPlacement: "behind",
             colors: [Colors.blueDark],
-            glowSize: [30, 40, 30],
-            opacity: 0.1,
+            glowSize: [8, 12, 8],
+            opacity: 0.15,
             speedMultiplier: 1,
             coverage: 1,
             relativeOffset: 0,
@@ -26,7 +26,7 @@ export const SearchFilterPreset: PresetConfig = {
             glowPlacement: "behind",
             colors: [Colors.blueDark],
             glowSize: 1,
-            opacity: 0.5,
+            opacity: 0.6,
             speedMultiplier: 1,
             coverage: 1,
             relativeOffset: 0,
@@ -34,10 +34,10 @@ export const SearchFilterPreset: PresetConfig = {
           {
             glowPlacement: "over",
             colors: [Colors.blueDark],
-            glowSize: [0, 30],
-            opacity: 0.05,
+            glowSize: [0, 8],
+            opacity: 0.08,
             speedMultiplier: 2,
-            coverage: 0.6,
+            coverage: 0.7,
             relativeOffset: 0,
           },
           {
@@ -46,7 +46,7 @@ export const SearchFilterPreset: PresetConfig = {
             glowSize: [0, 1],
             opacity: 1,
             speedMultiplier: 2,
-            coverage: 0.5,
+            coverage: 0.6,
             relativeOffset: 0,
           },
         ],
@@ -59,16 +59,16 @@ export const SearchFilterPreset: PresetConfig = {
         animationSpeed: 1.5,
         glowLayers: [
           {
-            glowSize: [36, 40, 36],
-            opacity: 0.12,
+            glowSize: [10, 14, 10],
+            opacity: 0.18,
           },
           {
             glowSize: 1,
-            opacity: 0.6,
+            opacity: 0.7,
           },
           {
-            glowSize: [0, 36],
-            opacity: 0.06,
+            glowSize: [0, 10],
+            opacity: 0.1,
           },
           {
             glowSize: [0, 1],
@@ -84,16 +84,16 @@ export const SearchFilterPreset: PresetConfig = {
         animationSpeed: 2,
         glowLayers: [
           {
-            glowSize: [40, 40, 40],
-            opacity: 0.14,
+            glowSize: [12, 16, 12],
+            opacity: 0.2,
           },
           {
             glowSize: 1,
-            opacity: 0.7,
+            opacity: 0.8,
           },
           {
-            glowSize: [0, 40],
-            opacity: 0.07,
+            glowSize: [0, 12],
+            opacity: 0.12,
           },
           {
             glowSize: [0, 1],
@@ -105,4 +105,4 @@ export const SearchFilterPreset: PresetConfig = {
   ],
 };
 
-export default SearchFilterPreset;
+export default TimelineTabs;

@@ -74,11 +74,13 @@ const EventsList: React.FC<EventsListProps> = ({
           }}
           style={styles.noEventsIcon}
         />
-        <Text style={styles.noEventsTitle}>No Events Found</Text>
+        <Text style={styles.noEventsTitle}>
+          Great things are brewing, stay tuned
+        </Text>
         <Text style={styles.noEventsSubtitle}>
           {search
             ? `No events match "${search}" for ${activeTab.replace("_", " ")}`
-            : `No events scheduled for ${activeTab.replace("_", " ")}`}
+            : `Great things are brewing, stay tuned`}
         </Text>
         {search && (
           <TouchableOpacity
